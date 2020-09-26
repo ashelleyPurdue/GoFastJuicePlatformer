@@ -41,9 +41,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void FixedUpdate()
     {
-        UpdateGroundVelocity();
-        _lastGroundTouched = GetGround();
-
+        UpdateGroundState();
         ApplyGravityAndJumping();
         ApplyHorizontalMovement();
 
@@ -62,11 +60,12 @@ public class PlayerMovement : MonoBehaviour
             _lastPositionRelativeToGround = _lastGroundTouched.InverseTransformPoint(transform.position);
     }
 
-    private void UpdateGroundVelocity()
+    private void UpdateGroundState()
     {
         if (_lastGroundTouched == null)
         {
             _groundVelocity = Vector3.zero;
+            _lastGroundTouched = GetGround();
             return;
         }
 
@@ -77,6 +76,8 @@ public class PlayerMovement : MonoBehaviour
         // Figure out how much the footprints moved, and move by that much
         var deltaFootprints = currentFootprintsPos - lastFootprintsPos;
         _groundVelocity = deltaFootprints / Time.deltaTime;
+
+        _lastGroundTouched = GetGround();
     }
 
     private void ApplyGravityAndJumping()
@@ -173,7 +174,7 @@ public class PlayerMovement : MonoBehaviour
     /// <returns></returns>
     private bool IsGrounded()
     {
-        return GetGround() != null;
+        return _lastGroundTouched != null;
     }
 
     /// <summary>
