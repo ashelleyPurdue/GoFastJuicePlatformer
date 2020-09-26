@@ -37,6 +37,10 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetButtonDown("Jump"))
             _lastJumpButtonPressTime = Time.time;
+
+        // HACK: Rotate to match our h angle
+        // TODO: Do this in a better place, and only do it to the model.
+        transform.localEulerAngles = new Vector3(0, -_hAngle * Mathf.Rad2Deg +90, 0);
     }
 
     public void FixedUpdate()
