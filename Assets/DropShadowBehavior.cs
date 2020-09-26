@@ -38,24 +38,6 @@ public class DropShadowBehavior : MonoBehaviour
     /// <returns></returns>
     private Vector3? FindContactPoint(Vector3 origin)
     {
-        // // Use a box cast, because that's easy
-        // var halfExtents = new Vector3
-        // (
-        //     _radius,
-        //     _thickness / 2,
-        //     _radius
-        // );
-
-        // RaycastHit hit;
-        // bool hitAnything = Physics.BoxCast(origin, halfExtents, Vector3.down, out hit);
-
-        // if (!hitAnything)
-        //     return null;
-
-        // Vector3 pos = origin;
-        // pos.y = hit.point.y;
-        // return pos;
-
         // Use the same hit-detection logic as the player, so that the shadow is
         // accurate.
         var hits = CylinderPhysics.CylinderCastAll(origin, _radius, _thickness, Vector3.down);
