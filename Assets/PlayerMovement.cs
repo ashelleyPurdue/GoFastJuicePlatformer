@@ -62,44 +62,6 @@ public class PlayerMovement : MonoBehaviour
             _lastPositionRelativeToGround = _lastGroundTouched.InverseTransformPoint(transform.position);
     }
 
-    public void FixedUpdate_old()
-    {
-        Transform currentGround = GetGround();
-        bool isGrounded = currentGround != null;
-
-        // Move with the platform we're standing on
-        if (isGrounded)
-        {
-            if (_lastGroundTouched != null)
-            {
-                // Figure out where our "foot prints" have moved to
-                var currentFootprintsPos = currentGround.TransformPoint(_lastPositionRelativeToGround);
-                var lastFootprintsPos = transform.position;
-
-                // Figure out much much the footprints moved, and move by that much
-                var deltaFootprints = currentFootprintsPos - lastFootprintsPos;
-                _controller.Move(deltaFootprints);
-            }
-        }
-
-        ApplyGravityAndJumping();
-        ApplyHorizontalMovement();
-
-        // Compute the velocity vector and move
-        var velocity = new Vector3
-        (
-            _hSpeed * Mathf.Cos(_hAngle),
-            _vSpeed,
-            _hSpeed * Mathf.Sin(_hAngle)
-        );
-        _controller.Move(velocity * Time.deltaTime);
-
-        // Remember the moving platform values for next frame
-        _lastGroundTouched = currentGround;
-        if (isGrounded)
-            _lastPositionRelativeToGround = _lastGroundTouched.InverseTransformPoint(transform.position);
-    }
-
     private void UpdateGroundVelocity()
     {
         if (_lastGroundTouched == null)
