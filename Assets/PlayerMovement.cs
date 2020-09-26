@@ -95,9 +95,16 @@ public class PlayerMovement : MonoBehaviour
         // Apply gravity
         _vSpeed -= _gravity * Time.deltaTime;
 
-        // Stop falling if we hit the ground.
         if (IsGrounded())
+        {
+            // Stop falling when we hit the ground.
             _vSpeed = 0;
+
+            // If we obtained negative hspeed while in the air(EG: from air braking),
+            // bring it back to zero so the player doesn't go flying backwards.
+            if (_hSpeed < 0)
+                _hSpeed = 0;
+        }
 
         // Jump when the button is pressed and we're on the ground.
         // Well, OK, that's a little too strict.  
@@ -147,11 +154,11 @@ public class PlayerMovement : MonoBehaviour
             float stickAngle = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
             float hAngleDeg = _hAngle * Mathf.Rad2Deg;
             float delta = Mathf.Abs(Mathf.DeltaAngle(stickAngle, hAngleDeg));
-            
+
             bool pushingBackwards = delta > 90;
 
             if (pushingBackwards)
-                _hSpeed -= inputVector.magnitude * _hAccelMax * Time.deltaTime;
+                _hSpeed -= inputVector.magnitude * _hAccelMax * 2 * Time.deltaTime;
 
             if (_hSpeed < -_hSpeedMax)
                 _hSpeed = -_hSpeedMax;
