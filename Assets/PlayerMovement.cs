@@ -140,9 +140,21 @@ public class PlayerMovement : MonoBehaviour
                 _hAngle = hAngleDeg * Mathf.Deg2Rad;
             }
         }
-        else
+
+        if (!IsGrounded())
         {
-            // TODO: different controls for when we're in the air
+            // Apply the "air brakes" if pushing backwards on the left stick
+            float stickAngle = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
+            float hAngleDeg = _hAngle * Mathf.Rad2Deg;
+            float delta = Mathf.Abs(Mathf.DeltaAngle(stickAngle, hAngleDeg));
+            
+            bool pushingBackwards = delta > 90;
+
+            if (pushingBackwards)
+                _hSpeed -= inputVector.magnitude * _hAccelMax * Time.deltaTime;
+
+            if (_hSpeed < -_hSpeedMax)
+                _hSpeed = -_hSpeedMax;
         }
     }
 
