@@ -22,7 +22,7 @@ public class PlayerMovement : MonoBehaviour
     private float _lastGroundedTime = 0;
     private float _lastJumpButtonPressTime = 0;
 
-    private Transform _lastGroundTouched;
+    private Transform _currentGround;
     private Vector3 _lastPositionRelativeToGround;
     private Vector3 _groundVelocity;
 
@@ -56,35 +56,37 @@ public class PlayerMovement : MonoBehaviour
         _controller.Move(velocity * Time.deltaTime);
 
         // Remember moving-platform stuff for next frame
-        if (_lastGroundTouched != null)
-            _lastPositionRelativeToGround = _lastGroundTouched.InverseTransformPoint(transform.position);
+        if (IsGrounded())
+            _lastPositionRelativeToGround = _currentGround.InverseTransformPoint(transform.position);
     }
 
     private void UpdateGroundState()
     {
-        // Update the ground velocity
-        if (_lastGroundTouched == null)
-        {
-            _groundVelocity = Vector3.zero;
-        }
-        else
+        var previousGround = _currentGround;
+        _currentGround = GetGround();
+
+        // Record the last time we were grounded
+        if (IsGrounded())
+            _lastGroundedTime = Time.time;
+
+        // Calculate how fast the ground is moving (aka: the ground velocity)
+        if (IsGrounded() && _currentGround == previousGround)
         {
             // Figure out where our "foot prints" have moved to
-            var currentFootprintsPos = _lastGroundTouched.TransformPoint(_lastPositionRelativeToGround);
+            var currentFootprintsPos = _currentGround.TransformPoint(_lastPositionRelativeToGround);
             var lastFootprintsPos = transform.position;
 
             // Figure out how much the footprints moved, and move by that much
             var deltaFootprints = currentFootprintsPos - lastFootprintsPos;
             _groundVelocity = deltaFootprints / Time.deltaTime;
         }
-
-        // Update whether or not we're currently grounded
-        _lastGroundTouched = GetGround();
-
-        // Record the last time we were grounded
-        if (IsGrounded())
+        else
         {
-            _lastGroundedTime = Time.time;
+            // If we're not on a platform, then the ground velocity is zero.
+            // If we're standing on a *different* platform than before, then we
+            // have no way of tracking its velocity, so we'll just cheat and set
+            // it to zero in that case too.
+            _groundVelocity = Vector3.zero;
         }
     }
 
@@ -179,7 +181,7 @@ public class PlayerMovement : MonoBehaviour
     /// <returns></returns>
     private bool IsGrounded()
     {
-        return _lastGroundTouched != null;
+        return _currentGround != null;
     }
 
     /// <summary>
