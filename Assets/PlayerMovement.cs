@@ -62,22 +62,30 @@ public class PlayerMovement : MonoBehaviour
 
     private void UpdateGroundState()
     {
+        // Update the ground velocity
         if (_lastGroundTouched == null)
         {
             _groundVelocity = Vector3.zero;
-            _lastGroundTouched = GetGround();
-            return;
+        }
+        else
+        {
+            // Figure out where our "foot prints" have moved to
+            var currentFootprintsPos = _lastGroundTouched.TransformPoint(_lastPositionRelativeToGround);
+            var lastFootprintsPos = transform.position;
+
+            // Figure out how much the footprints moved, and move by that much
+            var deltaFootprints = currentFootprintsPos - lastFootprintsPos;
+            _groundVelocity = deltaFootprints / Time.deltaTime;
         }
 
-        // Figure out where our "foot prints" have moved to
-        var currentFootprintsPos = _lastGroundTouched.TransformPoint(_lastPositionRelativeToGround);
-        var lastFootprintsPos = transform.position;
-
-        // Figure out how much the footprints moved, and move by that much
-        var deltaFootprints = currentFootprintsPos - lastFootprintsPos;
-        _groundVelocity = deltaFootprints / Time.deltaTime;
-
+        // Update whether or not we're currently grounded
         _lastGroundTouched = GetGround();
+
+        // Record the last time we were grounded
+        if (IsGrounded())
+        {
+            _lastGroundedTime = Time.time;
+        }
     }
 
     private void ApplyGravityAndJumping()
@@ -87,10 +95,7 @@ public class PlayerMovement : MonoBehaviour
 
         // Stop falling if we hit the ground.
         if (IsGrounded())
-        {
-            _lastGroundedTime = Time.time;
             _vSpeed = 0;
-        }
 
         // Jump when the button is pressed and we're on the ground.
         // Well, OK, that's a little too strict.  
