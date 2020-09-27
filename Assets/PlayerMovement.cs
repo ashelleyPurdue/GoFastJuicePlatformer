@@ -10,7 +10,7 @@ public class PlayerMovement : MonoBehaviour
     private readonly float _hSpeedMax = 8;
     private readonly float _hAccelMax = 10;
     private readonly float _rotSpeedDeg = 360 * 2;
-    private readonly float _friction = 10;
+    private readonly float _friction = 20;
 
     private readonly float _coyoteTime = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     private readonly float _earlyJumpTime = 0.1f;   // Allows you to press the jump button a little "early" and still jump
