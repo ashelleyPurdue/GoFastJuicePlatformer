@@ -2,8 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(IPlayerInput))]
+[RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
+    // Required components
+    private IPlayerInput _input;
+    private CharacterController _controller;
+
+    // Constants
     private readonly float _groundDetectorThickness = 0.1f;
     private readonly float _groundDetectorRadius = 0.5f;
     private readonly float _gravity = 40;
@@ -15,6 +22,7 @@ public class PlayerMovement : MonoBehaviour
     private readonly float _coyoteTime = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     private readonly float _earlyJumpTime = 0.1f;   // Allows you to press the jump button a little "early" and still jump
 
+    // State
     private float _hAngle = 0;
     private float _hSpeed = 0;
     private float _vSpeed = 0;
@@ -26,16 +34,16 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 _lastPositionRelativeToGround;
     private Vector3 _groundVelocity;
 
-    private CharacterController _controller;
 
     public void Awake()
     {
+        _input = GetComponent<IPlayerInput>();
         _controller = GetComponent<CharacterController>();
     }
 
     public void Update()
     {
-        if (Input.GetButtonDown("Jump"))
+        if (_input.JumpPressed)
             _lastJumpButtonPressTime = Time.time;
 
         // HACK: Rotate to match our h angle
@@ -178,9 +186,9 @@ public class PlayerMovement : MonoBehaviour
     {
         var rawInput = new Vector3
         (
-            Input.GetAxisRaw("Horizontal"),
+            _input.LeftStick.x,
             0,
-            Input.GetAxisRaw("Vertical")
+            _input.LeftStick.y
         );
         
         // Rotate it into camera space
@@ -198,8 +206,9 @@ public class PlayerMovement : MonoBehaviour
     }
 
     /// <summary>
-    /// Capsules suck for platformer collision.
-    /// Players demand that their feet be CYLINDERS!
+    /// Use this instead of CharacterController's built-in isGrounded property.
+    /// It uses a cylinder-shaped hitbox for the feet, instead of capsule-shaped.
+    /// Capsules suck for platformers; players demand that their feet be CYLINDERS!
     /// </summary>
     /// <returns></returns>
     private bool IsGrounded()
