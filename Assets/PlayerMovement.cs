@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(IPlayerInput))]
 [RequireComponent(typeof(CharacterController))]
@@ -22,10 +23,13 @@ public class PlayerMovement : MonoBehaviour
     private readonly float _coyoteTime = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     private readonly float _earlyJumpTime = 0.1f;   // Allows you to press the jump button a little "early" and still jump
 
+    // Events
+    public UnityEvent StartedJumping;
+
     // State
-    private float _hAngle = 0;
-    private float _hSpeed = 0;
-    private float _vSpeed = 0;
+    public float HAngle {get; private set;}
+    public float HSpeed {get; private set;}
+    public float VSpeed {get; private set;}
 
     private float _lastGroundedTime = 0;
     private float _lastJumpButtonPressTime = 0;
@@ -45,10 +49,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_input.JumpPressed)
             _lastJumpButtonPressTime = Time.time;
-
-        // HACK: Rotate to match our h angle
-        // TODO: Do this in a better place, and only do it to the model.
-        transform.localEulerAngles = new Vector3(0, -_hAngle * Mathf.Rad2Deg +90, 0);
     }
 
     public void FixedUpdate()
@@ -60,9 +60,9 @@ public class PlayerMovement : MonoBehaviour
         // Compute the velocity vector and move
         var velocity = new Vector3
         (
-            _hSpeed * Mathf.Cos(_hAngle),
-            _vSpeed,
-            _hSpeed * Mathf.Sin(_hAngle)
+            HSpeed * Mathf.Cos(HAngle),
+            VSpeed,
+            HSpeed * Mathf.Sin(HAngle)
         );
         velocity += _groundVelocity;
         _controller.Move(velocity * Time.deltaTime);
@@ -105,17 +105,17 @@ public class PlayerMovement : MonoBehaviour
     private void ApplyGravityAndJumping()
     {
         // Apply gravity
-        _vSpeed -= _gravity * Time.deltaTime;
+        VSpeed -= _gravity * Time.deltaTime;
 
         if (IsGrounded())
         {
             // Stop falling when we hit the ground.
-            _vSpeed = 0;
+            VSpeed = 0;
 
             // If we obtained negative hspeed while in the air(EG: from air braking),
             // bring it back to zero so the player doesn't go flying backwards.
-            if (_hSpeed < 0)
-                _hSpeed = 0;
+            if (HSpeed < 0)
+                HSpeed = 0;
         }
 
         // Jump when the button is pressed and we're on the ground.
@@ -124,8 +124,12 @@ public class PlayerMovement : MonoBehaviour
         // And we should also let them do it a little bit after leaving the ground.
         bool jumpPressedRecently = (Time.time - _earlyJumpTime < _lastJumpButtonPressTime);
         bool wasGroundedRecently = (Time.time - _coyoteTime < _lastGroundedTime);
+
         if (wasGroundedRecently && jumpPressedRecently)
-            _vSpeed = 15;
+        {
+            VSpeed = 15;
+            StartedJumping.Invoke();
+        }
     }
 
     private void ApplyHorizontalMovement()
@@ -136,11 +140,11 @@ public class PlayerMovement : MonoBehaviour
         {
             // Speed up/slow down with the left stick
             float hSpeedIntended = inputVector.magnitude * _hSpeedMax;
-            float accel = _hSpeed < hSpeedIntended
+            float accel = HSpeed < hSpeedIntended
                 ? _hAccelMax
                 : _friction;
 
-            _hSpeed = Mathf.MoveTowards(_hSpeed, hSpeedIntended, accel * Time.deltaTime);
+            HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
 
 
             // Rotate with the left stick
@@ -149,14 +153,14 @@ public class PlayerMovement : MonoBehaviour
                 // Gradually rotate until we're facing the direction the stick
                 // is pointing
                 float targetAngleDeg = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
-                float hAngleDeg = _hAngle * Mathf.Rad2Deg;
+                float hAngleDeg = HAngle * Mathf.Rad2Deg;
                 hAngleDeg = Mathf.MoveTowardsAngle(hAngleDeg, targetAngleDeg, _rotSpeedDeg * Time.deltaTime);
 
                 // ...unless we're going really slow, then just pivot instantly.
-                if (_hSpeed < 0.1f)
+                if (HSpeed < 0.1f)
                     hAngleDeg = targetAngleDeg;
 
-                _hAngle = hAngleDeg * Mathf.Deg2Rad;
+                HAngle = hAngleDeg * Mathf.Deg2Rad;
             }
         }
 
@@ -164,16 +168,16 @@ public class PlayerMovement : MonoBehaviour
         {
             // Apply the "air brakes" if pushing backwards on the left stick
             float stickAngle = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
-            float hAngleDeg = _hAngle * Mathf.Rad2Deg;
+            float hAngleDeg = HAngle * Mathf.Rad2Deg;
             float delta = Mathf.Abs(Mathf.DeltaAngle(stickAngle, hAngleDeg));
 
             bool pushingBackwards = delta > 90;
 
             if (pushingBackwards)
-                _hSpeed -= inputVector.magnitude * _hAccelMax * 2 * Time.deltaTime;
+                HSpeed -= inputVector.magnitude * _hAccelMax * 2 * Time.deltaTime;
 
-            if (_hSpeed < -_hSpeedMax)
-                _hSpeed = -_hSpeedMax;
+            if (HSpeed < -_hSpeedMax)
+                HSpeed = -_hSpeedMax;
         }
     }
 
