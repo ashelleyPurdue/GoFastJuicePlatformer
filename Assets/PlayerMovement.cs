@@ -22,6 +22,8 @@ public class PlayerMovement : MonoBehaviour
 
     private readonly float _coyoteTime = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     private readonly float _earlyJumpTime = 0.1f;   // Allows you to press the jump button a little "early" and still jump
+    
+    private readonly float _maxPivotSpeed = 0.25f;      // If you're below this speed, you can pivot on a dime.
 
     // Events
     public UnityEvent StartedJumping;
@@ -157,7 +159,7 @@ public class PlayerMovement : MonoBehaviour
                 hAngleDeg = Mathf.MoveTowardsAngle(hAngleDeg, targetAngleDeg, _rotSpeedDeg * Time.deltaTime);
 
                 // ...unless we're going really slow, then just pivot instantly.
-                if (HSpeed < 0.1f)
+                if (HSpeed < _maxPivotSpeed)
                     hAngleDeg = targetAngleDeg;
 
                 HAngle = hAngleDeg * Mathf.Deg2Rad;
