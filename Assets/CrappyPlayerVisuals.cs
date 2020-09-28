@@ -22,7 +22,7 @@ public class CrappyPlayerVisuals : MonoBehaviour
     {
         
         _model.localEulerAngles = new Vector3(
-            Mathf.Pow(_movement.HSpeed / PlayerMovement._hSpeedMax, 3) * 10, // Become more tilted as we go faster
+            Mathf.Pow(_movement.HSpeed / PlayerMovement.HSPEED_MAX, 3) * 10, // Become more tilted as we go faster
             -_movement.HAngle * Mathf.Rad2Deg +90,  // Rotate the model in the direction we're moving
             0
         );

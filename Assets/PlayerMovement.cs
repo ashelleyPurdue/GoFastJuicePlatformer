@@ -12,18 +12,18 @@ public class PlayerMovement : MonoBehaviour
     private CharacterController _controller;
 
     // Constants
-    private readonly float _groundDetectorThickness = 0.1f;
-    private readonly float _groundDetectorRadius = 0.5f;
-    private readonly float _gravity = 40;
-    public const float _hSpeedMax = 8;
-    private readonly float _hAccelMax = 10;
-    private readonly float _rotSpeedDeg = 360 * 2;
-    private readonly float _friction = 20;
+    public const float GROUND_DETECTOR_THICKNESS = 0.1f;
+    public const float GROUND_DETECTOR_RADIUS = 0.5f;
+    public const float GRAVITY = 40;
+    public const float HSPEED_MAX = 8;
+    public const float HACCEL_MAX = 10;
+    public const float ROT_SPEED_DEG = 360 * 2;
+    public const float FRICTION = 20;
 
-    private readonly float _coyoteTime = 0.1f;      // Allows you to press the jump button a little "late" and still jump
-    private readonly float _earlyJumpTime = 0.1f;   // Allows you to press the jump button a little "early" and still jump
+    public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
+    public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
     
-    private readonly float _maxPivotSpeed = 0.25f;      // If you're below this speed, you can pivot on a dime.
+    public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
 
     // Events
     public UnityEvent StartedJumping;
@@ -107,7 +107,7 @@ public class PlayerMovement : MonoBehaviour
     private void ApplyGravityAndJumping()
     {
         // Apply gravity
-        VSpeed -= _gravity * Time.deltaTime;
+        VSpeed -= GRAVITY * Time.deltaTime;
 
         if (IsGrounded())
         {
@@ -124,8 +124,8 @@ public class PlayerMovement : MonoBehaviour
         // Well, OK, that's a little too strict.  
         // We should let the player press the jump button a little bit before hitting the ground.
         // And we should also let them do it a little bit after leaving the ground.
-        bool jumpPressedRecently = (Time.time - _earlyJumpTime < _lastJumpButtonPressTime);
-        bool wasGroundedRecently = (Time.time - _coyoteTime < _lastGroundedTime);
+        bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
+        bool wasGroundedRecently = (Time.time - COYOTE_TIME < _lastGroundedTime);
 
         if (wasGroundedRecently && jumpPressedRecently)
         {
@@ -141,10 +141,10 @@ public class PlayerMovement : MonoBehaviour
         if (IsGrounded())
         {
             // Speed up/slow down with the left stick
-            float hSpeedIntended = inputVector.magnitude * _hSpeedMax;
+            float hSpeedIntended = inputVector.magnitude * HSPEED_MAX;
             float accel = HSpeed < hSpeedIntended
-                ? _hAccelMax
-                : _friction;
+                ? HACCEL_MAX
+                : FRICTION;
 
             HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
 
@@ -156,10 +156,10 @@ public class PlayerMovement : MonoBehaviour
                 // is pointing
                 float targetAngleDeg = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
                 float hAngleDeg = HAngle * Mathf.Rad2Deg;
-                hAngleDeg = Mathf.MoveTowardsAngle(hAngleDeg, targetAngleDeg, _rotSpeedDeg * Time.deltaTime);
+                hAngleDeg = Mathf.MoveTowardsAngle(hAngleDeg, targetAngleDeg, ROT_SPEED_DEG * Time.deltaTime);
 
                 // ...unless we're going really slow, then just pivot instantly.
-                if (HSpeed < _maxPivotSpeed)
+                if (HSpeed < MAX_PIVOT_SPEED)
                     hAngleDeg = targetAngleDeg;
 
                 HAngle = hAngleDeg * Mathf.Deg2Rad;
@@ -176,10 +176,10 @@ public class PlayerMovement : MonoBehaviour
             bool pushingBackwards = delta > 90;
 
             if (pushingBackwards)
-                HSpeed -= inputVector.magnitude * _hAccelMax * 2 * Time.deltaTime;
+                HSpeed -= inputVector.magnitude * HACCEL_MAX * 2 * Time.deltaTime;
 
-            if (HSpeed < -_hSpeedMax)
-                HSpeed = -_hSpeedMax;
+            if (HSpeed < -HSPEED_MAX)
+                HSpeed = -HSPEED_MAX;
         }
     }
 
@@ -232,10 +232,10 @@ public class PlayerMovement : MonoBehaviour
         Vector3 origin = transform.position;
         var hits = CylinderPhysics.CylinderCastAll(
             transform.position,
-            _groundDetectorRadius,
-            _groundDetectorThickness,
+            GROUND_DETECTOR_RADIUS,
+            GROUND_DETECTOR_THICKNESS,
             Vector3.down,
-            _groundDetectorThickness / 2
+            GROUND_DETECTOR_THICKNESS / 2
         );
 
         foreach (var h in hits)
