@@ -15,7 +15,7 @@ public class PlayerMovement : MonoBehaviour
     private readonly float _groundDetectorThickness = 0.1f;
     private readonly float _groundDetectorRadius = 0.5f;
     private readonly float _gravity = 40;
-    private readonly float _hSpeedMax = 8;
+    public const float _hSpeedMax = 8;
     private readonly float _hAccelMax = 10;
     private readonly float _rotSpeedDeg = 360 * 2;
     private readonly float _friction = 20;

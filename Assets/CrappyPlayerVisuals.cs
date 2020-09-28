@@ -3,22 +3,29 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerMovement))]
+[RequireComponent(typeof(IPlayerInput))]
 public class CrappyPlayerVisuals : MonoBehaviour
 {
     public Transform _model;
     private PlayerMovement _movement;
+    private IPlayerInput _input;
 
     void Awake()
     {
         _movement = GetComponent<PlayerMovement>();
+        _input = GetComponent<IPlayerInput>();
 
         _movement.StartedJumping.AddListener(() => StartCoroutine(JumpAnimation()));
     }
 
     void Update()
     {
-        // Rotate the model in the direction we're moving
-        _model.localEulerAngles = new Vector3(0, -_movement.HAngle * Mathf.Rad2Deg +90, 0);
+        
+        _model.localEulerAngles = new Vector3(
+            Mathf.Pow(_movement.HSpeed / PlayerMovement._hSpeedMax, 3) * 10, // Become more tilted as we go faster
+            -_movement.HAngle * Mathf.Rad2Deg +90,  // Rotate the model in the direction we're moving
+            0
+        );
     }
 
     private IEnumerator JumpAnimation()
