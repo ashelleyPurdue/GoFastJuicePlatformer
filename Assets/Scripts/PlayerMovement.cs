@@ -28,6 +28,13 @@ public class PlayerMovement : MonoBehaviour
     // Events
     public UnityEvent StartedJumping;
 
+    // Accessors
+    public Vector3 Velocity => _groundVelocity + new Vector3(
+        HSpeed * Mathf.Cos(HAngle),
+        VSpeed,
+        HSpeed * Mathf.Sin(HAngle)
+    );
+
     // State
     public float HAngle {get; private set;}
     public float HSpeed {get; private set;}
@@ -59,15 +66,7 @@ public class PlayerMovement : MonoBehaviour
         ApplyGravityAndJumping();
         ApplyHorizontalMovement();
 
-        // Compute the velocity vector and move
-        var velocity = new Vector3
-        (
-            HSpeed * Mathf.Cos(HAngle),
-            VSpeed,
-            HSpeed * Mathf.Sin(HAngle)
-        );
-        velocity += _groundVelocity;
-        _controller.Move(velocity * Time.deltaTime);
+        _controller.Move(Velocity * Time.deltaTime);
 
         // Remember moving-platform stuff for next frame
         if (IsGrounded())
