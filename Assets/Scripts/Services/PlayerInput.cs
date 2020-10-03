@@ -10,6 +10,8 @@ public interface IPlayerInput
     /// <value></value>
     Vector2 LeftStick {get;}
 
+    Vector2 RightStick {get;}
+
     /// <summary>
     /// Whether or not the jump button is currently being held
     /// </summary>
