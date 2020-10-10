@@ -168,11 +168,13 @@ public class PlayerMovement : MonoBehaviour
         if (!IsGrounded())
         {
             // Apply the "air brakes" if pushing backwards on the left stick
-            float stickAngle = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
-            float hAngleDeg = HAngle * Mathf.Rad2Deg;
-            float delta = Mathf.Abs(Mathf.DeltaAngle(stickAngle, hAngleDeg));
-
-            bool pushingBackwards = delta > 90;
+            Vector3 forward = new Vector3(
+                Mathf.Cos(HAngle),
+                0,
+                Mathf.Sin(HAngle)
+            );
+            
+            bool pushingBackwards = ComponentAlong(inputVector, forward) < 0;
 
             if (pushingBackwards)
                 HSpeed -= inputVector.magnitude * HACCEL_MAX * 2 * Time.deltaTime;
@@ -243,5 +245,12 @@ public class PlayerMovement : MonoBehaviour
                 return h.collider.transform;
         }
         return null;
+    }
+
+    private float ComponentAlong(Vector3 a, Vector3 b)
+    {
+        float dot = Vector3.Dot(a, b);
+        float mag = b.magnitude;
+        return dot / mag;
     }
 }
