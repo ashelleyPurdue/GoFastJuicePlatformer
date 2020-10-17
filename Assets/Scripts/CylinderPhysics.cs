@@ -49,19 +49,21 @@ public static class CylinderPhysics
         );
         var boxPos = origin - new Vector3(0, height / 2, 0);
         var boxHits = Physics.BoxCastAll(boxPos, halfExtents, direction, orientation, maxDistance);
+        
+        var capsulePointOffset = direction.normalized * (height * 2);
+        var capsuleHits = new HashSet<Collider>(Physics.OverlapCapsule
+        (
+            origin + capsulePointOffset,
+            origin - capsulePointOffset,
+            radius
+        ));
 
         // If any of the colliders from the boxcast ALSO pass a really tall
         // capsule cast, then it's in the cylinder
         var hits = new List<RaycastHit>();
         foreach (var h in boxHits)
         {
-            var capsulePointOffset = direction.normalized * (h.distance + radius);
-            bool inCapsule = Physics.CheckCapsule
-            (
-                origin + capsulePointOffset,
-                origin - capsulePointOffset,
-                radius
-            );
+            bool inCapsule = capsuleHits.Contains(h.collider);
             if (inCapsule)
                 hits.Add(h);
         }
