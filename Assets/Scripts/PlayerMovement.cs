@@ -29,11 +29,7 @@ public class PlayerMovement : MonoBehaviour
     public UnityEvent StartedJumping;
 
     // Accessors
-    public Vector3 Velocity => _groundVelocity + new Vector3(
-        HSpeed * Mathf.Cos(HAngle),
-        VSpeed,
-        HSpeed * Mathf.Sin(HAngle)
-    );
+    public Vector3 TotalVelocity => _groundVelocity + _walkVelocity + (Vector3.up * VSpeed);
 
     // State
     public float HAngle {get; private set;}
@@ -46,6 +42,7 @@ public class PlayerMovement : MonoBehaviour
     private Transform _currentGround;
     private Vector3 _lastPositionRelativeToGround;
     private Vector3 _groundVelocity;
+    private Vector3 _walkVelocity;
 
 
     public void Awake()
@@ -66,7 +63,7 @@ public class PlayerMovement : MonoBehaviour
         ApplyGravityAndJumping();
         ApplyHorizontalMovement();
 
-        _controller.Move(Velocity * Time.deltaTime);
+        _controller.Move(TotalVelocity * Time.deltaTime);
 
         // Remember moving-platform stuff for next frame
         if (IsGrounded())
@@ -182,6 +179,13 @@ public class PlayerMovement : MonoBehaviour
             if (HSpeed < -HSPEED_MAX)
                 HSpeed = -HSPEED_MAX;
         }
+    
+        // Convert the HSpeed and HAngle to _walkVelocity
+        _walkVelocity = new Vector3(
+            HSpeed * Mathf.Cos(HAngle),
+            0,
+            HSpeed * Mathf.Sin(HAngle)
+        );
     }
 
     /// <summary>
