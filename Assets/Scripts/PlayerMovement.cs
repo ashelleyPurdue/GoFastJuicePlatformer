@@ -26,6 +26,8 @@ public class PlayerMovement : MonoBehaviour
     public const float HACCEL_AIR_EXTRA = 2;
     public const float HACCEL_AIR_BACKWARDS = 15;
 
+    public const float BONK_SPEED = -3;
+
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION_GROUND = 20;
 
@@ -142,6 +144,11 @@ public class PlayerMovement : MonoBehaviour
             VSpeed = 15;
             StartedJumping.Invoke();
         }
+
+        // Start going downwards if you bonk your head on the ceiling.
+        // Don't bonk your head!
+        if (VSpeed > 0 && IsBonkingHead())
+            VSpeed = BONK_SPEED;
     }
 
     private void ApplyHorizontalMovement()
@@ -308,5 +315,16 @@ public class PlayerMovement : MonoBehaviour
         float dot = Vector3.Dot(a, b);
         float mag = b.magnitude;
         return dot / mag;
+    }
+
+    private bool IsBonkingHead()
+    {
+        return CylinderPhysics.CylinderCast(
+            transform.position + (Vector3.up * 2),
+            GROUND_DETECTOR_RADIUS,
+            GROUND_DETECTOR_THICKNESS,
+            Vector3.up,
+            GROUND_DETECTOR_THICKNESS / 2
+        );
     }
 }
