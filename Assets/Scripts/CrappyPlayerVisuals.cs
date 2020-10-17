@@ -20,12 +20,19 @@ public class CrappyPlayerVisuals : MonoBehaviour
 
     void Update()
     {
+        // Become more tilted as we go faster
+        float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX;
+        float xAngle = SignedPow(speedPercent, 3) * 10;
+
+        // Rotate the model in the direction we're moving
+        float yAngle = -_movement.HAngle * Mathf.Rad2Deg + 90;
         
-        _model.localEulerAngles = new Vector3(
-            Mathf.Pow(_movement.HSpeed / PlayerMovement.HSPEED_MAX, 3) * 10, // Become more tilted as we go faster
-            -_movement.HAngle * Mathf.Rad2Deg +90,  // Rotate the model in the direction we're moving
-            0
-        );
+        _model.localEulerAngles = new Vector3(xAngle, yAngle, 0);
+    }
+
+    private float SignedPow(float f, float p)
+    {
+        return Mathf.Pow(f, p) * Mathf.Sign(f);
     }
 
     private IEnumerator JumpAnimation()
