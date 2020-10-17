@@ -9,8 +9,6 @@ public class SpinningPlatform : MonoBehaviour
 
     public void FixedUpdate()
     {
-        var angles = transform.localEulerAngles;
-        angles += RotSpeed * Time.deltaTime;
-        transform.localEulerAngles = angles;
+        transform.Rotate(RotSpeed * Time.deltaTime);
     }
 }
