@@ -16,7 +16,7 @@ public class PlayerMovement : MonoBehaviour
     public const float GROUND_DETECTOR_RADIUS = 0.5f;
     public const float GRAVITY = 40;
     public const float HSPEED_MAX = 8;
-    public const float HACCEL_MAX = 10;
+    public const float HACCEL_MAX = 15;
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION = 20;
 
