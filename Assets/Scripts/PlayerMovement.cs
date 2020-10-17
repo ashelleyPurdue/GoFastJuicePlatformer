@@ -160,32 +160,44 @@ public class PlayerMovement : MonoBehaviour
 
                 HAngle = hAngleDeg * Mathf.Deg2Rad;
             }
+
+            // Convert the HSpeed and HAngle to _walkVelocity
+            _walkVelocity = new Vector3(
+                HSpeed * Mathf.Cos(HAngle),
+                0,
+                HSpeed * Mathf.Sin(HAngle)
+            );
         }
 
         if (!IsGrounded())
         {
-            // Apply the "air brakes" if pushing backwards on the left stick
+            // Figure out if the player is pushing backwards on this stick.
             Vector3 forward = new Vector3(
                 Mathf.Cos(HAngle),
                 0,
                 Mathf.Sin(HAngle)
             );
             
-            bool pushingBackwards = ComponentAlong(inputVector, forward) < 0;
+            bool pushingBackwards = ComponentAlong(inputVector, forward) < -0.5f;
 
-            if (pushingBackwards)
-                HSpeed -= inputVector.magnitude * HACCEL_MAX * 2 * Time.deltaTime;
+            // Let the player adjust their velocity in the air.
+            // Give them a little bit of help if they're pushing backwards
+            // on the stick, so it's easier to "abort" a poorly-timed jump.
+            float accel = pushingBackwards
+                ? HACCEL_MAX
+                : HACCEL_MAX / 2;
 
-            if (HSpeed < -HSPEED_MAX)
-                HSpeed = -HSPEED_MAX;
+            _walkVelocity += inputVector * accel * Time.deltaTime;
+
+            if (_walkVelocity.magnitude > HSPEED_MAX)
+            {
+                _walkVelocity.Normalize();
+                _walkVelocity *= HSPEED_MAX;
+            }
+
+            // Keep HSpeed up-to-date, so it'll be correct when we land.
+            HSpeed = _walkVelocity.magnitude;
         }
-    
-        // Convert the HSpeed and HAngle to _walkVelocity
-        _walkVelocity = new Vector3(
-            HSpeed * Mathf.Cos(HAngle),
-            0,
-            HSpeed * Mathf.Sin(HAngle)
-        );
     }
 
     /// <summary>
