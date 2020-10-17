@@ -14,7 +14,10 @@ public class PlayerMovement : MonoBehaviour
     // Constants
     public const float GROUND_DETECTOR_THICKNESS = 0.1f;
     public const float GROUND_DETECTOR_RADIUS = 0.5f;
-    public const float GRAVITY = 40;
+
+    public const float RISING_GRAVITY = 40;
+    public const float FALLING_GRAVITY = 43;
+
     public const float HSPEED_MAX = 8;
     public const float HACCEL_MAX = 15;
     public const float ROT_SPEED_DEG = 360 * 2;
@@ -102,8 +105,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void ApplyGravityAndJumping()
     {
-        // Apply gravity
-        VSpeed -= GRAVITY * Time.deltaTime;
+        // Apply gravity to the VSpeed.
+        // Use more gravity when we're falling so the jump arc feels "squishier"
+        float gravity = VSpeed > 0
+            ? RISING_GRAVITY
+            : FALLING_GRAVITY;
+
+        VSpeed -= gravity * Time.deltaTime;
 
         if (IsGrounded())
         {
