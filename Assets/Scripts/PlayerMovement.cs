@@ -18,10 +18,16 @@ public class PlayerMovement : MonoBehaviour
     public const float RISING_GRAVITY = 40;
     public const float FALLING_GRAVITY = 43;
 
-    public const float HSPEED_MAX = 8;
-    public const float HACCEL_MAX = 15;
+    public const float HSPEED_MAX_GROUND = 8;
+    public const float HSPEED_MAX_AIR = 10;
+
+    public const float HACCEL_GROUND = 15;
+    public const float HACCEL_AIR = 9;
+    public const float HACCEL_AIR_EXTRA = 2;
+    public const float HACCEL_AIR_BACKWARDS = 15;
+
     public const float ROT_SPEED_DEG = 360 * 2;
-    public const float FRICTION = 20;
+    public const float FRICTION_GROUND = 20;
 
     public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
@@ -142,13 +148,18 @@ public class PlayerMovement : MonoBehaviour
     {
         var inputVector = GetWalkInput();
         
+        // On the ground, we let the player turn without sliding around or losing
+        // speed.
+        // We do this by keeping track of their speed and angle separately.
+        // The target speed is controlled by the magnitude of the left stick.
+        // The target angle is controlled by the direction of the left stick.
         if (IsGrounded())
         {
             // Speed up/slow down with the left stick
-            float hSpeedIntended = inputVector.magnitude * HSPEED_MAX;
+            float hSpeedIntended = inputVector.magnitude * HSPEED_MAX_GROUND;
             float accel = HSpeed < hSpeedIntended
-                ? HACCEL_MAX
-                : FRICTION;
+                ? HACCEL_GROUND
+                : FRICTION_GROUND;
 
             HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
 
@@ -177,9 +188,12 @@ public class PlayerMovement : MonoBehaviour
             );
         }
 
+        // In the air, we let the player "nudge" their velocity by applying a
+        // force in the direction the stick is being pushed.
+        // Unlike on the ground, you *will* lose speed and slide around if you
+        // try to change your direction.
         if (!IsGrounded())
         {
-            // Figure out if the player is pushing backwards on this stick.
             Vector3 forward = new Vector3(
                 Mathf.Cos(HAngle),
                 0,
@@ -187,25 +201,43 @@ public class PlayerMovement : MonoBehaviour
             );
             
             bool pushingBackwards = ComponentAlong(inputVector, forward) < -0.5f;
+            bool pushingForwards = ComponentAlong(inputVector, forward) > 0.75f;
+            bool movingForwards = ComponentAlong(_walkVelocity.normalized, forward) > 0;
 
-            // Let the player adjust their velocity in the air.
+            float accel = HACCEL_AIR;
+            float maxSpeed = HSPEED_MAX_GROUND;
+
             // Give them a little bit of help if they're pushing backwards
             // on the stick, so it's easier to "abort" a poorly-timed jump.
-            float accel = pushingBackwards
-                ? HACCEL_MAX
-                : HACCEL_MAX / 2;
+            if (pushingBackwards)
+                accel = HACCEL_AIR_BACKWARDS;
 
+            // Let the player exceed their usual max speed if they're moving
+            // forward.
+            // This makes bunny hopping slightly faster than walking, which I
+            // hear makes your game more popular.
+            if (movingForwards)
+                maxSpeed = HSPEED_MAX_AIR;
+            
+            // If the player is already going faster than their usual max speed,
+            // make it a little harder to accelerate past it.
+            if (pushingForwards && _walkVelocity.magnitude >= HSPEED_MAX_GROUND)
+                accel = HACCEL_AIR_EXTRA;
+
+            // WHEW.  Finially we can apply a force to the player.
+            // Think there were enough special cases, earlier?
             _walkVelocity += inputVector * accel * Time.deltaTime;
-
-            if (_walkVelocity.magnitude > HSPEED_MAX)
+            if (_walkVelocity.magnitude > maxSpeed)
             {
                 _walkVelocity.Normalize();
-                _walkVelocity *= HSPEED_MAX;
+                _walkVelocity *= maxSpeed;
             }
 
             // Keep HSpeed up-to-date, so it'll be correct when we land.
             HSpeed = _walkVelocity.magnitude;
         }
+
+        DebugDisplay.PrintLineFixed($"HSpeed: {HSpeed}");
     }
 
     /// <summary>

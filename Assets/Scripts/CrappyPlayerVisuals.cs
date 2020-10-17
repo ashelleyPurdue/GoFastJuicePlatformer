@@ -21,7 +21,7 @@ public class CrappyPlayerVisuals : MonoBehaviour
     void Update()
     {
         // Become more tilted as we go faster
-        float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX;
+        float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
         float xAngle = SignedPow(speedPercent, 3) * 10;
 
         // Rotate the model in the direction we're moving
