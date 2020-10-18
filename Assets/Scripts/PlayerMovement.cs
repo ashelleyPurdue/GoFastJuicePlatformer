@@ -341,8 +341,8 @@ public class PlayerMovement : MonoBehaviour
 
     private bool CanGrabLedge()
     {
-        // Only grab the ledge if in the air
-        if (IsGrounded())
+        // Only grab the ledge if falling in the air
+        if (IsGrounded() && VSpeed < 0)
             return false;
         
         // Only grab the ledge if we're actually moving in the direction we're
@@ -390,7 +390,7 @@ public class PlayerMovement : MonoBehaviour
             halfExtents,
             orientation
         );
-        
+
         return lowerBody && !upperBody;
     }
 }
