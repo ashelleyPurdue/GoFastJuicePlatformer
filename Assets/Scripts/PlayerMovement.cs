@@ -370,7 +370,7 @@ public class PlayerMovement : MonoBehaviour
             + (forward * bodyRadius)
             + (forward * distance / 2)
             + (Vector3.up * bodyHeight / 4);
-        var upperBodyStart = lowerBodyStart + (Vector3.up * bodyHeight / 2);
+        var upperBodyStart = lowerBodyStart + (Vector3.up * bodyHeight);
 
         var halfExtents = new Vector3(
             bodyRadius,
