@@ -27,6 +27,7 @@ public class PlayerMovement : MonoBehaviour
     public const float HACCEL_AIR_BACKWARDS = 15;
 
     public const float BONK_SPEED = -3;
+    public const float LEDGE_GRAB_SPEED = 10;
 
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION_GROUND = 20;
@@ -73,6 +74,7 @@ public class PlayerMovement : MonoBehaviour
         UpdateGroundState();
         ApplyGravityAndJumping();
         ApplyHorizontalMovement();
+        TryLedgeGrab();
 
         _controller.Move(TotalVelocity * Time.deltaTime);
 
@@ -247,6 +249,15 @@ public class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLineFixed($"HSpeed: {HSpeed}");
     }
 
+    private void TryLedgeGrab()
+    {
+        // HACK: Just keep moving the player up if they can grab a ledge.
+        // Their forward momentum will propel them forward, making it look like
+        // they did a ledge vault.
+        if (CanGrabLedge())
+            VSpeed = LEDGE_GRAB_SPEED;
+    }
+
     /// <summary>
     /// Returns a vector representing the left control stick, relative to camera
     /// space.
@@ -326,5 +337,39 @@ public class PlayerMovement : MonoBehaviour
             Vector3.up,
             GROUND_DETECTOR_THICKNESS / 2
         );
+    }
+
+    private bool CanGrabLedge()
+    {
+        if (IsGrounded())
+            return false;
+        
+        // We must have at least some velocity in the "forward" direction
+        var forward = new Vector3(
+            Mathf.Cos(HAngle),
+            0,
+            Mathf.Sin(HAngle)
+        );
+        
+        float forwardVelocity = ComponentAlong(_walkVelocity, forward);
+
+        if (forwardVelocity < 0.01f)
+            return false;
+
+        // Do 2 box casts in front of us: one for our upper body, and one for
+        // our lower body.
+        // The lower body should detect a wall, while the upper body should not.
+        // TODO: Make these actual *box* casts instead of raycasts.
+
+        const float bodyRadius = 0.5f;
+        const float bodyHeight = 2;
+
+        var lowerBodyStart = transform.position + (forward * bodyRadius);
+        var upperBodyStart = lowerBodyStart + (Vector3.up * bodyHeight / 2);
+
+        bool lowerBody = Physics.Raycast(lowerBodyStart, forward, forwardVelocity * Time.deltaTime);
+        bool upperBody = Physics.Raycast(upperBodyStart, forward, forwardVelocity * Time.deltaTime);
+
+        return lowerBody && !upperBody;
     }
 }
