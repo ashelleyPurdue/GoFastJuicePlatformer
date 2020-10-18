@@ -341,16 +341,18 @@ public class PlayerMovement : MonoBehaviour
 
     private bool CanGrabLedge()
     {
+        // Only grab the ledge if in the air
         if (IsGrounded())
             return false;
         
-        // We must have at least some velocity in the "forward" direction
+        // Only grab the ledge if we're actually moving in the direction we're
+        // facing.
         var forward = new Vector3(
             Mathf.Cos(HAngle),
             0,
             Mathf.Sin(HAngle)
         );
-        
+
         float forwardVelocity = ComponentAlong(_walkVelocity, forward);
 
         if (forwardVelocity < 0.01f)
@@ -359,17 +361,36 @@ public class PlayerMovement : MonoBehaviour
         // Do 2 box casts in front of us: one for our upper body, and one for
         // our lower body.
         // The lower body should detect a wall, while the upper body should not.
-        // TODO: Make these actual *box* casts instead of raycasts.
 
         const float bodyRadius = 0.5f;
         const float bodyHeight = 2;
+        float distance = forwardVelocity * Time.deltaTime;
 
-        var lowerBodyStart = transform.position + (forward * bodyRadius);
+        var lowerBodyStart = transform.position 
+            + (forward * bodyRadius)
+            + (forward * distance / 2)
+            + (Vector3.up * bodyHeight / 4);
         var upperBodyStart = lowerBodyStart + (Vector3.up * bodyHeight / 2);
 
-        bool lowerBody = Physics.Raycast(lowerBodyStart, forward, forwardVelocity * Time.deltaTime);
-        bool upperBody = Physics.Raycast(upperBodyStart, forward, forwardVelocity * Time.deltaTime);
+        var halfExtents = new Vector3(
+            bodyRadius,
+            bodyHeight / 4,
+            distance / 2
+        );
 
+        var orientation = Quaternion.LookRotation(forward, Vector3.up);
+
+        bool lowerBody = Physics.CheckBox(
+            lowerBodyStart,
+            halfExtents,
+            orientation
+        );
+        bool upperBody = Physics.CheckBox(
+            upperBodyStart,
+            halfExtents,
+            orientation
+        );
+        
         return lowerBody && !upperBody;
     }
 }
