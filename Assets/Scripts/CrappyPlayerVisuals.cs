@@ -7,6 +7,8 @@ using UnityEngine;
 public class CrappyPlayerVisuals : MonoBehaviour
 {
     public Transform _model;
+    public Animator _animator;
+
     private PlayerMovement _movement;
     private IPlayerInput _input;
 
@@ -20,8 +22,10 @@ public class CrappyPlayerVisuals : MonoBehaviour
 
     void Update()
     {
-        // Become more tilted as we go faster
         float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
+        _animator.SetFloat("RunSpeed", speedPercent);
+
+        // Become more tilted as we go faster
         float xAngle = SignedPow(speedPercent, 3) * 10;
 
         // Rotate the model in the direction we're moving
