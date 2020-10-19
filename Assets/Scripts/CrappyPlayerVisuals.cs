@@ -23,8 +23,11 @@ public class CrappyPlayerVisuals : MonoBehaviour
     void Update()
     {
         float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
-        _animator.SetFloat("RunSpeed", speedPercent);
 
+        _animator.SetFloat("RunSpeed", speedPercent);
+        _animator.SetFloat("VSpeed", _movement.VSpeed);
+        _animator.SetBool("IsGrounded", _movement.IsGrounded());
+        
         // Become more tilted as we go faster
         float xAngle = SignedPow(speedPercent, 3) * 10;
 

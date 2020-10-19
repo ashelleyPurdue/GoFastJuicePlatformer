@@ -292,7 +292,7 @@ public class PlayerMovement : MonoBehaviour
     /// Capsules suck for platformers; players demand that their feet be CYLINDERS!
     /// </summary>
     /// <returns></returns>
-    private bool IsGrounded()
+    public bool IsGrounded()
     {
         return _currentGround != null;
     }
