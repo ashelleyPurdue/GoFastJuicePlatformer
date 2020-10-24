@@ -27,6 +27,7 @@ public class CrappyPlayerVisuals : MonoBehaviour
         _animator.SetFloat("RunSpeed", speedPercent);
         _animator.SetFloat("VSpeed", _movement.VSpeed);
         _animator.SetBool("IsGrounded", _movement.IsGrounded());
+        _animator.SetBool("IsGrabbingLedge", _movement.IsGrabbingLedge);
         
         // Become more tilted as we go faster
         float xAngle = SignedPow(speedPercent, 3) * 20;

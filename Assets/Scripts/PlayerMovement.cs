@@ -27,7 +27,8 @@ public class PlayerMovement : MonoBehaviour
     public const float HACCEL_AIR_BACKWARDS = 15;
 
     public const float BONK_SPEED = -3;
-    public const float LEDGE_GRAB_SPEED = 10;
+    public const float LEDGE_GRAB_VSPEED = 10;
+    public const float LEDGE_GRAB_HSPEED = 4;
 
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION_GROUND = 20;
@@ -42,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
 
     // Accessors
     public Vector3 TotalVelocity => _groundVelocity + _walkVelocity + (Vector3.up * VSpeed);
+    public bool IsGrabbingLedge {get; private set;}
 
     // State
     public float HAngle {get; private set;}
@@ -74,7 +76,7 @@ public class PlayerMovement : MonoBehaviour
         UpdateGroundState();
         ApplyGravityAndJumping();
         ApplyHorizontalMovement();
-        TryLedgeGrab();
+        ApplyLedgeGrabbing();
 
         _controller.Move(TotalVelocity * Time.deltaTime);
 
@@ -249,13 +251,28 @@ public class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLineFixed($"HSpeed: {HSpeed}");
     }
 
-    private void TryLedgeGrab()
+    private void ApplyLedgeGrabbing()
     {
-        // HACK: Just keep moving the player up if they can grab a ledge.
-        // Their forward momentum will propel them forward, making it look like
-        // they did a ledge vault.
-        if (CanGrabLedge())
-            VSpeed = LEDGE_GRAB_SPEED;
+        // Grab the ledge if we can
+        if (!IsGrabbingLedge && CanGrabLedge() && VSpeed < 0)
+            IsGrabbingLedge = true;
+
+        // HACK: override the VSpeed and HSpeed while the ledge is being grabbed
+        if (IsGrabbingLedge)
+        {
+            VSpeed = LEDGE_GRAB_VSPEED;
+            HSpeed = LEDGE_GRAB_HSPEED;
+            _walkVelocity = new Vector3(
+                HSpeed * Mathf.Cos(HAngle),
+                0,
+                HSpeed * Mathf.Sin(HAngle)
+            );
+
+            if (!CanGrabLedge())
+            {
+                IsGrabbingLedge = false;
+            }
+        }
     }
 
     /// <summary>
@@ -341,8 +358,8 @@ public class PlayerMovement : MonoBehaviour
 
     private bool CanGrabLedge()
     {
-        // Only grab the ledge if falling in the air
-        if (IsGrounded() && VSpeed < 0)
+        // Only grab the ledge if in the air
+        if (IsGrounded())
             return false;
         
         // Only grab the ledge if we're actually moving in the direction we're
