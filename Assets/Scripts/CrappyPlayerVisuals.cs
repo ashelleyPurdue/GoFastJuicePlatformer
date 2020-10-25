@@ -4,6 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(PlayerMovement))]
 [RequireComponent(typeof(IPlayerInput))]
+[RequireComponent(typeof(PlayerGroundDetector))]
 public class CrappyPlayerVisuals : MonoBehaviour
 {
     public Transform _model;
@@ -11,11 +12,13 @@ public class CrappyPlayerVisuals : MonoBehaviour
 
     private PlayerMovement _movement;
     private IPlayerInput _input;
+    private PlayerGroundDetector _ground;
 
     void Awake()
     {
         _movement = GetComponent<PlayerMovement>();
         _input = GetComponent<IPlayerInput>();
+        _ground = GetComponent<PlayerGroundDetector>();
 
         _movement.StartedJumping.AddListener(() => StartCoroutine(JumpAnimation()));
     }
@@ -26,7 +29,7 @@ public class CrappyPlayerVisuals : MonoBehaviour
 
         _animator.SetFloat("RunSpeed", speedPercent);
         _animator.SetFloat("VSpeed", _movement.VSpeed);
-        _animator.SetBool("IsGrounded", _movement.IsGrounded());
+        _animator.SetBool("IsGrounded", _ground.IsGrounded);
         _animator.SetBool("IsGrabbingLedge", _movement.IsGrabbingLedge);
         
         // Become more tilted as we go faster

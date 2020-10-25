@@ -4,11 +4,13 @@ using UnityEngine;
 using UnityEngine.Events;
 
 [RequireComponent(typeof(IPlayerInput))]
+[RequireComponent(typeof(PlayerGroundDetector))]
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
     // Required components
     private IPlayerInput _input;
+    private PlayerGroundDetector _ground;
     private CharacterController _controller;
 
     // Constants
@@ -42,25 +44,27 @@ public class PlayerMovement : MonoBehaviour
     public UnityEvent StartedJumping;
 
     // Accessors
-    public Vector3 TotalVelocity => _groundVelocity + _walkVelocity + (Vector3.up * VSpeed);
+    public Vector3 TotalVelocity => 
+        _ground.GroundVelocity +
+        _walkVelocity +
+        (Vector3.up * VSpeed);
+
     public bool IsGrabbingLedge {get; private set;}
 
     // State
     public float HSpeed {get; private set;}
     public float VSpeed {get; private set;}
 
-    private float _lastGroundedTime = 0;
     private float _lastJumpButtonPressTime = 0;
 
     private Transform _currentGround;
-    private Vector3 _lastPositionRelativeToGround;
-    private Vector3 _groundVelocity;
     private Vector3 _walkVelocity;
 
 
     public void Awake()
     {
         _input = GetComponent<IPlayerInput>();
+        _ground = GetComponent<PlayerGroundDetector>();
         _controller = GetComponent<CharacterController>();
     }
 
@@ -72,7 +76,8 @@ public class PlayerMovement : MonoBehaviour
 
     public void FixedUpdate()
     {
-        UpdateGroundState();
+        _ground.UpdateGroundState();
+
         ApplyGravityAndJumping();
         ApplyHorizontalMovement();
         ApplyLedgeGrabbing();
@@ -80,38 +85,7 @@ public class PlayerMovement : MonoBehaviour
         _controller.Move(TotalVelocity * Time.deltaTime);
 
         // Remember moving-platform stuff for next frame
-        if (IsGrounded())
-            _lastPositionRelativeToGround = _currentGround.InverseTransformPoint(transform.position);
-    }
-
-    private void UpdateGroundState()
-    {
-        var previousGround = _currentGround;
-        _currentGround = GetGround();
-
-        // Record the last time we were grounded
-        if (IsGrounded())
-            _lastGroundedTime = Time.time;
-
-        // Calculate how fast the ground is moving (aka: the ground velocity)
-        if (IsGrounded() && _currentGround == previousGround)
-        {
-            // Figure out where our "foot prints" have moved to
-            var currentFootprintsPos = _currentGround.TransformPoint(_lastPositionRelativeToGround);
-            var lastFootprintsPos = transform.position;
-
-            // Figure out how much the footprints moved, and move by that much
-            var deltaFootprints = currentFootprintsPos - lastFootprintsPos;
-            _groundVelocity = deltaFootprints / Time.deltaTime;
-        }
-        else
-        {
-            // If we're not on a platform, then the ground velocity is zero.
-            // If we're standing on a *different* platform than before, then we
-            // have no way of tracking its velocity, so we'll just cheat and set
-            // it to zero in that case too.
-            _groundVelocity = Vector3.zero;
-        }
+        _ground.RecordFootprintPos();
     }
 
     private void ApplyGravityAndJumping()
@@ -124,7 +98,7 @@ public class PlayerMovement : MonoBehaviour
 
         VSpeed -= gravity * Time.deltaTime;
 
-        if (IsGrounded())
+        if (_ground.IsGrounded)
         {
             // Stop falling when we hit the ground.
             VSpeed = 0;
@@ -140,7 +114,7 @@ public class PlayerMovement : MonoBehaviour
         // We should let the player press the jump button a little bit before hitting the ground.
         // And we should also let them do it a little bit after leaving the ground.
         bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
-        bool wasGroundedRecently = (Time.time - COYOTE_TIME < _lastGroundedTime);
+        bool wasGroundedRecently = (Time.time - COYOTE_TIME < _ground.LastGroundedTime);
 
         if (wasGroundedRecently && jumpPressedRecently)
         {
@@ -150,7 +124,7 @@ public class PlayerMovement : MonoBehaviour
 
         // Start going downwards if you bonk your head on the ceiling.
         // Don't bonk your head!
-        if (VSpeed > 0 && IsBonkingHead())
+        if (VSpeed > 0 && _ground.IsBonkingHead)
             VSpeed = BONK_SPEED;
     }
 
@@ -163,7 +137,7 @@ public class PlayerMovement : MonoBehaviour
         // We do this by keeping track of their speed and angle separately.
         // The target speed is controlled by the magnitude of the left stick.
         // The target angle is controlled by the direction of the left stick.
-        if (IsGrounded())
+        if (_ground.IsGrounded)
         {
             // Speed up/slow down with the left stick
             float hSpeedIntended = inputVector.magnitude * HSPEED_MAX_GROUND;
@@ -201,7 +175,7 @@ public class PlayerMovement : MonoBehaviour
         // force in the direction the stick is being pushed.
         // Unlike on the ground, you *will* lose speed and slide around if you
         // try to change your direction.
-        if (!IsGrounded())
+        if (!_ground.IsGrounded)
         {
             Vector3 forward = transform.forward;
             
@@ -293,41 +267,6 @@ public class PlayerMovement : MonoBehaviour
         return adjustedInput;
     }
 
-    /// <summary>
-    /// Use this instead of CharacterController's built-in isGrounded property.
-    /// It uses a cylinder-shaped hitbox for the feet, instead of capsule-shaped.
-    /// Capsules suck for platformers; players demand that their feet be CYLINDERS!
-    /// </summary>
-    /// <returns></returns>
-    public bool IsGrounded()
-    {
-        return _currentGround != null;
-    }
-
-    /// <summary>
-    /// Returns the Transform of the ground that we're standing on,
-    /// or null if we're in the air.
-    /// </summary>
-    /// <returns></returns>
-    private Transform GetGround()
-    {
-        Vector3 origin = transform.position;
-        var hits = CylinderPhysics.CylinderCastAll(
-            transform.position,
-            GROUND_DETECTOR_RADIUS,
-            GROUND_DETECTOR_THICKNESS,
-            Vector3.down,
-            GROUND_DETECTOR_THICKNESS / 2
-        );
-
-        foreach (var h in hits)
-        {
-            if (h.collider.transform != this.transform)
-                return h.collider.transform;
-        }
-        return null;
-    }
-
     private float ComponentAlong(Vector3 a, Vector3 b)
     {
         float dot = Vector3.Dot(a, b);
@@ -335,21 +274,10 @@ public class PlayerMovement : MonoBehaviour
         return dot / mag;
     }
 
-    private bool IsBonkingHead()
-    {
-        return CylinderPhysics.CylinderCast(
-            transform.position + (Vector3.up * 2),
-            GROUND_DETECTOR_RADIUS,
-            GROUND_DETECTOR_THICKNESS,
-            Vector3.up,
-            GROUND_DETECTOR_THICKNESS / 2
-        );
-    }
-
     private bool CanGrabLedge()
     {
         // Only grab the ledge if in the air
-        if (IsGrounded())
+        if (_ground.IsGrounded)
             return false;
         
         // Only grab the ledge if we're actually moving in the direction we're
