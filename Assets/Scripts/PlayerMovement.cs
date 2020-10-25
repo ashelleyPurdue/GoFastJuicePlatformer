@@ -46,7 +46,6 @@ public class PlayerMovement : MonoBehaviour
     public bool IsGrabbingLedge {get; private set;}
 
     // State
-    public float HAngle {get; private set;}
     public float HSpeed {get; private set;}
     public float VSpeed {get; private set;}
 
@@ -181,22 +180,21 @@ public class PlayerMovement : MonoBehaviour
                 // Gradually rotate until we're facing the direction the stick
                 // is pointing
                 float targetAngleDeg = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
-                float hAngleDeg = HAngle * Mathf.Rad2Deg;
-                hAngleDeg = Mathf.MoveTowardsAngle(hAngleDeg, targetAngleDeg, ROT_SPEED_DEG * Time.deltaTime);
+                Quaternion targetRot = Quaternion.AngleAxis(-targetAngleDeg + 90, Vector3.up);
+
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    targetRot,
+                    ROT_SPEED_DEG * Time.deltaTime
+                );
 
                 // ...unless we're going really slow, then just pivot instantly.
                 if (HSpeed < MAX_PIVOT_SPEED)
-                    hAngleDeg = targetAngleDeg;
-
-                HAngle = hAngleDeg * Mathf.Deg2Rad;
+                    transform.rotation = targetRot;
             }
 
-            // Convert the HSpeed and HAngle to _walkVelocity
-            _walkVelocity = new Vector3(
-                HSpeed * Mathf.Cos(HAngle),
-                0,
-                HSpeed * Mathf.Sin(HAngle)
-            );
+            // Update the velocity based on HSpeed
+            _walkVelocity = HSpeed * transform.forward;
         }
 
         // In the air, we let the player "nudge" their velocity by applying a
@@ -205,11 +203,7 @@ public class PlayerMovement : MonoBehaviour
         // try to change your direction.
         if (!IsGrounded())
         {
-            Vector3 forward = new Vector3(
-                Mathf.Cos(HAngle),
-                0,
-                Mathf.Sin(HAngle)
-            );
+            Vector3 forward = transform.forward;
             
             bool pushingBackwards = ComponentAlong(inputVector, forward) < -0.5f;
             bool pushingForwards = ComponentAlong(inputVector, forward) > 0.75f;
@@ -262,11 +256,7 @@ public class PlayerMovement : MonoBehaviour
         {
             VSpeed = LEDGE_GRAB_VSPEED;
             HSpeed = LEDGE_GRAB_HSPEED;
-            _walkVelocity = new Vector3(
-                HSpeed * Mathf.Cos(HAngle),
-                0,
-                HSpeed * Mathf.Sin(HAngle)
-            );
+            _walkVelocity = HSpeed * transform.forward;
 
             if (!CanGrabLedge())
             {
@@ -364,12 +354,7 @@ public class PlayerMovement : MonoBehaviour
         
         // Only grab the ledge if we're actually moving in the direction we're
         // facing.
-        var forward = new Vector3(
-            Mathf.Cos(HAngle),
-            0,
-            Mathf.Sin(HAngle)
-        );
-
+        var forward = transform.forward;
         float forwardVelocity = ComponentAlong(_walkVelocity, forward);
 
         if (forwardVelocity < 0.01f)
