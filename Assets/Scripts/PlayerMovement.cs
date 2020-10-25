@@ -5,12 +5,14 @@ using UnityEngine.Events;
 
 [RequireComponent(typeof(IPlayerInput))]
 [RequireComponent(typeof(PlayerGroundDetector))]
+[RequireComponent(typeof(PlayerWallDetector))]
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
     // Required components
     private IPlayerInput _input;
     private PlayerGroundDetector _ground;
+    private PlayerWallDetector _wall;
     private CharacterController _controller;
 
     // Constants
@@ -65,6 +67,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _input = GetComponent<IPlayerInput>();
         _ground = GetComponent<PlayerGroundDetector>();
+        _wall = GetComponent<PlayerWallDetector>();
         _controller = GetComponent<CharacterController>();
     }
 
@@ -77,6 +80,7 @@ public class PlayerMovement : MonoBehaviour
     public void FixedUpdate()
     {
         _ground.UpdateGroundState();
+        _wall.UpdateWallState();
 
         ApplyGravityAndJumping();
         ApplyHorizontalMovement();
@@ -288,39 +292,6 @@ public class PlayerMovement : MonoBehaviour
         if (forwardVelocity < 0.01f)
             return false;
 
-        // Do 2 box casts in front of us: one for our upper body, and one for
-        // our lower body.
-        // The lower body should detect a wall, while the upper body should not.
-
-        const float bodyRadius = 0.5f;
-        const float bodyHeight = 2;
-        float distance = forwardVelocity * Time.deltaTime;
-
-        var lowerBodyStart = transform.position 
-            + (forward * bodyRadius)
-            + (forward * distance / 2)
-            + (Vector3.up * bodyHeight / 4);
-        var upperBodyStart = lowerBodyStart + (Vector3.up * bodyHeight);
-
-        var halfExtents = new Vector3(
-            bodyRadius,
-            bodyHeight / 4,
-            distance / 2
-        );
-
-        var orientation = Quaternion.LookRotation(forward, Vector3.up);
-
-        bool lowerBody = Physics.CheckBox(
-            lowerBodyStart,
-            halfExtents,
-            orientation
-        );
-        bool upperBody = Physics.CheckBox(
-            upperBodyStart,
-            halfExtents,
-            orientation
-        );
-
-        return lowerBody && !upperBody;
+        return _wall.LowerBodyTouchingWall && !_wall.UpperBodyTouchingWall;
     }
 }
