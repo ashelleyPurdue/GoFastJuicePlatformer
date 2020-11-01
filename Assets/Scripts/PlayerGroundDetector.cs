@@ -6,10 +6,13 @@ public class PlayerGroundDetector : MonoBehaviour
 {
     public const float GROUND_DETECTOR_THICKNESS = 0.1f;
     public const float GROUND_DETECTOR_RADIUS = 0.5f;
+    public const float RAYCAST_DISTANCE = 1000;
+    public const float RAYCAST_OFFSET = 0.1f;
 
     public Vector3 GroundVelocity {get; private set;}
     public Transform CurrentGround {get; private set;}
-    public bool IsGrounded => CurrentGround != null;
+    public bool IsGrounded {get; private set;}
+    public float HeightAboveGround {get; private set;}
     public float LastGroundedTime {get; private set;}
 
     public bool IsBonkingHead => CheckBonkingHead();
@@ -22,8 +25,21 @@ public class PlayerGroundDetector : MonoBehaviour
     /// </summary>
     public void UpdateGroundState()
     {
+        RaycastHit? hit = GetGround();
+
+        // Update the height above the ground
+        HeightAboveGround = hit.HasValue
+            ? hit.Value.distance - RAYCAST_OFFSET
+            : RAYCAST_DISTANCE;   // If we're over a void, then we're Really Fuckin' High(tm)
+
+        // We're grounded if our height is below a threshold
+        IsGrounded = HeightAboveGround < GROUND_DETECTOR_THICKNESS;
+
+        // Update the current ground.
         var previousGround = CurrentGround;
-        CurrentGround = GetGround();
+        CurrentGround = IsGrounded
+            ? hit.Value.transform
+            : null;
 
         // Record the last time we were grounded
         if (IsGrounded)
@@ -72,26 +88,32 @@ public class PlayerGroundDetector : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns the Transform of the ground that we're standing on,
+    /// Returns a raycast hit for the ground we're above,
     /// or null if we're in the air.
     /// </summary>
     /// <returns></returns>
-    private Transform GetGround()
+    private RaycastHit? GetGround()
     {
         Vector3 origin = transform.position;
-        var hits = CylinderPhysics.CylinderCastAll(
-            transform.position,
-            GROUND_DETECTOR_RADIUS,
-            GROUND_DETECTOR_THICKNESS,
+        origin.y += RAYCAST_OFFSET;
+
+        var hits = CircleSweep.SweepTestAll(
+            origin,
             Vector3.down,
-            GROUND_DETECTOR_THICKNESS / 2
+            GROUND_DETECTOR_RADIUS,
+            RAYCAST_DISTANCE,
+            QueryTriggerInteraction.Ignore
         );
 
+        RaycastHit? closestHit = null;
         foreach (var h in hits)
         {
-            if (h.collider.transform != this.transform)
-                return h.collider.transform;
+            if (h.collider.transform == this.transform)
+                continue;
+            
+            if (!closestHit.HasValue || h.distance < closestHit.Value.distance)
+                closestHit = h;
         }
-        return null;
+        return closestHit;
     }
 }
