@@ -82,17 +82,22 @@ public class PlayerMovement : MonoBehaviour
         _ground.UpdateGroundState();
         _wall.UpdateWallState();
 
-        ApplyGravityAndJumping();
-        ApplyHorizontalMovement();
+        // Vertical controls
+        ApplyGravity();
+        JumpControls();
+        
+        // Horizontal controls
+        WalkControls();
         ApplyLedgeGrabbing();
 
+        // Apply the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
 
         // Remember moving-platform stuff for next frame
         _ground.RecordFootprintPos();
     }
 
-    private void ApplyGravityAndJumping()
+    private void ApplyGravity()
     {
         // Apply gravity to the VSpeed.
         // Use more gravity when we're falling so the jump arc feels "squishier"
@@ -107,16 +112,24 @@ public class PlayerMovement : MonoBehaviour
             // Stop falling when we hit the ground.
             VSpeed = 0;
 
-            // HACK: Snap to the floor so we don't bounce or float
-            // Note that this doesn't update _ground.HeightAboveGround!
-            _controller.Move(Vector3.down * _ground.HeightAboveGround);
-
+            // HACK: Snap to the ground if we're hovering over it a little bit.
+            if (_ground.HeightAboveGround > 0)
+                VSpeed = -_ground.HeightAboveGround / Time.deltaTime;
+            
             // If we obtained negative hspeed while in the air(EG: from air braking),
             // bring it back to zero so the player doesn't go flying backwards.
             if (HSpeed < 0)
                 HSpeed = 0;
         }
 
+        // Start going downwards if you bonk your head on the ceiling.
+        // Don't bonk your head!
+        if (VSpeed > 0 && _ground.IsBonkingHead)
+            VSpeed = BONK_SPEED;
+    }
+
+    private void JumpControls()
+    {
         // Jump when the button is pressed and we're on the ground.
         // Well, OK, that's a little too strict.  
         // We should let the player press the jump button a little bit before hitting the ground.
@@ -129,14 +142,9 @@ public class PlayerMovement : MonoBehaviour
             VSpeed = 15;
             StartedJumping.Invoke();
         }
-
-        // Start going downwards if you bonk your head on the ceiling.
-        // Don't bonk your head!
-        if (VSpeed > 0 && _ground.IsBonkingHead)
-            VSpeed = BONK_SPEED;
     }
 
-    private void ApplyHorizontalMovement()
+    private void WalkControls()
     {
         var inputVector = GetWalkInput();
         
