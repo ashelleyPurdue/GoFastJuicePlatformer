@@ -107,6 +107,10 @@ public class PlayerMovement : MonoBehaviour
             // Stop falling when we hit the ground.
             VSpeed = 0;
 
+            // HACK: Snap to the floor so we don't bounce or float
+            // Note that this doesn't update _ground.HeightAboveGround!
+            _controller.Move(Vector3.down * _ground.HeightAboveGround);
+
             // If we obtained negative hspeed while in the air(EG: from air braking),
             // bring it back to zero so the player doesn't go flying backwards.
             if (HSpeed < 0)
