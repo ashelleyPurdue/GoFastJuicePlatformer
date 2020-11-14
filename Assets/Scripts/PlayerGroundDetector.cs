@@ -7,7 +7,7 @@ public class PlayerGroundDetector : MonoBehaviour
     public const float GROUND_DETECTOR_THICKNESS = 0.1f;
     public const float GROUND_DETECTOR_RADIUS = 0.5f;
     public const float RAYCAST_DISTANCE = 1000;
-    public const float RAYCAST_OFFSET = 0.1f;
+    public const float RAYCAST_OFFSET = 1f;
 
     public Vector3 GroundVelocity {get; private set;}
     public Transform CurrentGround {get; private set;}
@@ -94,26 +94,10 @@ public class PlayerGroundDetector : MonoBehaviour
     /// <returns></returns>
     private RaycastHit? GetGround()
     {
-        Vector3 origin = transform.position;
-        origin.y += RAYCAST_OFFSET;
-
-        var hits = CircleSweep.SweepTestAll(
-            origin,
-            Vector3.down,
+        return CylinderPhysics.CircleCast(
+            transform.position + (Vector3.up * RAYCAST_OFFSET),
             GROUND_DETECTOR_RADIUS,
-            RAYCAST_DISTANCE,
-            QueryTriggerInteraction.Ignore
+            RAYCAST_DISTANCE
         );
-
-        RaycastHit? closestHit = null;
-        foreach (var h in hits)
-        {
-            if (h.collider.transform == this.transform)
-                continue;
-            
-            if (!closestHit.HasValue || h.distance < closestHit.Value.distance)
-                closestHit = h;
-        }
-        return closestHit;
     }
 }
