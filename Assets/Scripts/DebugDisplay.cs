@@ -32,6 +32,80 @@ public class DebugDisplay : MonoBehaviour
             orientation = Quaternion.identity;
 
         // Generate all the corners
+        Vector3[] corners = CubeCorners(center, halfExtents, orientation.Value);
+
+        // Draw a line between each corner and every other corner
+        ConnectCorners(corners, color);
+    }
+
+    public static void DrawBoxCast(
+        Color color,
+        Vector3 origin,
+        Vector3 halfExtents,
+        Vector3 direction,
+        float maxDistance,
+        Quaternion? boxOrientation = null
+    )
+    {
+        if (!boxOrientation.HasValue)
+            boxOrientation = Quaternion.identity;
+
+        var startCorners = CubeCorners(
+            origin,
+            halfExtents,
+            boxOrientation.Value
+        );
+        var endCorners = CubeCorners(
+            origin + (direction * maxDistance),
+            halfExtents,
+            boxOrientation.Value
+        );
+
+        // Draw the start and end boxes
+        ConnectCorners(startCorners, color);
+        ConnectCorners(endCorners, color);
+
+        // Draw lines connecting the two boxes
+        ConnectParallel(startCorners, endCorners, color);
+    }
+
+    public static void DrawCircleCast(
+        Color color,
+        Vector3 origin,
+        float radius,
+        Vector3 direction,
+        float maxDistance,
+        Quaternion? circleOrientation = null
+    )
+    {
+        if (!circleOrientation.HasValue)
+            circleOrientation = Quaternion.identity;
+
+        var startCorners = CircleCorners(
+            origin,
+            radius,
+            12,
+            circleOrientation.Value
+        );
+        var endCorners = CircleCorners(
+            origin + (direction * maxDistance),
+            radius,
+            12,
+            circleOrientation.Value
+        );
+
+        ConnectCorners(startCorners, color);
+        ConnectCorners(endCorners, color);
+        ConnectParallel(startCorners, endCorners, color);
+    }
+
+    private static Vector3[] CubeCorners(
+        Vector3 center,
+        Vector3 halfExtents,
+        Quaternion orientation
+    )
+    {
+        // Generate all the corners
         Vector3 startCorner = center - halfExtents;
         Vector3[] corners = new[]
         {
@@ -50,40 +124,53 @@ public class DebugDisplay : MonoBehaviour
             corners[i].y *= halfExtents.y;
             corners[i].z *= halfExtents.z;
 
-            corners[i] = orientation.Value * corners[i];
+            corners[i] = orientation * corners[i];
             corners[i] += center;
         }
-        // {
-        //     new Vector3(0, 0, 0),
-        //     new Vector3(0, 0, 1),
-        //     new Vector3(0, 1, 0),
-        //     new Vector3(0, 1, 1),
-        //     new Vector3(1, 0, 0),
-        //     new Vector3(1, 0, 1),
-        //     new Vector3(1, 1, 0),
-        //     new Vector3(1, 1, 1)
-        // };
-        // for(int i = 0; i < corners.Length; i++)
-        // {
-        //     corners[i] *= 2;
-        //     corners[i] -= Vector3.one;
-            
-        //     corners[i].x *= halfExtents.x;
-        //     corners[i].y *= halfExtents.y;
-        //     corners[i].z *= halfExtents.z;
-        //     corners[i] = orientation.Value * corners[i];
 
-        //     corners[i] += center;
-        // }
+        return corners;
+    }
 
-        // Draw a line between each corner and every other corner
+    private static Vector3[] CircleCorners(
+        Vector3 center,
+        float radius,
+        int numCorners,
+        Quaternion orientation
+    )
+    {
+        var corners = new Vector3[numCorners];
+        for (int i = 0; i < numCorners; i++)
+        {
+            float angleDeg = (360 * i) / numCorners;
+
+            var c = new Vector3(
+                radius * Mathf.Cos(angleDeg * Mathf.Deg2Rad),
+                0,
+                radius * Mathf.Sin(angleDeg * Mathf.Deg2Rad)
+            );
+
+            c = orientation * c;
+            c += center;
+
+            corners[i] = c;
+        }
+
+        return corners;
+    }
+
+    private static void ConnectCorners(Vector3[] corners, Color color)
+    {
         for (int i = 0; i < corners.Length; i++)
         {
             for (int j = i + 1; j < corners.Length; j++)
-            {
                 Debug.DrawLine(corners[i], corners[j], color);
-            }
         }
+    }
+
+    private static void ConnectParallel(Vector3[] startCorners, Vector3[] endCorners, Color color)
+    {
+        for (int i = 0; i < startCorners.Length; i++)
+            Debug.DrawLine(startCorners[i], endCorners[i], color);
     }
 
     public void OnGUI()
