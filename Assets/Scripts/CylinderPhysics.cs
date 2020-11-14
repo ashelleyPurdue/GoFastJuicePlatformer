@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -57,7 +57,7 @@ public static class CylinderPhysics
             origin - capsulePointOffset,
             radius
         ));
-
+        
         // If any of the colliders from the boxcast ALSO pass a really tall
         // capsule cast, then it's in the cylinder
         var hits = new List<RaycastHit>();
@@ -69,4 +69,65 @@ public static class CylinderPhysics
         }
         return hits.ToArray();
     }
+
+    /// <summary>
+    /// Like a raycast, except it sweeps a circle instead of a point.
+    /// Returns null if nothing was hit.
+    /// Currently only works in the downward direction.
+    /// </summary>
+    /// <returns></returns>
+    public static RaycastHit? CircleCast(
+        Vector3 origin,
+        float radius,
+        float maxDistance
+    )
+    {
+        Vector3 direction = Vector3.down;
+
+        // Start with a boxcast, to get a rough approximation.
+        // We will shave off the "corners" later.
+        Vector3 halfExtents = Vector3.one * radius;
+        halfExtents.y = 0.025f;
+        RaycastHit boxHit;
+        bool boxHitSuccess = Physics.BoxCast(
+            origin,
+            halfExtents,
+            direction,
+            out boxHit,
+            Quaternion.identity,
+            maxDistance
+        );
+
+        if (!boxHitSuccess)
+            return null;
+
+        // If the impact point is within the circle's radius, then the "corners"
+        // didn't have any influence on the result.  Therefore, we don't need to
+        // cut them out.
+        Vector3 flatOrigin = origin.Flattened();
+        Vector3 flatBoxHit = boxHit.point.Flattened();
+
+        if (Vector3.Distance(flatBoxHit, flatOrigin) <= radius)
+            return boxHit;
+
+        // The impact point was outside the radius of the circle
+        // (IE: in one of the corners).  So, let's move that point inward onto
+        // the edge of the circle, and do a raycast
+        Vector3 raycastStartOffset = radius * (flatBoxHit - flatOrigin).normalized;
+        Vector3 raycastStart = origin + raycastStartOffset;
+
+        RaycastHit raycastHit;
+        bool rayHitSuccess = Physics.Raycast(
+            raycastStart,
+            direction,
+            out raycastHit,
+            maxDistance
+        );
+
+        if (!rayHitSuccess)
+            return null;
+
+        return raycastHit;
+    }
+
 }
