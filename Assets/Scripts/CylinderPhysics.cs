@@ -123,22 +123,27 @@ public static class CylinderPhysics
     public static RaycastHit? CircleCast(
         Vector3 origin,
         float radius,
-        float maxDistance
+        float maxDistance,
+        Vector3 direction
     )
     {
-        Vector3 direction = Vector3.down;
+        // Create a coordinate system where "direction" points forward.
+        var orientation = Quaternion.LookRotation(direction);
+        var right   = orientation * Vector3.right;
+        var up      = orientation * Vector3.up;
+        var forward = orientation * Vector3.forward;
 
         // Start with a boxcast, to get a rough approximation.
         // We will shave off the "corners" later.
         Vector3 halfExtents = Vector3.one * radius;
-        halfExtents.y = 0.025f;
+        halfExtents.z = 0.025f;
         RaycastHit boxHit;
         bool boxHitSuccess = Physics.BoxCast(
             origin,
             halfExtents,
             direction,
             out boxHit,
-            Quaternion.identity,
+            orientation,
             maxDistance
         );
 
@@ -148,8 +153,8 @@ public static class CylinderPhysics
         // If the impact point is within the circle's radius, then the "corners"
         // didn't have any influence on the result.  Therefore, we don't need to
         // cut them out.
-        Vector3 flatOrigin = origin.Flattened();
-        Vector3 flatBoxHit = boxHit.point.Flattened();
+        Vector3 flatOrigin = origin.ProjectOnPlane(direction);
+        Vector3 flatBoxHit = boxHit.point.ProjectOnPlane(direction);
 
         if (Vector3.Distance(flatBoxHit, flatOrigin) <= radius)
             return boxHit;
@@ -173,5 +178,4 @@ public static class CylinderPhysics
 
         return raycastHit;
     }
-
 }

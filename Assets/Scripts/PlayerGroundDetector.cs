@@ -97,7 +97,8 @@ public class PlayerGroundDetector : MonoBehaviour
         return CylinderPhysics.CircleCast(
             transform.position + (Vector3.up * RAYCAST_OFFSET),
             GROUND_DETECTOR_RADIUS,
-            RAYCAST_DISTANCE
+            RAYCAST_DISTANCE,
+            Vector3.down
         );
     }
 }
