@@ -9,4 +9,25 @@ public static class Vector3Extensions
         v.y = 0;
         return v;
     }
+
+    public static Vector3 ProjectOnPlane(this Vector3 v, Vector3 planeNormal)
+    {
+        return Vector3.ProjectOnPlane(v, planeNormal);
+    }
+
+    public static Vector3 ProjectOnVector(this Vector3 v, Vector3 target)
+    {
+        return Vector3.Project(v, target);
+    }
+
+    /// <summary>
+    /// Returns the component of this vector along the target vector.
+    /// </summary>
+    /// <param name="v"></param>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    public static float ComponentAlong(this Vector3 v, Vector3 target)
+    {
+        return v.ProjectOnVector(target).magnitude;
+    }
 }
