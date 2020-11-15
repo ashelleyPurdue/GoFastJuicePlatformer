@@ -21,6 +21,12 @@ public class DebugDisplay : MonoBehaviour
         _queuedFixedLines += line + "\n";
     }
 
+    public static void DrawRay(Color color, Vector3 origin, Vector3 dir, float length)
+    {
+        var end = origin + (dir * length);
+        Debug.DrawLine(origin, end, color);
+    }
+
     public static void DrawCube(
         Color color,
         Vector3 center,
@@ -79,24 +85,20 @@ public class DebugDisplay : MonoBehaviour
         Vector3 origin,
         float radius,
         Vector3 direction,
-        float maxDistance,
-        Quaternion? circleOrientation = null
+        float maxDistance
     )
     {
-        if (!circleOrientation.HasValue)
-            circleOrientation = Quaternion.identity;
-
         var startCorners = CircleCorners(
             origin,
             radius,
             12,
-            circleOrientation.Value
+            direction
         );
         var endCorners = CircleCorners(
             origin + (direction * maxDistance),
             radius,
             12,
-            circleOrientation.Value
+            direction
         );
 
         ConnectCorners(startCorners, color);
@@ -140,13 +142,18 @@ public class DebugDisplay : MonoBehaviour
         Vector3 center,
         float radius,
         int numCorners,
-        Quaternion orientation
+        Vector3 normal
     )
     {
+        var rot = Quaternion.LookRotation(normal);
+        var up    = rot * Vector3.up;
+        var right = rot * Vector3.right;
+        
         var corners = new Vector3[numCorners];
         for (int i = 0; i < numCorners; i++)
         {
             float angleDeg = (360 * i) / numCorners;
+            float angleRad = Mathf.Deg2Rad * angleDeg;
 
             var c = new Vector3(
                 radius * Mathf.Cos(angleDeg * Mathf.Deg2Rad),
@@ -154,10 +161,10 @@ public class DebugDisplay : MonoBehaviour
                 radius * Mathf.Sin(angleDeg * Mathf.Deg2Rad)
             );
 
-            c = orientation * c;
-            c += center;
-
-            corners[i] = c;
+            corners[i] =
+                (radius * Mathf.Cos(angleRad) * right) +
+                (radius * Mathf.Sin(angleRad) * up) +
+                center;
         }
 
         return corners;
