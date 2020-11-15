@@ -38,6 +38,11 @@ public class DebugDisplay : MonoBehaviour
         ConnectCorners(corners, color);
     }
 
+    public static void DrawPoint(Color color, Vector3 point, float radius = 0.1f)
+    {
+        DrawCube(color, point, radius * Vector3.one);
+    }
+
     public static void DrawBoxCast(
         Color color,
         Vector3 origin,
