@@ -19,8 +19,6 @@ public class CrappyPlayerVisuals : MonoBehaviour
         _movement = GetComponent<PlayerMovement>();
         _input = GetComponent<IPlayerInput>();
         _ground = GetComponent<PlayerGroundDetector>();
-
-        _movement.StartedJumping.AddListener(() => StartCoroutine(JumpAnimation()));
     }
 
     void Update()
@@ -40,38 +38,5 @@ public class CrappyPlayerVisuals : MonoBehaviour
     private float SignedPow(float f, float p)
     {
         return Mathf.Pow(f, p) * Mathf.Sign(f);
-    }
-
-    private IEnumerator JumpAnimation()
-    {
-        const float stretchHeight = 1.25f;
-        const float stretchWidth = 0.9f;
-
-        Vector3 stretchScale = new Vector3(
-            stretchWidth,
-            stretchHeight,
-            stretchWidth
-        );
-        Vector3 stretchPos = new Vector3(
-            0,
-            1 - stretchHeight,
-            0
-        );
-
-        Vector3 restScale = Vector3.one;
-        Vector3 restPos = Vector3.zero;
-
-        // Recede back to the rest position as our jump velocity slows down
-        float startVSpeed = _movement.VSpeed;
-        while (_movement.VSpeed >= 0)
-        {
-            float t = _movement.VSpeed / startVSpeed;
-
-            _model.localScale = Vector3.Lerp(restScale, stretchScale, t);
-            _model.localPosition = Vector3.Lerp(restPos, stretchPos, t);
-
-            yield return new WaitForEndOfFrame();
-        }
-        _model.localScale = restScale;
     }
 }
