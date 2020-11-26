@@ -28,6 +28,8 @@ public static class Vector3Extensions
     /// <returns></returns>
     public static float ComponentAlong(this Vector3 v, Vector3 target)
     {
-        return v.ProjectOnVector(target).magnitude;
+        float dot = Vector3.Dot(v, target);
+        float mag = target.magnitude;
+        return dot / mag;
     }
 }
