@@ -195,9 +195,9 @@ public class PlayerMovement : MonoBehaviour
         {
             Vector3 forward = transform.forward;
             
-            bool pushingBackwards = ComponentAlong(inputVector, forward) < -0.5f;
-            bool pushingForwards = ComponentAlong(inputVector, forward) > 0.75f;
-            bool movingForwards = ComponentAlong(_walkVelocity.normalized, forward) > 0;
+            bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
+            bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
+            bool movingForwards = _walkVelocity.normalized.ComponentAlong(forward) > 0;
 
             float accel = HACCEL_AIR;
             float maxSpeed = HSPEED_MAX_GROUND;
@@ -283,13 +283,6 @@ public class PlayerMovement : MonoBehaviour
         return adjustedInput;
     }
 
-    private float ComponentAlong(Vector3 a, Vector3 b)
-    {
-        float dot = Vector3.Dot(a, b);
-        float mag = b.magnitude;
-        return dot / mag;
-    }
-
     private bool CanGrabLedge()
     {
         // Only grab the ledge if in the air
@@ -299,7 +292,7 @@ public class PlayerMovement : MonoBehaviour
         // Only grab the ledge if we're actually moving in the direction we're
         // facing.
         var forward = transform.forward;
-        float forwardVelocity = ComponentAlong(_walkVelocity, forward);
+        float forwardVelocity = _walkVelocity.ComponentAlong(forward);
 
         if (forwardVelocity < 0.01f)
             return false;
