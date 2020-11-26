@@ -5,14 +5,14 @@ using UnityEngine.Events;
 
 [RequireComponent(typeof(IPlayerInput))]
 [RequireComponent(typeof(PlayerGroundDetector))]
-[RequireComponent(typeof(PlayerWallDetector))]
+[RequireComponent(typeof(PlayerLedgeDetector))]
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
     // Required components
     private IPlayerInput _input;
     private PlayerGroundDetector _ground;
-    private PlayerWallDetector _wall;
+    private PlayerLedgeDetector _ledge;
     private CharacterController _controller;
 
     // Constants
@@ -67,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _input = GetComponent<IPlayerInput>();
         _ground = GetComponent<PlayerGroundDetector>();
-        _wall = GetComponent<PlayerWallDetector>();
+        _ledge = GetComponent<PlayerLedgeDetector>();
         _controller = GetComponent<CharacterController>();
     }
 
@@ -80,7 +80,7 @@ public class PlayerMovement : MonoBehaviour
     public void FixedUpdate()
     {
         _ground.UpdateGroundState();
-        _wall.UpdateWallState();
+        _ledge.UpdateLedgeDetectorState();
 
         // Vertical controls
         ApplyGravity();
@@ -304,6 +304,6 @@ public class PlayerMovement : MonoBehaviour
         if (forwardVelocity < 0.01f)
             return false;
 
-        return _wall.LowerBodyTouchingWall && !_wall.UpperBodyTouchingWall;
+        return _ledge.LowerBodyTouchingWall && !_ledge.UpperBodyTouchingWall;
     }
 }

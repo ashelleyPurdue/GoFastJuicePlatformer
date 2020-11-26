@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerWallDetector : MonoBehaviour
+public class PlayerLedgeDetector : MonoBehaviour
 {
     public bool UpperBodyTouchingWall {get; private set;}
     public bool LowerBodyTouchingWall {get; private set;}
 
-    public void UpdateWallState()
+    public void UpdateLedgeDetectorState()
     {
         var forward = transform.forward;
 
