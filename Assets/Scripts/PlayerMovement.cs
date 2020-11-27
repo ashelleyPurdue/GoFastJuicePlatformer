@@ -57,6 +57,7 @@ public class PlayerMovement : MonoBehaviour
         (Vector3.up * VSpeed);
 
     public bool IsGrabbingLedge {get; private set;}
+    public bool IsWallSliding {get; private set;}
 
     // State
     public float HAngleDeg {get; private set;}
@@ -155,13 +156,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void WallJumpControls()
     {
-        bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
-        bool isWallSliding = 
+        IsWallSliding = 
             !_ground.IsGrounded &&
             _wall.IsTouchingWall && 
             VSpeed < 0;
 
-        if (isWallSliding && jumpPressedRecently)
+        bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
+        if (IsWallSliding && jumpPressedRecently)
         {
             // Kick away from the wall
             var kickDir = _wall.LastWallNormal.Flattened().normalized;
