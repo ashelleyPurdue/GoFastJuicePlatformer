@@ -6,6 +6,50 @@ public static class CylinderPhysics
 {
     private const float ENDLESS_DISTANCE = Mathf.Infinity;
     
+    public static Collider[] OverlapCylinder(
+        Vector3 origin,
+        float radius,
+        float height
+    )
+    {
+        // Unity doesn't have support for cylinder collisions.
+        // NO MATTER.
+        // We can just do two casts: a box cast and a capsule cast.
+        // Anything that passes the box cast is within the cylinder's "height".
+        // Anything that passes the capsule cast is within the cylinder's "radius".
+        // Anything that passes BOTH casts must be in our cylinder.
+        // This essentially "trims off the corners" of the box cast.
+        // Note that this only works for convex shapes.  
+        // Just don't use concave platforms.
+        Quaternion orientation = Quaternion.identity;
+        var halfExtents = new Vector3
+        (
+            radius,
+            height / 2,
+            radius
+        );
+        var boxPos = origin + (Vector3.up * height / 2);
+        var boxHits = Physics.OverlapBox(boxPos, halfExtents, orientation);
+        var capsulePointOffset = Vector3.up * (height * 2);
+        var capsuleHits = new HashSet<Collider>(Physics.OverlapCapsule
+        (
+            origin + capsulePointOffset,
+            origin - capsulePointOffset,
+            radius
+        ));
+        
+        // If any of the colliders from the boxcast ALSO pass a really tall
+        // capsule cast, then it's in the cylinder
+        var hits = new List<Collider>();
+        foreach (var c in boxHits)
+        {
+            bool inCapsule = capsuleHits.Contains(c);
+            if (inCapsule)
+                hits.Add(c);
+        }
+        return hits.ToArray();
+    }
+
     public static bool CylinderCast(
         Vector3 origin,
         float radius,
