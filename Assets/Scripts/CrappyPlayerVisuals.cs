@@ -23,14 +23,23 @@ public class CrappyPlayerVisuals : MonoBehaviour
 
     void Update()
     {
+        UpdateAnimatorParams();
+        TiltWithSpeed();
+    }
+
+    private void UpdateAnimatorParams()
+    {
         float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
 
         _animator.SetFloat("RunSpeed", speedPercent);
         _animator.SetFloat("VSpeed", _movement.VSpeed);
         _animator.SetBool("IsGrounded", _ground.IsGrounded);
         _animator.SetBool("IsGrabbingLedge", _movement.IsGrabbingLedge);
-        
-        // Become more tilted as we go faster
+    }
+
+    private void TiltWithSpeed()
+    {
+        float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
         float xAngle = SignedPow(speedPercent, 3) * 20;
         _model.localEulerAngles = new Vector3(xAngle, 0, 0);
     }
