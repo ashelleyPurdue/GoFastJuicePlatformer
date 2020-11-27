@@ -6,6 +6,7 @@ using UnityEngine.Events;
 [RequireComponent(typeof(IPlayerInput))]
 [RequireComponent(typeof(PlayerGroundDetector))]
 [RequireComponent(typeof(PlayerLedgeDetector))]
+[RequireComponent(typeof(PlayerWallDetector))]
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class PlayerMovement : MonoBehaviour
     private IPlayerInput _input;
     private PlayerGroundDetector _ground;
     private PlayerLedgeDetector _ledge;
+    private PlayerWallDetector _wall;
     private CharacterController _controller;
 
     // Constants
@@ -68,6 +70,7 @@ public class PlayerMovement : MonoBehaviour
         _input = GetComponent<IPlayerInput>();
         _ground = GetComponent<PlayerGroundDetector>();
         _ledge = GetComponent<PlayerLedgeDetector>();
+        _wall = GetComponent<PlayerWallDetector>();
         _controller = GetComponent<CharacterController>();
     }
 
@@ -81,6 +84,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _ground.UpdateGroundState();
         _ledge.UpdateLedgeDetectorState();
+        _wall.UpdateWallState();
 
         // Vertical controls
         ApplyGravity();
