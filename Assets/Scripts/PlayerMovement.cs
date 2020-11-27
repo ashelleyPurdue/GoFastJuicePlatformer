@@ -89,6 +89,7 @@ public class PlayerMovement : MonoBehaviour
         // Vertical controls
         ApplyGravity();
         JumpControls();
+        WallJumpControls();
         
         // Horizontal controls
         WalkControls();
@@ -143,6 +144,32 @@ public class PlayerMovement : MonoBehaviour
 
         if (wasGroundedRecently && jumpPressedRecently)
         {
+            VSpeed = 15;
+            StartedJumping.Invoke();
+        }
+    }
+
+    private void WallJumpControls()
+    {
+        bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
+        bool isWallSliding = 
+            !_ground.IsGrounded &&
+            _wall.IsTouchingWall && 
+            VSpeed < 0;
+
+        if (isWallSliding && jumpPressedRecently)
+        {
+            // Kick away from the wall
+            var kickDir = _wall.LastWallNormal.Flattened().normalized;
+            float kickSpeed = Mathf.Max(
+                HSPEED_MAX_AIR / 2,
+                _walkVelocity.Flattened().magnitude
+            );
+
+            _walkVelocity = kickDir * kickSpeed;
+            transform.forward = kickDir;
+
+            // Jump up
             VSpeed = 15;
             StartedJumping.Invoke();
         }
