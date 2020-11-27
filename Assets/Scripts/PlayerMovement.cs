@@ -22,7 +22,8 @@ public class PlayerMovement : MonoBehaviour
     public const float GROUND_DETECTOR_RADIUS = 0.5f;
 
     public const float JUMP_SPEED = 15;
-    public const float RISING_GRAVITY = 40;
+    public const float RISING_GRAVITY = 30;
+    public const float SHORT_JUMP_GRAVITY = 40;
     public const float FALLING_GRAVITY = 43;
 
     public const float HSPEED_MAX_GROUND = 8;
@@ -68,6 +69,7 @@ public class PlayerMovement : MonoBehaviour
     public float VSpeed {get; private set;}
 
     private float _lastJumpButtonPressTime = 0;
+    private bool _jumpReleased;
 
     private Transform _currentGround;
     private Vector3 _walkVelocity;
@@ -102,7 +104,6 @@ public class PlayerMovement : MonoBehaviour
         // Vertical controls
         ApplyGravity();
         JumpControls();
-        WallJumpControls();
         
         // Horizontal controls
         WalkControls();
@@ -117,12 +118,23 @@ public class PlayerMovement : MonoBehaviour
 
     private void ApplyGravity()
     {
-        // Apply gravity to the VSpeed.
-        // Use more gravity when we're falling so the jump arc feels "squishier"
-        float gravity = VSpeed > 0
-            ? RISING_GRAVITY
-            : FALLING_GRAVITY;
+        // Decide how much gravity to use
+        
+        float gravity;
+        if (VSpeed < 0)
+        {
+            // Use more gravity when we're falling so the jump arc feels "squishier"
+            gravity = FALLING_GRAVITY;
+        }
+        else
+        {
+            // Use less gravity while jump is being held, for variable jumping.
+            gravity = _input.JumpHeld && !_jumpReleased
+                ? RISING_GRAVITY
+                : SHORT_JUMP_GRAVITY;
+        }
 
+        // Apply that gravity to the VSpeed.
         VSpeed -= gravity * Time.deltaTime;
 
         // Cap the VSpeed at the terminal velocity
@@ -165,17 +177,16 @@ public class PlayerMovement : MonoBehaviour
         bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
         bool wasGroundedRecently = (Time.time - COYOTE_TIME < _ground.LastGroundedTime);
 
+        if (!_input.JumpHeld)
+            _jumpReleased = true;
+
         if (wasGroundedRecently && jumpPressedRecently)
         {
+            _jumpReleased = false;
             VSpeed = JUMP_SPEED;
             StartedJumping.Invoke();
         }
-    }
-
-    private void WallJumpControls()
-    {
-        bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
-        if (IsWallSliding && jumpPressedRecently)
+        else if (IsWallSliding && jumpPressedRecently)
         {
             // Kick away from the wall
             var kickDir = _wall.LastWallNormal.Flattened().normalized;
@@ -188,6 +199,7 @@ public class PlayerMovement : MonoBehaviour
             HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
 
             // Jump up
+            _jumpReleased = false;
             VSpeed = JUMP_SPEED;
             StartedJumping.Invoke();
         }
