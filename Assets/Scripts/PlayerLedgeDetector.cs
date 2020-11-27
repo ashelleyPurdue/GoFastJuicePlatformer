@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(PlayerMovement))]
 public class PlayerLedgeDetector : MonoBehaviour
 {
     public bool UpperBodyTouchingWall {get; private set;}
@@ -9,7 +10,8 @@ public class PlayerLedgeDetector : MonoBehaviour
 
     public void UpdateLedgeDetectorState()
     {
-        var forward = transform.forward;
+        // TODO: Fix this to depend on HAngle instead.
+        var forward = GetComponent<PlayerMovement>().Forward;
 
         // Do 2 box casts in front of us: one for our upper body, and one for
         // our lower body.

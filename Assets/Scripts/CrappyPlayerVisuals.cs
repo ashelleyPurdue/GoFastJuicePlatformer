@@ -24,6 +24,7 @@ public class CrappyPlayerVisuals : MonoBehaviour
     void Update()
     {
         UpdateAnimatorParams();
+        FaceHAngle();
         TiltWithSpeed();
     }
 
@@ -37,11 +38,20 @@ public class CrappyPlayerVisuals : MonoBehaviour
         _animator.SetBool("IsGrabbingLedge", _movement.IsGrabbingLedge);
     }
 
+    private void FaceHAngle()
+    {
+        var eulers = _model.localEulerAngles;
+        eulers.y = -_movement.HAngleDeg + 90;
+        _model.localEulerAngles = eulers;
+    }
+
     private void TiltWithSpeed()
     {
         float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
-        float xAngle = SignedPow(speedPercent, 3) * 20;
-        _model.localEulerAngles = new Vector3(xAngle, 0, 0);
+
+        var eulers = _model.localEulerAngles;
+        eulers.x = SignedPow(speedPercent, 3) * 20;
+        _model.localEulerAngles = eulers;
     }
 
     private float SignedPow(float f, float p)
