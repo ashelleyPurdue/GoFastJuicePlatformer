@@ -28,6 +28,9 @@ public class PlayerMovement : MonoBehaviour
     public const float HSPEED_MAX_GROUND = 8;
     public const float HSPEED_MAX_AIR = 10;
 
+    public const float TERMINAL_VELOCITY_AIR = -100;
+    public const float TERMINAL_VELOCITY_WALL_SLIDE = -10;
+
     public const float HACCEL_GROUND = 15;
     public const float HACCEL_AIR = 9;
     public const float HACCEL_AIR_EXTRA = 2;
@@ -122,6 +125,14 @@ public class PlayerMovement : MonoBehaviour
 
         VSpeed -= gravity * Time.deltaTime;
 
+        // Cap the VSpeed at the terminal velocity
+        float terminalVelocity = IsWallSliding
+            ? TERMINAL_VELOCITY_WALL_SLIDE
+            : TERMINAL_VELOCITY_AIR;
+        
+        if (VSpeed < terminalVelocity)
+            VSpeed = terminalVelocity;
+
         if (_ground.IsGrounded)
         {
             // Stop falling when we hit the ground.
@@ -141,6 +152,8 @@ public class PlayerMovement : MonoBehaviour
         // Don't bonk your head!
         if (VSpeed > 0 && _ground.IsBonkingHead)
             VSpeed = BONK_SPEED;
+
+        DebugDisplay.PrintLineFixed("VSpeed: " + VSpeed);
     }
 
     private void JumpControls()
