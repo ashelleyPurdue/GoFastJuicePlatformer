@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -91,6 +91,11 @@ public class PlayerMovement : MonoBehaviour
         _ledge.UpdateLedgeDetectorState();
         _wall.UpdateWallState();
 
+        IsWallSliding = 
+            !_ground.IsGrounded &&
+            _wall.IsTouchingWall && 
+            VSpeed < 0;
+
         // Vertical controls
         ApplyGravity();
         JumpControls();
@@ -156,11 +161,6 @@ public class PlayerMovement : MonoBehaviour
 
     private void WallJumpControls()
     {
-        IsWallSliding = 
-            !_ground.IsGrounded &&
-            _wall.IsTouchingWall && 
-            VSpeed < 0;
-
         bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
         if (IsWallSliding && jumpPressedRecently)
         {
