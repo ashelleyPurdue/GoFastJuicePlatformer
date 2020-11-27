@@ -4,6 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(PlayerMovement))]
 [RequireComponent(typeof(PlayerGroundDetector))]
+[RequireComponent(typeof(PlayerWallDetector))]
 public class CrappyPlayerVisuals : MonoBehaviour
 {
     public Transform _model;
@@ -11,18 +12,28 @@ public class CrappyPlayerVisuals : MonoBehaviour
 
     private PlayerMovement _movement;
     private PlayerGroundDetector _ground;
+    private PlayerWallDetector _wall;
 
     void Awake()
     {
         _movement = GetComponent<PlayerMovement>();
         _ground = GetComponent<PlayerGroundDetector>();
+        _wall = GetComponent<PlayerWallDetector>();
     }
 
     void Update()
     {
         UpdateAnimatorParams();
-        FaceHAngle();
-        TiltWithSpeed();
+
+        if (!_movement.IsWallSliding)
+        {
+            FaceHAngle();
+            TiltWithSpeed();
+        }
+        else
+        {
+            FaceWallSlide();
+        }
     }
 
     private void UpdateAnimatorParams()
@@ -33,6 +44,12 @@ public class CrappyPlayerVisuals : MonoBehaviour
         _animator.SetFloat("VSpeed", _movement.VSpeed);
         _animator.SetBool("IsGrounded", _ground.IsGrounded);
         _animator.SetBool("IsGrabbingLedge", _movement.IsGrabbingLedge);
+        _animator.SetBool("IsWallSliding", _movement.IsWallSliding);
+    }
+
+    private void FaceWallSlide()
+    {
+        _model.forward = _wall.LastWallNormal.Flattened();
     }
 
     private void FaceHAngle()
