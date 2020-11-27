@@ -21,6 +21,7 @@ public class PlayerMovement : MonoBehaviour
     public const float GROUND_DETECTOR_THICKNESS = 0.1f;
     public const float GROUND_DETECTOR_RADIUS = 0.5f;
 
+    public const float JUMP_SPEED = 15;
     public const float RISING_GRAVITY = 40;
     public const float FALLING_GRAVITY = 43;
 
@@ -144,7 +145,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (wasGroundedRecently && jumpPressedRecently)
         {
-            VSpeed = 15;
+            VSpeed = JUMP_SPEED;
             StartedJumping.Invoke();
         }
     }
@@ -170,7 +171,7 @@ public class PlayerMovement : MonoBehaviour
             transform.forward = kickDir;
 
             // Jump up
-            VSpeed = 15;
+            VSpeed = JUMP_SPEED;
             StartedJumping.Invoke();
         }
     }
