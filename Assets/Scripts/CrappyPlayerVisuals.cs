@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerMovement))]
-[RequireComponent(typeof(IPlayerInput))]
 [RequireComponent(typeof(PlayerGroundDetector))]
 public class CrappyPlayerVisuals : MonoBehaviour
 {
@@ -11,13 +10,11 @@ public class CrappyPlayerVisuals : MonoBehaviour
     public Animator _animator;
 
     private PlayerMovement _movement;
-    private IPlayerInput _input;
     private PlayerGroundDetector _ground;
 
     void Awake()
     {
         _movement = GetComponent<PlayerMovement>();
-        _input = GetComponent<IPlayerInput>();
         _ground = GetComponent<PlayerGroundDetector>();
     }
 
