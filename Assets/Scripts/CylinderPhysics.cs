@@ -133,49 +133,29 @@ public static class CylinderPhysics
         var up      = orientation * Vector3.up;
         var forward = orientation * Vector3.forward;
 
-        // Start with a boxcast, to get a rough approximation.
-        // We will shave off the "corners" later.
-        Vector3 halfExtents = Vector3.one * radius;
-        halfExtents.z = 0.025f;
-        RaycastHit boxHit;
-        bool boxHitSuccess = Physics.BoxCast(
+        // Do a sphere cast, but then fudge the distance to make it look like
+        // a circle.
+        RaycastHit hit;
+        bool hitAnything = Physics.SphereCast(
             origin,
-            halfExtents,
+            radius,
             direction,
-            out boxHit,
-            orientation,
+            out hit,
             maxDistance
         );
 
-        if (!boxHitSuccess)
+        if (!hitAnything)
             return null;
 
-        // If the impact point is within the circle's radius, then the "corners"
-        // didn't have any influence on the result.  Therefore, we don't need to
-        // cut them out.
-        Vector3 flatOrigin = origin.ProjectOnPlane(direction);
-        Vector3 flatBoxHit = boxHit.point.ProjectOnPlane(direction);
+        // Fudge the hit's distance
+        float originY = origin.ComponentAlong(direction);
+        float hitPointY = hit.point.ComponentAlong(direction);
+        hit.distance = Mathf.Abs(hitPointY - originY);
 
-        if (Vector3.Distance(flatBoxHit, flatOrigin) <= radius)
-            return boxHit;
-
-        // The impact point was outside the radius of the circle
-        // (IE: in one of the corners).  So, let's move that point inward onto
-        // the edge of the circle, and do a raycast
-        Vector3 raycastStartOffset = radius * (flatBoxHit - flatOrigin).normalized;
-        Vector3 raycastStart = origin + raycastStartOffset;
-
-        RaycastHit raycastHit;
-        bool rayHitSuccess = Physics.Raycast(
-            raycastStart,
-            direction,
-            out raycastHit,
-            maxDistance
-        );
-
-        if (!rayHitSuccess)
+        // Drop the hit if it's too far away
+        if (hit.distance > maxDistance)
             return null;
 
-        return raycastHit;
+        return hit;
     }
 }
