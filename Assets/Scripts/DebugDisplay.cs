@@ -84,8 +84,8 @@ public class DebugDisplay : MonoBehaviour
         Color color,
         Vector3 origin,
         float radius,
-        Vector3 direction,
-        float maxDistance
+        float maxDistance,
+        Vector3 direction
     )
     {
         var startCorners = CircleCorners(
