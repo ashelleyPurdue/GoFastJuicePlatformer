@@ -5,45 +5,35 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerMovement))]
 public class PlayerLedgeDetector : MonoBehaviour
 {
-    public bool UpperBodyTouchingWall {get; private set;}
-    public bool LowerBodyTouchingWall {get; private set;}
+    private const float BIG_NUMBER = 10000;
+    
+    public bool LedgePresent {get; private set;}
+    public float LastLedgeHeight {get; private set;}
 
     public void UpdateLedgeDetectorState()
     {
-        // TODO: Fix this to depend on HAngle instead.
-        var forward = GetComponent<PlayerMovement>().Forward;
-
-        // Do 2 box casts in front of us: one for our upper body, and one for
-        // our lower body.
-        // The lower body should detect a wall, while the upper body should not.
-
         const float bodyRadius = PlayerMovement.BODY_RADIUS;
-        const float bodyHeight = PlayerMovement.BODY_HEIGHT;
         const float distance = 0.13f;
 
-        var lowerBodyStart = transform.position 
-            + (forward * bodyRadius)
-            + (forward * distance / 2)
-            + (Vector3.up * bodyHeight / 4);
-        var upperBodyStart = lowerBodyStart + (Vector3.up * bodyHeight);
-
-        var halfExtents = new Vector3(
+        // TODO: Add comments, some of them clever.
+        RaycastHit? ceilingHit = CylinderPhysics.CircleCast(
+            transform.position,
             bodyRadius,
-            bodyHeight / 4,
-            distance / 2
+            BIG_NUMBER,
+            Vector3.up
+        );
+        float ceilingHeight = ceilingHit?.distance ?? BIG_NUMBER;
+
+        Vector3 echoStart = transform.position + (Vector3.up * ceilingHeight);
+        RaycastHit? echoHit = CylinderPhysics.CircleCast(
+            echoStart,
+            bodyRadius + distance,
+            BIG_NUMBER,
+            Vector3.down
         );
 
-        var orientation = Quaternion.LookRotation(forward, Vector3.up);
-
-        LowerBodyTouchingWall = Physics.CheckBox(
-            lowerBodyStart,
-            halfExtents,
-            orientation
-        );
-        UpperBodyTouchingWall = Physics.CheckBox(
-            upperBodyStart,
-            halfExtents,
-            orientation
-        );
+        LedgePresent = echoHit.HasValue;
+        if (LedgePresent)
+            LastLedgeHeight = echoHit.Value.point.y - transform.position.y;
     }
 }

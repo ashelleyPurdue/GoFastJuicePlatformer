@@ -345,6 +345,17 @@ public class PlayerMovement : MonoBehaviour
 
     private bool CanGrabLedge()
     {
+        DebugDisplay.DrawPoint(Color.red, transform.position + (Vector3.up * _ledge.LastLedgeHeight));
+        if (!_ledge.LedgePresent)
+            return false;
+
+        // Only grab the ledge if it's in the sweet spot
+        if (_ledge.LastLedgeHeight < BODY_HEIGHT / 2)
+            return false;
+        
+        if (_ledge.LastLedgeHeight > BODY_HEIGHT)
+            return false;
+
         // Only grab the ledge if in the air
         if (_ground.IsGrounded)
             return false;
@@ -357,7 +368,7 @@ public class PlayerMovement : MonoBehaviour
         if (forwardVelocity < 0.01f)
             return false;
 
-        return _ledge.LowerBodyTouchingWall && !_ledge.UpperBodyTouchingWall;
+        return true;
     }
 
     private Vector3 AngleForward(float angleDeg)
