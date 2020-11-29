@@ -17,8 +17,8 @@ public class PlayerLedgeDetector : MonoBehaviour
         // our lower body.
         // The lower body should detect a wall, while the upper body should not.
 
-        const float bodyRadius = 0.5f;
-        const float bodyHeight = 2;
+        const float bodyRadius = PlayerMovement.BODY_RADIUS;
+        const float bodyHeight = PlayerMovement.BODY_HEIGHT;
         const float distance = 0.13f;
 
         var lowerBodyStart = transform.position 

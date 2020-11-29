@@ -5,7 +5,6 @@ using UnityEngine;
 public class PlayerGroundDetector : MonoBehaviour
 {
     public const float GROUND_DETECTOR_THICKNESS = 0.1f;
-    public const float GROUND_DETECTOR_RADIUS = 0.5f;
     public const float RAYCAST_DISTANCE = 1000;
     public const float RAYCAST_OFFSET = 1f;
 
@@ -79,8 +78,8 @@ public class PlayerGroundDetector : MonoBehaviour
     private bool CheckBonkingHead()
     {
         return CylinderPhysics.CylinderCast(
-            transform.position + (Vector3.up * 2),
-            GROUND_DETECTOR_RADIUS,
+            transform.position + (Vector3.up * PlayerMovement.BODY_HEIGHT),
+            PlayerMovement.BODY_RADIUS,
             GROUND_DETECTOR_THICKNESS,
             Vector3.up,
             GROUND_DETECTOR_THICKNESS / 2
@@ -96,7 +95,7 @@ public class PlayerGroundDetector : MonoBehaviour
     {
         return CylinderPhysics.CircleCast(
             transform.position + (Vector3.up * RAYCAST_OFFSET),
-            GROUND_DETECTOR_RADIUS,
+            PlayerMovement.BODY_RADIUS,
             RAYCAST_DISTANCE,
             Vector3.down
         );

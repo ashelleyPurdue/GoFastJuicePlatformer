@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PlayerWallDetector : MonoBehaviour
 {
-    public const float BODY_HEIGHT = 2;
+    public const float BODY_HEIGHT = 1.69f;
     public const float BODY_RADIUS = 0.5f;
     public const float WALL_CHECK_DIST = 0.13f;
 

@@ -18,8 +18,8 @@ public class PlayerMovement : MonoBehaviour
     private CharacterController _controller;
 
     // Constants
-    public const float GROUND_DETECTOR_THICKNESS = 0.1f;
-    public const float GROUND_DETECTOR_RADIUS = 0.5f;
+    public const float BODY_HEIGHT = 1.69f;
+    public const float BODY_RADIUS = 0.5f;
 
     public const float JUMP_SPEED = 15;
     public const float RISING_GRAVITY = 30;
