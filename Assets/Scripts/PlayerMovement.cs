@@ -289,7 +289,7 @@ public class PlayerMovement : MonoBehaviour
             }
 
             // Keep HSpeed up-to-date, so it'll be correct when we land.
-            HSpeed = _walkVelocity.magnitude;
+            HSpeed = _walkVelocity.ComponentAlong(Forward);
         }
 
         DebugDisplay.PrintLineFixed($"HSpeed: {HSpeed}");
