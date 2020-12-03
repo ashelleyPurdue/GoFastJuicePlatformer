@@ -38,8 +38,9 @@ public class PlayerMovement : MonoBehaviour
     public const float HACCEL_AIR_BACKWARDS = 15;
 
     public const float BONK_SPEED = -3;
-    public const float LEDGE_GRAB_VSPEED = 10;
+    public const float LEDGE_GRAB_VSPEED = 11;
     public const float LEDGE_GRAB_HSPEED = 4;
+    public const float LEDGE_GRAB_DURATION = 0.15f;
 
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION_GROUND = 15;
@@ -70,6 +71,8 @@ public class PlayerMovement : MonoBehaviour
 
     private float _lastJumpButtonPressTime = 0;
     private bool _jumpReleased;
+
+    private float _ledgeGrabTimer = 0;
 
     private Transform _currentGround;
     private Vector3 _walkVelocity;
@@ -299,7 +302,10 @@ public class PlayerMovement : MonoBehaviour
     {
         // Grab the ledge if we can
         if (!IsGrabbingLedge && CanGrabLedge() && VSpeed < 0)
+        {
             IsGrabbingLedge = true;
+            _ledgeGrabTimer = LEDGE_GRAB_DURATION;
+        }
 
         // HACK: override the VSpeed and HSpeed while the ledge is being grabbed
         if (IsGrabbingLedge)
@@ -308,7 +314,8 @@ public class PlayerMovement : MonoBehaviour
             HSpeed = LEDGE_GRAB_HSPEED;
             _walkVelocity = HSpeed * AngleForward(HAngleDeg);
 
-            if (!CanGrabLedge())
+            _ledgeGrabTimer -= Time.deltaTime;
+            if (_ledgeGrabTimer <= 0)
             {
                 IsGrabbingLedge = false;
             }
