@@ -42,7 +42,7 @@ public class PlayerMovement : MonoBehaviour
     public const float LEDGE_GRAB_HSPEED = 4;
 
     public const float ROT_SPEED_DEG = 360 * 2;
-    public const float FRICTION_GROUND = 20;
+    public const float FRICTION_GROUND = 15;
 
     public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
