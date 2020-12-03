@@ -376,8 +376,10 @@ public class PlayerMovement : MonoBehaviour
             return false;
 
         // Only grab the ledge if we're actually moving toward the wall
-        float velocityTowardWall = _walkVelocity.ComponentAlong(-_wall.LastWallNormal);
-        if (velocityTowardWall < 0.1f)
+        float amountTowardWall = _walkVelocity
+            .normalized
+            .ComponentAlong(-_wall.LastWallNormal);
+        if (amountTowardWall < 0.25f)
             return false;
 
         return true;
