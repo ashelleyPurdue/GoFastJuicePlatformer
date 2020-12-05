@@ -335,10 +335,10 @@ public class PlayerMovement : MonoBehaviour
         if (JumpPressedRecently())
         {
             // Kick away from the wall
-            var kickDir = _wall.LastWallNormal.Flattened().normalized;
+            var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
             float kickSpeed = Mathf.Max(
                 HSPEED_MAX_AIR / 2,
-                _walkVelocity.Flattened().magnitude
+                HSpeed
             );
 
             _walkVelocity = kickDir * kickSpeed;
@@ -435,5 +435,13 @@ public class PlayerMovement : MonoBehaviour
             0,
             Mathf.Sin(Mathf.Deg2Rad * angleDeg)
         );
+    }
+
+    private Vector3 ReflectOffOfSurface(Vector3 v, Vector3 surfaceNormal)
+    {
+        var vectorAlongSurface = v.ProjectOnPlane(surfaceNormal);
+        var vectorIntoSurface = v - vectorAlongSurface;
+
+        return -vectorIntoSurface + vectorAlongSurface;
     }
 }
