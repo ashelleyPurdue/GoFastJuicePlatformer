@@ -25,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
     public const float RISING_GRAVITY = 30;
     public const float SHORT_JUMP_GRAVITY = 40;
     public const float FALLING_GRAVITY = 43;
+    public const float WALL_SLIDE_GRAVITY = 30;
 
     public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
@@ -45,6 +46,7 @@ public class PlayerMovement : MonoBehaviour
 
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION_GROUND = 15;
+    public const float FRICTION_WALL_SLIDE = 10;
 
     public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
@@ -96,101 +98,241 @@ public class PlayerMovement : MonoBehaviour
 
     public void FixedUpdate()
     {
+        // Detect various states
         _ground.UpdateGroundState();
         _ledge.UpdateLedgeDetectorState();
         _wall.UpdateWallState();
 
-        IsWallSliding = 
-            !_ground.IsGrounded &&
-            _wall.IsTouchingWall && 
-            VSpeed < 0;
+        // Start wall-sliding if we're falling while touching a wall
+        // (and somewhat facing toward that wall)
+        if (!IsWallSliding)
+        {
+            IsWallSliding = 
+                !_ground.IsGrounded &&
+                _wall.IsTouchingWall &&
+                Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
+                VSpeed < 0;
+        }
+        // Stop wall-sliding if we leave the wall or stop falling.
+        else
+        {
+            IsWallSliding =
+                !_ground.IsGrounded &&
+                _wall.IsTouchingWall &&
+                VSpeed < 0;
+        }
 
-        // Vertical controls
-        ApplyGravity();
-        JumpControls();
-        
-        // Horizontal controls
-        WalkControls();
+
+        // Adjust the velocity based on the current state
+        if (IsWallSliding)
+            WhileWallSliding();
+        else if (_ground.IsGrounded)
+            WhileGrounded();
+        else
+            WhileAirborne();
+
         ApplyLedgeGrabbing();
 
-        // Apply the current velocity
+        DebugDisplay.PrintLineFixed("HSpeed: " + HSpeed);
+        DebugDisplay.PrintLineFixed("VSpeed: " + VSpeed);
+
+        // Move with the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
 
         // Remember moving-platform stuff for next frame
         _ground.RecordFootprintPos();
     }
 
-    private void ApplyGravity()
+    private void WhileGrounded()
     {
-        // Decide how much gravity to use
+        // Stop falling when we hit the ground.
+        VSpeed = 0;
+
+        // HACK: Snap to the ground if we're hovering over it a little bit.
+        if (_ground.HeightAboveGround > 0)
+            VSpeed = -_ground.HeightAboveGround / Time.deltaTime;
         
-        float gravity;
-        if (VSpeed < 0)
+        // If we obtained negative hspeed while in the air(EG: from air braking),
+        // bring it back to zero so the player doesn't go flying backwards.
+        if (HSpeed < 0)
+            HSpeed = 0;
+
+        GroundedControls();
+    }
+    private void GroundedControls()
+    {
+        // Jump when the button is pressed and we're on the ground.
+        // Well, OK, that's a little too strict.  
+        // We should let the player press the jump button a little bit before 
+        // hitting the ground.
+        if (JumpPressedRecently())
         {
-            // Use more gravity when we're falling so the jump arc feels "squishier"
-            gravity = FALLING_GRAVITY;
-        }
-        else
-        {
-            // Use less gravity while jump is being held, for variable jumping.
-            gravity = _input.JumpHeld && !_jumpReleased
-                ? RISING_GRAVITY
-                : SHORT_JUMP_GRAVITY;
+            _jumpReleased = false;
+            VSpeed = JUMP_SPEED;
+            StartedJumping.Invoke();
         }
 
-        // Apply that gravity to the VSpeed.
+        // On the ground, we let the player turn without sliding around or losing
+        // speed.
+        // We do this by keeping track of their speed and angle separately.
+        // The target speed is controlled by the magnitude of the left stick.
+        // The target angle is controlled by the direction of the left stick.
+
+        // Speed up/slow down with the left stick
+        var inputVector = GetWalkInput();
+        float hSpeedIntended = inputVector.magnitude * HSPEED_MAX_GROUND;
+
+        if (hSpeedIntended < HSPEED_MIN)
+            hSpeedIntended = 0;
+
+        float accel = HSpeed < hSpeedIntended
+            ? HACCEL_GROUND
+            : FRICTION_GROUND;
+
+        HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
+
+        // HACK: Immediately accelerate to the minimum speed.
+        // This makes the controls feel snappy and responsive, while still
+        // having a feeling of acceleration.
+        if (hSpeedIntended > 0 && HSpeed < HSPEED_MIN)
+            HSpeed = HSPEED_MIN;
+
+        // Rotate with the left stick
+        if (inputVector.magnitude > 0.001f)
+        {
+            // Gradually rotate until we're facing the direction the stick
+            // is pointing
+            float targetAngleDeg = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
+
+            HAngleDeg = Mathf.MoveTowardsAngle(
+                HAngleDeg,
+                targetAngleDeg,
+                ROT_SPEED_DEG * Time.deltaTime
+            );
+
+            // ...unless we're going really slow, then just pivot instantly.
+            if (HSpeed < MAX_PIVOT_SPEED)
+                HAngleDeg = targetAngleDeg;
+        }
+
+        // Update the velocity based on HSpeed
+        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+    }
+
+    private void WhileAirborne()
+    {
+        // Apply gravity
+        // Use less gravity while jump is being held, for variable-height jumping.
+        // Use more gravity when we're falling so the jump arc feels "squishier"
+        float gravity = _input.JumpHeld && !_jumpReleased
+            ? RISING_GRAVITY
+            : SHORT_JUMP_GRAVITY;
+
+        if (VSpeed < 0)
+            gravity = FALLING_GRAVITY;
+
         VSpeed -= gravity * Time.deltaTime;
 
         // Cap the VSpeed at the terminal velocity
-        float terminalVelocity = IsWallSliding
-            ? TERMINAL_VELOCITY_WALL_SLIDE
-            : TERMINAL_VELOCITY_AIR;
-        
-        if (VSpeed < terminalVelocity)
-            VSpeed = terminalVelocity;
-
-        if (_ground.IsGrounded)
-        {
-            // Stop falling when we hit the ground.
-            VSpeed = 0;
-
-            // HACK: Snap to the ground if we're hovering over it a little bit.
-            if (_ground.HeightAboveGround > 0)
-                VSpeed = -_ground.HeightAboveGround / Time.deltaTime;
-            
-            // If we obtained negative hspeed while in the air(EG: from air braking),
-            // bring it back to zero so the player doesn't go flying backwards.
-            if (HSpeed < 0)
-                HSpeed = 0;
-        }
+        if (VSpeed < TERMINAL_VELOCITY_AIR)
+            VSpeed = TERMINAL_VELOCITY_AIR;
 
         // Start going downwards if you bonk your head on the ceiling.
         // Don't bonk your head!
         if (VSpeed > 0 && _ground.IsBonkingHead)
             VSpeed = BONK_SPEED;
 
-        DebugDisplay.PrintLineFixed("VSpeed: " + VSpeed);
+        AirborneControls();
     }
-
-    private void JumpControls()
+    private void AirborneControls()
     {
-        // Jump when the button is pressed and we're on the ground.
-        // Well, OK, that's a little too strict.  
-        // We should let the player press the jump button a little bit before hitting the ground.
-        // And we should also let them do it a little bit after leaving the ground.
-        bool jumpPressedRecently = (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
-        bool wasGroundedRecently = (Time.time - COYOTE_TIME < _ground.LastGroundedTime);
-
+        // Stop variable-height jumping if the button was released.
         if (!_input.JumpHeld)
             _jumpReleased = true;
 
-        if (wasGroundedRecently && jumpPressedRecently)
+        // Let the player jump for a short period after walking off a ledge,
+        // because everyone is human.  
+        // Well, except maybe Wile E. Coyote, but he makes mistakes too. 
+        bool wasGroundedRecently = (Time.time - COYOTE_TIME < _ground.LastGroundedTime);
+        if (wasGroundedRecently && JumpPressedRecently())
         {
             _jumpReleased = false;
             VSpeed = JUMP_SPEED;
             StartedJumping.Invoke();
+            DebugDisplay.PrintLineFixed("Coyote-time jump!");
         }
-        else if (IsWallSliding && jumpPressedRecently)
+
+        // In the air, we let the player "nudge" their velocity by applying a
+        // force in the direction the stick is being pushed.
+        // Unlike on the ground, you *will* lose speed and slide around if you
+        // try to change your direction.
+        var inputVector = GetWalkInput();
+
+        Vector3 forward = AngleForward(HAngleDeg);
+        bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
+        bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
+        bool movingForwards = _walkVelocity.normalized.ComponentAlong(forward) > 0;
+
+        float accel = HACCEL_AIR;
+        float maxSpeed = HSPEED_MAX_GROUND;
+
+        // Give them a little bit of help if they're pushing backwards
+        // on the stick, so it's easier to "abort" a poorly-timed jump.
+        if (pushingBackwards)
+            accel = HACCEL_AIR_BACKWARDS;
+
+        // Let the player exceed their usual max speed if they're moving
+        // forward.
+        // This makes bunny hopping slightly faster than walking, which I
+        // hear makes your game more popular.
+        if (movingForwards)
+            maxSpeed = HSPEED_MAX_AIR;
+        
+        // If the player is already going faster than their usual max speed,
+        // make it a little harder to accelerate past it.
+        if (pushingForwards && _walkVelocity.magnitude >= HSPEED_MAX_GROUND)
+            accel = HACCEL_AIR_EXTRA;
+
+        // WHEW.  Finially we can apply a force to the player.
+        // Think there were enough special cases, earlier?
+        _walkVelocity += inputVector * accel * Time.deltaTime;
+        if (_walkVelocity.magnitude > maxSpeed)
+        {
+            _walkVelocity.Normalize();
+            _walkVelocity *= maxSpeed;
+        }
+
+        // Keep HSpeed up-to-date, so it'll be correct when we land.
+        HSpeed = _walkVelocity.ComponentAlong(Forward);
+    }
+
+    private void WhileWallSliding()
+    {
+        // Apply gravity
+        float gravity = WALL_SLIDE_GRAVITY;
+        VSpeed -= gravity * Time.deltaTime;
+
+        if (VSpeed < TERMINAL_VELOCITY_WALL_SLIDE)
+            VSpeed = TERMINAL_VELOCITY_WALL_SLIDE;
+
+        // Cancel all walking velocity pointing "inside" the wall.
+        _walkVelocity = _walkVelocity.ProjectOnPlane(_wall.LastWallNormal);
+        HSpeed = _walkVelocity.magnitude;
+
+        // Apply horizontal friction, since sliding on a wall naturally slows
+        // you down.
+        HSpeed -= FRICTION_WALL_SLIDE * Time.deltaTime;
+        if (HSpeed < 0)
+            HSpeed = 0;
+
+        _walkVelocity = HSpeed * _walkVelocity.normalized;
+
+        WallSlidingControls();
+    }
+    private void WallSlidingControls()
+    {
+        // Wall kick when we press the jump button
+        if (JumpPressedRecently())
         {
             // Kick away from the wall
             var kickDir = _wall.LastWallNormal.Flattened().normalized;
@@ -207,106 +349,6 @@ public class PlayerMovement : MonoBehaviour
             VSpeed = JUMP_SPEED;
             StartedJumping.Invoke();
         }
-    }
-
-    private void WalkControls()
-    {
-        var inputVector = GetWalkInput();
-        
-        // On the ground, we let the player turn without sliding around or losing
-        // speed.
-        // We do this by keeping track of their speed and angle separately.
-        // The target speed is controlled by the magnitude of the left stick.
-        // The target angle is controlled by the direction of the left stick.
-        if (_ground.IsGrounded)
-        {
-            // Speed up/slow down with the left stick
-            float hSpeedIntended = inputVector.magnitude * HSPEED_MAX_GROUND;
-
-            if (hSpeedIntended < HSPEED_MIN)
-                hSpeedIntended = 0;
-
-            float accel = HSpeed < hSpeedIntended
-                ? HACCEL_GROUND
-                : FRICTION_GROUND;
-
-            HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
-
-            // HACK: Immediately accelerate to the minimum speed.
-            // This makes the controls feel snappy and responsive, while still
-            // having a feeling of acceleration.
-            if (hSpeedIntended > 0 && HSpeed < HSPEED_MIN)
-                HSpeed = HSPEED_MIN;
-
-
-            // Rotate with the left stick
-            if (inputVector.magnitude > 0.001f)
-            {
-                // Gradually rotate until we're facing the direction the stick
-                // is pointing
-                float targetAngleDeg = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
-
-                HAngleDeg = Mathf.MoveTowardsAngle(
-                    HAngleDeg,
-                    targetAngleDeg,
-                    ROT_SPEED_DEG * Time.deltaTime
-                );
-
-                // ...unless we're going really slow, then just pivot instantly.
-                if (HSpeed < MAX_PIVOT_SPEED)
-                    HAngleDeg = targetAngleDeg;
-            }
-
-            // Update the velocity based on HSpeed
-            _walkVelocity = HSpeed * AngleForward(HAngleDeg);
-        }
-
-        // In the air, we let the player "nudge" their velocity by applying a
-        // force in the direction the stick is being pushed.
-        // Unlike on the ground, you *will* lose speed and slide around if you
-        // try to change your direction.
-        if (!_ground.IsGrounded)
-        {
-            Vector3 forward = AngleForward(HAngleDeg);
-            
-            bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
-            bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
-            bool movingForwards = _walkVelocity.normalized.ComponentAlong(forward) > 0;
-
-            float accel = HACCEL_AIR;
-            float maxSpeed = HSPEED_MAX_GROUND;
-
-            // Give them a little bit of help if they're pushing backwards
-            // on the stick, so it's easier to "abort" a poorly-timed jump.
-            if (pushingBackwards)
-                accel = HACCEL_AIR_BACKWARDS;
-
-            // Let the player exceed their usual max speed if they're moving
-            // forward.
-            // This makes bunny hopping slightly faster than walking, which I
-            // hear makes your game more popular.
-            if (movingForwards)
-                maxSpeed = HSPEED_MAX_AIR;
-            
-            // If the player is already going faster than their usual max speed,
-            // make it a little harder to accelerate past it.
-            if (pushingForwards && _walkVelocity.magnitude >= HSPEED_MAX_GROUND)
-                accel = HACCEL_AIR_EXTRA;
-
-            // WHEW.  Finially we can apply a force to the player.
-            // Think there were enough special cases, earlier?
-            _walkVelocity += inputVector * accel * Time.deltaTime;
-            if (_walkVelocity.magnitude > maxSpeed)
-            {
-                _walkVelocity.Normalize();
-                _walkVelocity *= maxSpeed;
-            }
-
-            // Keep HSpeed up-to-date, so it'll be correct when we land.
-            HSpeed = _walkVelocity.ComponentAlong(Forward);
-        }
-
-        DebugDisplay.PrintLineFixed($"HSpeed: {HSpeed}");
     }
 
     private void ApplyLedgeGrabbing()
@@ -361,6 +403,11 @@ public class PlayerMovement : MonoBehaviour
         return adjustedInput;
     }
 
+    private bool JumpPressedRecently()
+    {
+        return (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
+    }
+
     private bool CanGrabLedge()
     {
         DebugDisplay.DrawPoint(Color.red, transform.position + (Vector3.up * _ledge.LastLedgeHeight));
@@ -374,23 +421,8 @@ public class PlayerMovement : MonoBehaviour
         if (_ledge.LastLedgeHeight > BODY_HEIGHT)
             return false;
 
-        // Only grab the ledge if in the air
-        if (_ground.IsGrounded)
-            return false;
-        
-        // Only grab the ledge if we're actually moving in the direction we're
-        // facing.
-        var forward = AngleForward(HAngleDeg);
-        float forwardVelocity = _walkVelocity.ComponentAlong(forward);
-
-        if (forwardVelocity < 0.01f)
-            return false;
-
-        // Only grab the ledge if we're actually moving toward the wall
-        float amountTowardWall = _walkVelocity
-            .normalized
-            .ComponentAlong(-_wall.LastWallNormal);
-        if (amountTowardWall < 0.25f)
+        // Only grab the ledge if we're wall-sliding
+        if (!IsWallSliding)
             return false;
 
         return true;
