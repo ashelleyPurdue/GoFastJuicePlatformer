@@ -105,23 +105,11 @@ public class PlayerMovement : MonoBehaviour
 
         // Start wall-sliding if we're falling while touching a wall
         // (and somewhat facing toward that wall)
-        if (!IsWallSliding)
-        {
-            IsWallSliding = 
-                !_ground.IsGrounded &&
-                _wall.IsTouchingWall &&
-                Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
-                VSpeed < 0;
-        }
-        // Stop wall-sliding if we leave the wall or stop falling.
-        else
-        {
-            IsWallSliding =
-                !_ground.IsGrounded &&
-                _wall.IsTouchingWall &&
-                VSpeed < 0;
-        }
-
+        IsWallSliding = 
+            !_ground.IsGrounded &&
+            _wall.IsTouchingWall &&
+            Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
+            VSpeed < 0;
 
         // Adjust the velocity based on the current state
         if (IsWallSliding)
