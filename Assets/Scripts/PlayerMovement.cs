@@ -325,7 +325,7 @@ public class PlayerMovement : MonoBehaviour
             // Kick away from the wall
             var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
             float kickSpeed = Mathf.Max(
-                HSPEED_MAX_AIR / 2,
+                HSPEED_MAX_GROUND,
                 HSpeed
             );
 
