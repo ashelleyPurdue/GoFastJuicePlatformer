@@ -18,7 +18,7 @@ public class PlayerMovement : MonoBehaviour
     private CharacterController _controller;
 
     // Constants
-    public const float BODY_HEIGHT = 1.69f;
+    public const float BODY_HEIGHT = 1.58775f;
     public const float BODY_RADIUS = 0.375f;
 
     public const float JUMP_SPEED = 15;
