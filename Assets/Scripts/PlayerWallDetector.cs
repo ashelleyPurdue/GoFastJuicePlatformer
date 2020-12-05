@@ -5,8 +5,6 @@ using UnityEngine;
 
 public class PlayerWallDetector : MonoBehaviour
 {
-    public const float BODY_HEIGHT = 1.69f;
-    public const float BODY_RADIUS = 0.5f;
     public const float WALL_CHECK_DIST = 0.13f;
 
     public Vector3 LastWallNormal {get; private set;}
@@ -17,8 +15,8 @@ public class PlayerWallDetector : MonoBehaviour
         // Do a capsule overlap to see if we're touching a wall
         var wallHits = CylinderPhysics.OverlapCylinder(
             transform.position,
-            BODY_RADIUS + WALL_CHECK_DIST,
-            BODY_HEIGHT
+            PlayerMovement.BODY_RADIUS + WALL_CHECK_DIST,
+            PlayerMovement.BODY_HEIGHT
         );
         IsTouchingWall = wallHits.Any(c => c.transform != this.transform);
 
@@ -71,12 +69,12 @@ public class PlayerWallDetector : MonoBehaviour
         var orientation = Quaternion.LookRotation(forward, Vector3.up);
 
         var halfExtents = new Vector3(
-            BODY_RADIUS,
-            BODY_HEIGHT / 2,
-            BODY_RADIUS
+            PlayerMovement.BODY_RADIUS,
+            PlayerMovement.BODY_HEIGHT / 2,
+            PlayerMovement.BODY_RADIUS
         );
 
-        var boxCenter = transform.position + (Vector3.up * BODY_HEIGHT / 2);
+        var boxCenter = transform.position + (Vector3.up * PlayerMovement.BODY_HEIGHT / 2);
 
         RaycastHit hit;
         bool hitAnything = Physics.BoxCast(
