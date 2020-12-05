@@ -26,6 +26,7 @@ public class PlayerMovement : MonoBehaviour
     public const float SHORT_JUMP_GRAVITY = 40;
     public const float FALLING_GRAVITY = 43;
 
+    public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
     public const float HSPEED_MAX_AIR = 10;
 
@@ -221,11 +222,21 @@ public class PlayerMovement : MonoBehaviour
         {
             // Speed up/slow down with the left stick
             float hSpeedIntended = inputVector.magnitude * HSPEED_MAX_GROUND;
+
+            if (hSpeedIntended < HSPEED_MIN)
+                hSpeedIntended = 0;
+
             float accel = HSpeed < hSpeedIntended
                 ? HACCEL_GROUND
                 : FRICTION_GROUND;
 
             HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
+
+            // HACK: Immediately accelerate to the minimum speed.
+            // This makes the controls feel snappy and responsive, while still
+            // having a feeling of acceleration.
+            if (hSpeedIntended > 0 && HSpeed < HSPEED_MIN)
+                HSpeed = HSPEED_MIN;
 
 
             // Rotate with the left stick
