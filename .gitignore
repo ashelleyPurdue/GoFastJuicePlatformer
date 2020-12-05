@@ -76,3 +76,4 @@ crashlytics-build.properties
 *.blend*
 !*.blend
 !*.blend.meta
+ProjectSettings/Packages/com.unity.probuilder/Settings.json
