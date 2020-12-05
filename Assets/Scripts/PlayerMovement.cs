@@ -19,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
 
     // Constants
     public const float BODY_HEIGHT = 1.69f;
-    public const float BODY_RADIUS = 0.5f;
+    public const float BODY_RADIUS = 0.375f;
 
     public const float JUMP_SPEED = 15;
     public const float RISING_GRAVITY = 30;
