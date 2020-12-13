@@ -388,6 +388,11 @@ public class PlayerMovement : MonoBehaviour
         adjustedInput.Normalize();
         adjustedInput *= rawInput.magnitude;
 
+        // Cap the magnitude at 1.0, because some people like to play with
+        // keyboards.
+        if (adjustedInput.magnitude > 1)
+            adjustedInput.Normalize();
+
         return adjustedInput;
     }
 
