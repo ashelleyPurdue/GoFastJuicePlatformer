@@ -20,12 +20,13 @@ public class PlayerMovement : MonoBehaviour
     // Constants
     public const float BODY_HEIGHT = 1.58775f;
     public const float BODY_RADIUS = 0.375f;
+    
+    public const float SHORT_JUMP_HEIGHT = 3f;
+    public const float SHORT_JUMP_TIME = 0.448f;
 
-    public const float JUMP_SPEED = 15;
-    public const float RISING_GRAVITY = 30;
-    public const float SHORT_JUMP_GRAVITY = 40;
-    public const float FALLING_GRAVITY = 43;
-    public const float WALL_SLIDE_GRAVITY = 30;
+    public const float FULL_JUMP_HEIGHT = 5;
+    public const float FULL_JUMP_RISE_TIME = 0.512f;
+    public const float FULL_JUMP_FALL_TIME = 0.416f;
 
     public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
@@ -56,6 +57,14 @@ public class PlayerMovement : MonoBehaviour
     // Events
     public UnityEvent StartedJumping;
 
+    // Computed jump/gravity values
+    private float _jumpSpeed;
+    private float _fallingGravity;
+    private float _fullJumpRiseGravity;
+    private float _shortJumpRiseGravity;
+    private float _wallSlideGravity => _fullJumpRiseGravity;
+
+
     // Accessors
     public Vector3 Forward => AngleForward(HAngleDeg);
 
@@ -72,14 +81,13 @@ public class PlayerMovement : MonoBehaviour
     public float HSpeed {get; private set;}
     public float VSpeed {get; private set;}
 
-    private float _lastJumpButtonPressTime = 0;
+    private float _lastJumpButtonPressTime = float.NegativeInfinity;
     private bool _jumpReleased;
 
     private float _ledgeGrabTimer = 0;
 
     private Transform _currentGround;
     private Vector3 _walkVelocity;
-
 
     public void Awake()
     {
@@ -88,6 +96,21 @@ public class PlayerMovement : MonoBehaviour
         _ledge = GetComponent<PlayerLedgeDetector>();
         _wall = GetComponent<PlayerWallDetector>();
         _controller = GetComponent<CharacterController>();
+
+        // Compute jump parameters
+        var jumpParams = new JumpParameters
+        {
+            ShortJumpHeight  = SHORT_JUMP_HEIGHT,
+            FullJumpHeight   = FULL_JUMP_HEIGHT,
+            FullJumpRiseTime = FULL_JUMP_RISE_TIME,
+            FullJumpFallTime = FULL_JUMP_FALL_TIME
+        };
+        var jumpValues = GravityMath.ComputeGravity(jumpParams);
+
+        _jumpSpeed              = jumpValues.JumpVelocity;
+        _fallingGravity         = jumpValues.FallGravity;
+        _fullJumpRiseGravity  = jumpValues.FullJumpRiseGravity;
+        _shortJumpRiseGravity = jumpValues.ShortJumpRiseGravity;
     }
 
     public void Update()
@@ -156,7 +179,7 @@ public class PlayerMovement : MonoBehaviour
         if (JumpPressedRecently())
         {
             _jumpReleased = false;
-            VSpeed = JUMP_SPEED;
+            VSpeed = _jumpSpeed;
             StartedJumping.Invoke();
         }
 
@@ -213,11 +236,11 @@ public class PlayerMovement : MonoBehaviour
         // Use less gravity while jump is being held, for variable-height jumping.
         // Use more gravity when we're falling so the jump arc feels "squishier"
         float gravity = _input.JumpHeld && !_jumpReleased
-            ? RISING_GRAVITY
-            : SHORT_JUMP_GRAVITY;
+            ? _fullJumpRiseGravity
+            : _shortJumpRiseGravity;
 
         if (VSpeed < 0)
-            gravity = FALLING_GRAVITY;
+            gravity = _fallingGravity;
 
         VSpeed -= gravity * Time.deltaTime;
 
@@ -242,10 +265,10 @@ public class PlayerMovement : MonoBehaviour
         // because everyone is human.  
         // Well, except maybe Wile E. Coyote, but he makes mistakes too. 
         bool wasGroundedRecently = (Time.time - COYOTE_TIME < _ground.LastGroundedTime);
-        if (wasGroundedRecently && JumpPressedRecently())
+        if (VSpeed < 0 && wasGroundedRecently && JumpPressedRecently())
         {
             _jumpReleased = false;
-            VSpeed = JUMP_SPEED;
+            VSpeed = _jumpSpeed;
             StartedJumping.Invoke();
             DebugDisplay.PrintLineFixed("Coyote-time jump!");
         }
@@ -297,7 +320,7 @@ public class PlayerMovement : MonoBehaviour
     private void WhileWallSliding()
     {
         // Apply gravity
-        float gravity = WALL_SLIDE_GRAVITY;
+        float gravity = _wallSlideGravity;
         VSpeed -= gravity * Time.deltaTime;
 
         if (VSpeed < TERMINAL_VELOCITY_WALL_SLIDE)
@@ -334,7 +357,7 @@ public class PlayerMovement : MonoBehaviour
 
             // Jump up
             _jumpReleased = false;
-            VSpeed = JUMP_SPEED;
+            VSpeed = _jumpSpeed;
             StartedJumping.Invoke();
         }
     }
