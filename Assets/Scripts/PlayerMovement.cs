@@ -25,8 +25,8 @@ public class PlayerMovement : MonoBehaviour
     public const float SHORT_JUMP_TIME = 0.448f;
 
     public const float FULL_JUMP_HEIGHT = 5;
-    public const float FULL_JUMP_RISE_TIME = 0.512f;
-    public const float FULL_JUMP_FALL_TIME = 0.416f;
+    public const float FULL_JUMP_RISE_TIME = 0.404f;
+    public const float FULL_JUMP_FALL_TIME = 0.328f;
 
     public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
