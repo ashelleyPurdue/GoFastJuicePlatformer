@@ -111,6 +111,31 @@ public class PlayerMovement : MonoBehaviour
         _shortJumpRiseGravity = jumpValues.ShortJumpRiseGravity;
     }
 
+    /// <summary>
+    /// Resets the state to a consistent baseline
+    /// </summary>
+    public void ResetState()
+    {
+        HAngleDeg = 0;
+        HSpeed = 0;
+        VSpeed = 0;
+        _walkVelocity = Vector3.zero;
+
+        _lastJumpButtonPressTime = float.NegativeInfinity;
+        _jumpReleased = false;
+        _ledgeGrabTimer = 0;
+
+        IsGrabbingLedge = false;
+        IsWallSliding = false;
+
+        _ground.RecordFootprintPos();
+        _ground.UpdateGroundState();
+        _ground.RecordFootprintPos();
+
+        _wall.UpdateWallState();
+        _ledge.UpdateLedgeDetectorState();
+    }
+
     public void Update()
     {
         if (_input.JumpPressed)
