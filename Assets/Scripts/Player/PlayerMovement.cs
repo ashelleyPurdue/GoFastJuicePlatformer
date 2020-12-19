@@ -85,8 +85,6 @@ public class PlayerMovement : MonoBehaviour
     private bool _jumpReleased;
 
     private float _ledgeGrabTimer = 0;
-
-    private Transform _currentGround;
     private Vector3 _walkVelocity;
 
     public void Awake()
