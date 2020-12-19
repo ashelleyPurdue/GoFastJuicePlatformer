@@ -55,10 +55,19 @@ public static class CylinderPhysics
         float radius,
         float height,
         Vector3 direction,
-        float maxDistance = ENDLESS_DISTANCE
+        float maxDistance = ENDLESS_DISTANCE,
+        QueryTriggerInteraction hitTrigger = QueryTriggerInteraction.UseGlobal
     )
     {
-        return CylinderCastAll(origin, radius, height, direction, maxDistance).Length > 0;
+        var allHits = CylinderCastAll(
+            origin,
+            radius,
+            height,
+            direction,
+            maxDistance,
+            hitTrigger
+        );
+        return allHits.Length > 0;
     }
 
     public static RaycastHit[] CylinderCastAll(
@@ -66,7 +75,8 @@ public static class CylinderPhysics
         float radius,
         float height,
         Vector3 direction,
-        float maxDistance = ENDLESS_DISTANCE
+        float maxDistance = ENDLESS_DISTANCE,
+        QueryTriggerInteraction hitTrigger = QueryTriggerInteraction.UseGlobal
     )
     {
         Debug.DrawLine(origin, origin + (direction * maxDistance));
@@ -92,7 +102,15 @@ public static class CylinderPhysics
             radius
         );
         var boxPos = origin - new Vector3(0, height / 2, 0);
-        var boxHits = Physics.BoxCastAll(boxPos, halfExtents, direction, orientation, maxDistance);
+        var boxHits = Physics.BoxCastAll(
+            boxPos,
+            halfExtents,
+            direction,
+            orientation,
+            maxDistance,
+            Physics.DefaultRaycastLayers,
+            hitTrigger
+        );
         
         var capsulePointOffset = direction.normalized * (height * 2);
         var capsuleHits = new HashSet<Collider>(Physics.OverlapCapsule
@@ -124,7 +142,8 @@ public static class CylinderPhysics
         Vector3 origin,
         float radius,
         float maxDistance,
-        Vector3 direction
+        Vector3 direction,
+        QueryTriggerInteraction hitTriggers = QueryTriggerInteraction.UseGlobal
     )
     {
         // Create a coordinate system where "direction" points forward.
@@ -141,7 +160,9 @@ public static class CylinderPhysics
             radius,
             direction,
             out hit,
-            maxDistance
+            maxDistance,
+            Physics.DefaultRaycastLayers,
+            hitTriggers
         );
 
         if (!hitAnything)

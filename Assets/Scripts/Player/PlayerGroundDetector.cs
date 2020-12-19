@@ -97,7 +97,8 @@ public class PlayerGroundDetector : MonoBehaviour
             transform.position + (Vector3.up * RAYCAST_OFFSET),
             PlayerMovement.BODY_RADIUS,
             RAYCAST_DISTANCE,
-            Vector3.down
+            Vector3.down,
+            QueryTriggerInteraction.Ignore
         );
     }
 }
