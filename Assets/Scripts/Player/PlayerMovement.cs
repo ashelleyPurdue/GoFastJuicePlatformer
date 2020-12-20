@@ -39,7 +39,7 @@ public class PlayerMovement : MonoBehaviour
     public const float HACCEL_AIR = 9;
     public const float HACCEL_AIR_EXTRA = 2;
     public const float HACCEL_AIR_BACKWARDS = 15;
-    public const float JUMP_HSPEED_MULTIPLIER = 1.2f;
+
 
     public const float BONK_SPEED = -3;
     public const float LEDGE_GRAB_VSPEED = 11;
@@ -53,6 +53,11 @@ public class PlayerMovement : MonoBehaviour
     public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
     
+    // If you jump again shortly after you land, you'll do a "chained jump."
+    // This is like the "double jump" from 3D Mario games.
+    public const float CHAINED_JUMP_HSPEED_MULT = 1.2f;
+    public const float CHAINED_JUMP_TIME_WINDOW = 0.1f;
+
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
 
     // Events
@@ -84,6 +89,9 @@ public class PlayerMovement : MonoBehaviour
 
     private float _lastJumpButtonPressTime = float.NegativeInfinity;
     private bool _jumpReleased;
+
+    private float _chainedJumpTimer = 0;
+    private int _chainedJumpCount = 0;
 
     private float _ledgeGrabTimer = 0;
     private Vector3 _walkVelocity;
@@ -125,6 +133,8 @@ public class PlayerMovement : MonoBehaviour
         _lastJumpButtonPressTime = float.NegativeInfinity;
         _jumpReleased = false;
         _ledgeGrabTimer = 0;
+        _chainedJumpTimer = 0;
+        _chainedJumpCount = 0;
 
         IsGrabbingLedge = false;
         IsWallSliding = false;
@@ -170,7 +180,9 @@ public class PlayerMovement : MonoBehaviour
 
         DebugDisplay.PrintLineFixed("HSpeed: " + HSpeed);
         DebugDisplay.PrintLineFixed("VSpeed: " + VSpeed);
-
+        DebugDisplay.PrintLineFixed("Chained jump count: " + _chainedJumpCount);
+        DebugDisplay.PrintLineFixed("Chained jump timer: " + _chainedJumpTimer);
+        
         // HACK: Allow the player to be teleported by directly modifying
         // transform.position.
         //
@@ -212,6 +224,18 @@ public class PlayerMovement : MonoBehaviour
         // bring it back to zero so the player doesn't go flying backwards.
         if (HSpeed < 0)
             HSpeed = 0;
+
+        // Start the chained jump timer once we land
+        if (!_ground.WasGroundedLastFrame)
+            _chainedJumpTimer = CHAINED_JUMP_TIME_WINDOW;
+
+        // Reset the chained jump count if you wait too long after landing
+        _chainedJumpTimer -= Time.deltaTime;
+        if (_chainedJumpTimer < 0)
+        {
+            _chainedJumpTimer = 0;
+            _chainedJumpCount = 0;
+        }
 
         GroundedControls();
     }
@@ -266,10 +290,7 @@ public class PlayerMovement : MonoBehaviour
         // hitting the ground.
         if (JumpPressedRecently())
         {
-            _jumpReleased = false;
-            VSpeed = _jumpSpeed;
-            HSpeed *= JUMP_HSPEED_MULTIPLIER;   // Speed up a bit when jumping
-            StartedJumping.Invoke();
+            StartGroundJump();
         }
 
         // Update the velocity based on HSpeed
@@ -313,9 +334,7 @@ public class PlayerMovement : MonoBehaviour
         bool wasGroundedRecently = (Time.time - COYOTE_TIME < _ground.LastGroundedTime);
         if (VSpeed < 0 && wasGroundedRecently && JumpPressedRecently())
         {
-            _jumpReleased = false;
-            VSpeed = _jumpSpeed;
-            StartedJumping.Invoke();
+            StartGroundJump();
             DebugDisplay.PrintLineFixed("Coyote-time jump!");
         }
 
@@ -430,6 +449,18 @@ public class PlayerMovement : MonoBehaviour
                 IsGrabbingLedge = false;
             }
         }
+    }
+
+    private void StartGroundJump()
+    {
+        _chainedJumpCount++;
+        _jumpReleased = false;
+        VSpeed = _jumpSpeed;
+        StartedJumping.Invoke();
+
+        // Give the player a speed boost on their second chained jump
+        if (_chainedJumpCount == 2)
+            HSpeed *= CHAINED_JUMP_HSPEED_MULT;
     }
 
     /// <summary>
