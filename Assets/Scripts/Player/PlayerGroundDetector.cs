@@ -11,6 +11,7 @@ public class PlayerGroundDetector : MonoBehaviour
     public Vector3 GroundVelocity {get; private set;}
     public Transform CurrentGround {get; private set;}
     public bool IsGrounded {get; private set;}
+    public bool WasGroundedLastFrame {get; private set;}
     public float HeightAboveGround {get; private set;}
     public float LastGroundedTime {get; private set;}
 
@@ -32,6 +33,7 @@ public class PlayerGroundDetector : MonoBehaviour
             : RAYCAST_DISTANCE;   // If we're over a void, then we're Really Fuckin' High(tm)
 
         // We're grounded if our height is below a threshold
+        WasGroundedLastFrame = IsGrounded;
         IsGrounded = HeightAboveGround < GROUND_DETECTOR_THICKNESS;
 
         // Update the current ground.
