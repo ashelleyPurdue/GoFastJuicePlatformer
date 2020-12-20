@@ -37,7 +37,6 @@ public class PlayerMovement : MonoBehaviour
 
     public const float HACCEL_GROUND = 15;
     public const float HACCEL_AIR = 9;
-    public const float HACCEL_AIR_EXTRA = 2;
     public const float HACCEL_AIR_BACKWARDS = 15;
 
 
@@ -350,33 +349,39 @@ public class PlayerMovement : MonoBehaviour
         bool movingForwards = _walkVelocity.normalized.ComponentAlong(forward) > 0;
 
         float accel = HACCEL_AIR;
-        float maxSpeed = HSPEED_MAX_GROUND;
+        float maxSpeed = HSPEED_MAX_AIR;
+
+        // Reduce the speed limit when moving backwards.
+        // If you're wanna go fast, you gotta go forward.
+        if (!movingForwards)
+            maxSpeed = HSPEED_MAX_GROUND;
 
         // Give them a little bit of help if they're pushing backwards
         // on the stick, so it's easier to "abort" a poorly-timed jump.
         if (pushingBackwards)
             accel = HACCEL_AIR_BACKWARDS;
 
-        // Let the player exceed their usual max speed if they're moving
-        // forward.
-        // This makes bunny hopping slightly faster than walking, which I
-        // hear makes your game more popular.
-        if (movingForwards)
-            maxSpeed = HSPEED_MAX_AIR;
-        
-        // If the player is already going faster than their usual max speed,
-        // make it a little harder to accelerate past it.
-        if (pushingForwards && _walkVelocity.magnitude >= HSPEED_MAX_GROUND)
-            accel = HACCEL_AIR_EXTRA;
+        // Apply a force to get our new velocity.
+        // Note that you can only get up to the normal ground speed this way.
+        // We won't slow you down if you're already going faster than that, though
+        // (eg: due to the speed boost from chained jumping)
+        var oldVelocity = _walkVelocity;
+        var newVelocity = _walkVelocity + (inputVector * accel * Time.deltaTime);
 
-        // WHEW.  Finially we can apply a force to the player.
-        // Think there were enough special cases, earlier?
-        _walkVelocity += inputVector * accel * Time.deltaTime;
+        bool wasAboveGroundSpeedLimit = oldVelocity.magnitude   > HSPEED_MAX_GROUND;
+        bool nowAboveGroundSpeedLimit = _walkVelocity.magnitude > HSPEED_MAX_GROUND;
+
+        if (wasAboveGroundSpeedLimit)
+            newVelocity = oldVelocity;
+        if (!wasAboveGroundSpeedLimit && nowAboveGroundSpeedLimit)
+            newVelocity = newVelocity.normalized * HSPEED_MAX_GROUND;
+
+        _walkVelocity = newVelocity;
+
+        // We WILL, however, slow you down if you're going past the max air
+        // speed.  That's a hard maximum.
         if (_walkVelocity.magnitude > maxSpeed)
-        {
-            _walkVelocity.Normalize();
-            _walkVelocity *= maxSpeed;
-        }
+            _walkVelocity = _walkVelocity.normalized * maxSpeed;
 
         // Keep HSpeed up-to-date, so it'll be correct when we land.
         HSpeed = _walkVelocity.ComponentAlong(Forward);
