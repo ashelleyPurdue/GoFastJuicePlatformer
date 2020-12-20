@@ -57,6 +57,8 @@ public class PlayerMovement : MonoBehaviour
     public const float CHAINED_JUMP_HSPEED_MULT = 1.3f;
     public const float CHAINED_JUMP_TIME_WINDOW = 0.1f;
 
+    public const float WALL_JUMP_HSPEED_MULT = 1.1f;
+
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
 
     // Events
@@ -421,6 +423,7 @@ public class PlayerMovement : MonoBehaviour
                 HSPEED_MAX_GROUND,
                 HSpeed
             );
+            kickSpeed *= WALL_JUMP_HSPEED_MULT;
 
             _walkVelocity = kickDir * kickSpeed;
             HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
