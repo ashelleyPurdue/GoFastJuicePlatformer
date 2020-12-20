@@ -30,7 +30,7 @@ public class PlayerMovement : MonoBehaviour
 
     public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
-    public const float HSPEED_MAX_AIR = 10;
+    public const float HSPEED_MAX_AIR = 20;
 
     public const float TERMINAL_VELOCITY_AIR = -100;
     public const float TERMINAL_VELOCITY_WALL_SLIDE = -10;
@@ -463,8 +463,8 @@ public class PlayerMovement : MonoBehaviour
         VSpeed = _jumpSpeed;
         StartedJumping.Invoke();
 
-        // Give the player a speed boost on their second chained jump
-        if (_chainedJumpCount == 2)
+        // Give the player a speed boost every time they do 2 chained jumps
+        if (_chainedJumpCount % 2 == 0)
             HSpeed *= CHAINED_JUMP_HSPEED_MULT;
     }
 
