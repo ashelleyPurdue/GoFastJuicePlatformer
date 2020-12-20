@@ -39,6 +39,7 @@ public class PlayerMovement : MonoBehaviour
     public const float HACCEL_AIR = 9;
     public const float HACCEL_AIR_EXTRA = 2;
     public const float HACCEL_AIR_BACKWARDS = 15;
+    public const float JUMP_HSPEED_MULTIPLIER = 1.2f;
 
     public const float BONK_SPEED = -3;
     public const float LEDGE_GRAB_VSPEED = 11;
@@ -216,17 +217,6 @@ public class PlayerMovement : MonoBehaviour
     }
     private void GroundedControls()
     {
-        // Jump when the button is pressed and we're on the ground.
-        // Well, OK, that's a little too strict.  
-        // We should let the player press the jump button a little bit before 
-        // hitting the ground.
-        if (JumpPressedRecently())
-        {
-            _jumpReleased = false;
-            VSpeed = _jumpSpeed;
-            StartedJumping.Invoke();
-        }
-
         // On the ground, we let the player turn without sliding around or losing
         // speed.
         // We do this by keeping track of their speed and angle separately.
@@ -268,6 +258,18 @@ public class PlayerMovement : MonoBehaviour
             // ...unless we're going really slow, then just pivot instantly.
             if (HSpeed < MAX_PIVOT_SPEED)
                 HAngleDeg = targetAngleDeg;
+        }
+
+        // Jump when the button is pressed and we're on the ground.
+        // Well, OK, that's a little too strict.  
+        // We should let the player press the jump button a little bit before 
+        // hitting the ground.
+        if (JumpPressedRecently())
+        {
+            _jumpReleased = false;
+            VSpeed = _jumpSpeed;
+            HSpeed *= JUMP_HSPEED_MULTIPLIER;   // Speed up a bit when jumping
+            StartedJumping.Invoke();
         }
 
         // Update the velocity based on HSpeed
