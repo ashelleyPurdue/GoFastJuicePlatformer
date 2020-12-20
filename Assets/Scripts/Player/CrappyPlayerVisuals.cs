@@ -25,15 +25,15 @@ public class CrappyPlayerVisuals : MonoBehaviour
     {
         UpdateAnimatorParams();
 
-        if (!_movement.IsWallSliding)
-        {
-            FaceHAngle();
+        if (_ground.IsGrounded)
             TiltWithSpeed();
-        }
         else
-        {
+            DoNotTilt();
+
+        if (!_movement.IsWallSliding)
+            FaceHAngle();
+        else
             FaceWallSlide();
-        }
     }
 
     private void UpdateAnimatorParams()
@@ -65,6 +65,13 @@ public class CrappyPlayerVisuals : MonoBehaviour
 
         var eulers = _model.localEulerAngles;
         eulers.x = SignedPow(speedPercent, 3) * 20;
+        _model.localEulerAngles = eulers;
+    }
+
+    private void DoNotTilt()
+    {
+        var eulers = _model.localEulerAngles;
+        eulers.x = 0;
         _model.localEulerAngles = eulers;
     }
 
