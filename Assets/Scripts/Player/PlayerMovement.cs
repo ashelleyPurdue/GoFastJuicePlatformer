@@ -54,7 +54,7 @@ public class PlayerMovement : MonoBehaviour
     
     // If you jump again shortly after you land, you'll do a "chained jump."
     // This is like the "double jump" from 3D Mario games.
-    public const float CHAINED_JUMP_HSPEED_MULT = 1.2f;
+    public const float CHAINED_JUMP_HSPEED_MULT = 1.3f;
     public const float CHAINED_JUMP_TIME_WINDOW = 0.1f;
 
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
