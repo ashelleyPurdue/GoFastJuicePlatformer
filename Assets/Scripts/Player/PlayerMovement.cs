@@ -21,8 +21,7 @@ public class PlayerMovement : MonoBehaviour
     public const float BODY_HEIGHT = 1.58775f;
     public const float BODY_RADIUS = 0.375f;
     
-    public const float SHORT_JUMP_HEIGHT = 3f;
-    public const float SHORT_JUMP_TIME = 0.448f;
+    public const float SHORT_JUMP_DECAY_RATE = 0.7f;
 
     public const float FULL_JUMP_HEIGHT = 5;
     public const float FULL_JUMP_RISE_TIME = 0.404f;
@@ -108,7 +107,6 @@ public class PlayerMovement : MonoBehaviour
         // Compute jump parameters
         var jumpParams = new JumpParameters
         {
-            ShortJumpHeight  = SHORT_JUMP_HEIGHT,
             FullJumpHeight   = FULL_JUMP_HEIGHT,
             FullJumpRiseTime = FULL_JUMP_RISE_TIME,
             FullJumpFallTime = FULL_JUMP_FALL_TIME
@@ -117,8 +115,8 @@ public class PlayerMovement : MonoBehaviour
 
         _jumpSpeed              = jumpValues.JumpVelocity;
         _fallingGravity         = jumpValues.FallGravity;
-        _fullJumpRiseGravity  = jumpValues.FullJumpRiseGravity;
-        _shortJumpRiseGravity = jumpValues.ShortJumpRiseGravity;
+        _fullJumpRiseGravity    = jumpValues.FullJumpRiseGravity;
+        Debug.Log("Jump speed: " + _jumpSpeed);
     }
 
     /// <summary>
@@ -301,14 +299,10 @@ public class PlayerMovement : MonoBehaviour
     private void WhileAirborne()
     {
         // Apply gravity
-        // Use less gravity while jump is being held, for variable-height jumping.
         // Use more gravity when we're falling so the jump arc feels "squishier"
-        float gravity = _input.JumpHeld && !_jumpReleased
+        float gravity = VSpeed > 0
             ? _fullJumpRiseGravity
-            : _shortJumpRiseGravity;
-
-        if (VSpeed < 0)
-            gravity = _fallingGravity;
+            : _fallingGravity;
 
         VSpeed -= gravity * Time.deltaTime;
 
@@ -325,9 +319,16 @@ public class PlayerMovement : MonoBehaviour
     }
     private void AirborneControls()
     {
-        // Stop variable-height jumping if the button was released.
         if (!_input.JumpHeld)
             _jumpReleased = true;
+
+        // Cut the jump short if the button was released on the way up.
+        // Immediately setting the VSpeed to 0 looks jarring, so instead we'll
+        // exponentially decay it every frame.
+        // Once it's decayed below a certain threshold, we'll let gravity do the
+        // rest of the work so it still looks natural.
+        if (VSpeed > (_jumpSpeed / 2) && _jumpReleased)
+            VSpeed *= SHORT_JUMP_DECAY_RATE;
 
         // Let the player jump for a short period after walking off a ledge,
         // because everyone is human.  
