@@ -4,17 +4,21 @@ using UnityEngine;
 
 public static class GravityMath
 {
-    public static GravityValues ComputeGravity(JumpParameters jump)
+    public static GravityValues ComputeGravity(
+        float jumpHeight,
+        float riseTime,
+        float fallTime
+    )
     {
         float fps = 1 / Time.fixedDeltaTime;
         float discreteConverter = fps / (fps + 1);
 
-        int fullJumpRiseFrames = Mathf.CeilToInt(jump.FullJumpRiseTime / Time.fixedDeltaTime);
-        int fullJumpFallFrames = Mathf.CeilToInt(jump.FullJumpFallTime / Time.fixedDeltaTime);
+        int riseTimeFrames = Mathf.CeilToInt(riseTime / Time.fixedDeltaTime);
+        int fallTimeFrames = Mathf.CeilToInt(fallTime / Time.fixedDeltaTime);
 
-        float jumpVelMetersPerFrame = 2 * jump.FullJumpHeight / fullJumpRiseFrames;
-        float fullRiseGravMetersPerFrameSquared = jumpVelMetersPerFrame / fullJumpRiseFrames;
-        float fallGravMetersPerFrameSquared =  (2 * jump.FullJumpHeight / (fullJumpFallFrames * fullJumpFallFrames));
+        float jumpVelMetersPerFrame = 2 * jumpHeight / riseTimeFrames;
+        float fullRiseGravMetersPerFrameSquared = jumpVelMetersPerFrame / riseTimeFrames;
+        float fallGravMetersPerFrameSquared =  (2 * jumpHeight / (fallTimeFrames * fallTimeFrames));
 
         float jumpVel = jumpVelMetersPerFrame * fps * discreteConverter;
         float fullRiseGrav = fullRiseGravMetersPerFrameSquared * fps * fps;
@@ -23,22 +27,15 @@ public static class GravityMath
         return new GravityValues
         {
             JumpVelocity = jumpVel,
-            FullJumpRiseGravity = fullRiseGrav,
+            RiseGravity = fullRiseGrav,
             FallGravity = fallGrav
         };
     }
 }
 
-public struct JumpParameters
-{
-    public float FullJumpHeight;
-    public float FullJumpRiseTime;
-    public float FullJumpFallTime;
-}
-
 public struct GravityValues
 {
     public float JumpVelocity;
-    public float FullJumpRiseGravity;
+    public float RiseGravity;
     public float FallGravity;
 }

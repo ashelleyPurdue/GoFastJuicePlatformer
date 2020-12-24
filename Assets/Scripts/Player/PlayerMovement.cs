@@ -65,10 +65,10 @@ public class PlayerMovement : MonoBehaviour
 
     // Computed jump/gravity values
     private float _jumpSpeed;
-    private float _fallingGravity;
-    private float _fullJumpRiseGravity;
+    private float _fallGravity;
+    private float _riseGravity;
     private float _shortJumpRiseGravity;
-    private float _wallSlideGravity => _fullJumpRiseGravity;
+    private float _wallSlideGravity => _riseGravity;
 
 
     // Accessors
@@ -105,17 +105,15 @@ public class PlayerMovement : MonoBehaviour
         _controller = GetComponent<CharacterController>();
 
         // Compute jump parameters
-        var jumpParams = new JumpParameters
-        {
-            FullJumpHeight   = FULL_JUMP_HEIGHT,
-            FullJumpRiseTime = FULL_JUMP_RISE_TIME,
-            FullJumpFallTime = FULL_JUMP_FALL_TIME
-        };
-        var jumpValues = GravityMath.ComputeGravity(jumpParams);
+        var jumpValues = GravityMath.ComputeGravity(
+            FULL_JUMP_HEIGHT,
+            FULL_JUMP_RISE_TIME,
+            FULL_JUMP_FALL_TIME
+        );
 
-        _jumpSpeed              = jumpValues.JumpVelocity;
-        _fallingGravity         = jumpValues.FallGravity;
-        _fullJumpRiseGravity    = jumpValues.FullJumpRiseGravity;
+        _jumpSpeed   = jumpValues.JumpVelocity;
+        _fallGravity = jumpValues.FallGravity;
+        _riseGravity = jumpValues.RiseGravity;
         Debug.Log("Jump speed: " + _jumpSpeed);
     }
 
@@ -301,8 +299,8 @@ public class PlayerMovement : MonoBehaviour
         // Apply gravity
         // Use more gravity when we're falling so the jump arc feels "squishier"
         float gravity = VSpeed > 0
-            ? _fullJumpRiseGravity
-            : _fallingGravity;
+            ? _riseGravity
+            : _fallGravity;
 
         VSpeed -= gravity * Time.deltaTime;
 
