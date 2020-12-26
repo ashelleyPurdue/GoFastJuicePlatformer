@@ -33,7 +33,7 @@ public class DumbOrbitCamera : MonoBehaviour
     {
         DebugDisplay.PrintLine(_input.RightStick.ToString());
 
-        // Orbit with the right stick
+        // Adjust the angles with the right stick
         Vector3 rightStick = _input.RightStick;
         if (INVERT_HORIZONTAL) rightStick.x *= -1;
         if (INVERT_VERTICAL) rightStick.y *= -1;
@@ -47,11 +47,24 @@ public class DumbOrbitCamera : MonoBehaviour
         if (_vAngleDeg < MIN_VANGLE_DEG)
             _vAngleDeg = MIN_VANGLE_DEG;
 
-        // Jump to the position
-        Vector3 offset = SphericalToCartesian(_hAngleDeg, _vAngleDeg, ORBIT_RADIUS);
-        transform.position = _target.position + offset;
+        // Calculate the position
+        Vector3 dir = SphericalToCartesian(_hAngleDeg, _vAngleDeg, 1);
+        Vector3 pos = _target.position + (dir * ORBIT_RADIUS);
 
-        // Look at the thing
+        // Zoom in if the view is obstructed
+        RaycastHit hit;
+        bool isObstructed = Physics.Raycast(
+            pos,
+            -dir,
+            out hit,
+            ORBIT_RADIUS
+        );
+        
+        if (isObstructed)
+            pos = _target.position + (ORBIT_RADIUS - hit.distance) * dir;
+        
+        // Jump to the position and look at the thing
+        transform.position = pos;
         transform.LookAt(_target);
     }
 
