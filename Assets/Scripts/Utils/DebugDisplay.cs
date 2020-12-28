@@ -13,13 +13,26 @@ public class DebugDisplay : MonoBehaviour
 
     public static void PrintLine(string line)
     {
-        _queuedLines += line + "\n";
+        if (Time.inFixedTimeStep)
+            _queuedFixedLines += line + "\n";
+        else
+            _queuedLines += line + "\n";
     }
 
-    public static void PrintLineFixed(string line)
+    public void Update()
     {
-        _queuedFixedLines += line + "\n";
+        _displayedLines = _queuedLines;
+        _queuedLines = "";
     }
+
+    public void FixedUpdate()
+    {
+        _displayedFixedLines = _queuedFixedLines;
+        _queuedFixedLines = "";
+    }
+
+
+    // --- Other utility functions ---
 
     public static void DrawRay(Color color, Vector3 origin, Vector3 dir, float length)
     {
@@ -191,17 +204,5 @@ public class DebugDisplay : MonoBehaviour
         GUILayout.Label(_displayedLines);
         GUILayout.Label(_displayedFixedLines);
         GUILayout.EndVertical();
-    }
-
-    public void Update()
-    {
-        _displayedLines = _queuedLines;
-        _queuedLines = "";
-    }
-
-    public void FixedUpdate()
-    {
-        _displayedFixedLines = _queuedFixedLines;
-        _queuedFixedLines = "";
     }
 }

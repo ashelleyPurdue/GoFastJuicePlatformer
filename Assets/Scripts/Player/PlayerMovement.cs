@@ -202,10 +202,10 @@ public class PlayerMovement : MonoBehaviour
 
         ApplyLedgeGrabbing();
 
-        DebugDisplay.PrintLineFixed("HSpeed: " + HSpeed);
-        DebugDisplay.PrintLineFixed("VSpeed: " + VSpeed);
-        DebugDisplay.PrintLineFixed("Chained jump count: " + _chainedJumpCount);
-        DebugDisplay.PrintLineFixed("Chained jump timer: " + _chainedJumpTimer);
+        DebugDisplay.PrintLine("HSpeed: " + HSpeed);
+        DebugDisplay.PrintLine("VSpeed: " + VSpeed);
+        DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
+        DebugDisplay.PrintLine("Chained jump timer: " + _chainedJumpTimer);
         
         // Move with the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
@@ -341,7 +341,7 @@ public class PlayerMovement : MonoBehaviour
         if (VSpeed < 0 && wasGroundedRecently && JumpPressedRecently())
         {
             StartGroundJump();
-            DebugDisplay.PrintLineFixed("Coyote-time jump!");
+            DebugDisplay.PrintLine("Coyote-time jump!");
         }
 
         // In the air, we let the player "nudge" their velocity by applying a
