@@ -369,26 +369,32 @@ public class PlayerMovement : MonoBehaviour
             accel = HACCEL_AIR_BACKWARDS;
 
         // Apply a force to get our new velocity.
-        // Note that you can only get up to the normal ground speed this way.
-        // We won't slow you down if you're already going faster than that, though
-        // (eg: due to the speed boost from chained jumping)
         var oldVelocity = _walkVelocity;
         var newVelocity = _walkVelocity + (inputVector * accel * Time.deltaTime);
+        
+        // Only let the player accellerate up to the normal ground speed.
+        // We won't slow them down if they're already going faster than that,
+        // though (eg: due to the speed boost from chained jumping)
+        float oldSpeed = oldVelocity.magnitude;
+        float newSpeed = newVelocity.magnitude;
 
-        bool wasAboveGroundSpeedLimit = oldVelocity.magnitude   > HSPEED_MAX_GROUND;
-        bool nowAboveGroundSpeedLimit = _walkVelocity.magnitude > HSPEED_MAX_GROUND;
+        bool wasAboveGroundSpeedLimit = oldSpeed > HSPEED_MAX_GROUND;
+        bool nowAboveGroundSpeedLimit = newSpeed > HSPEED_MAX_GROUND;
 
-        if (wasAboveGroundSpeedLimit)
-            newVelocity = oldVelocity;
-        if (!wasAboveGroundSpeedLimit && nowAboveGroundSpeedLimit)
-            newVelocity = newVelocity.normalized * HSPEED_MAX_GROUND;
+        if (newSpeed > oldSpeed)
+        {
+            if (wasAboveGroundSpeedLimit)
+                newSpeed = oldSpeed;
+            else if (nowAboveGroundSpeedLimit)
+                newSpeed = HSPEED_MAX_GROUND;
+        }
 
-        _walkVelocity = newVelocity;
-
-        // We WILL, however, slow you down if you're going past the max air
+        // We WILL, however, slow them down if they're going past the max air
         // speed.  That's a hard maximum.
-        if (_walkVelocity.magnitude > maxSpeed)
+        if (newSpeed > maxSpeed)
             _walkVelocity = _walkVelocity.normalized * maxSpeed;
+
+        _walkVelocity = newVelocity.normalized * newSpeed;
 
         // Keep HSpeed up-to-date, so it'll be correct when we land.
         HSpeed = _walkVelocity.ComponentAlong(Forward);
