@@ -35,7 +35,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnRespawned()
     {
-        transform.position = _respawnPosition;
+        _movement.SetPosition(_respawnPosition);
         _movement.ResetState();
         // TODO: Play a respawning animation
     }

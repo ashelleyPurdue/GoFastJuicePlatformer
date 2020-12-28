@@ -144,6 +144,33 @@ public class PlayerMovement : MonoBehaviour
         _ledge.UpdateLedgeDetectorState();
     }
 
+    /// <summary>
+    /// Use this to teleport the player, instead of setting transform.position
+    /// directly.
+    /// </summary>
+    /// <param name="position"></param>
+    public void SetPosition(Vector3 position)
+    {
+        // CharacterController maintains its own private "position" field,
+        // which happens to trump "transform.position".  This means you can't
+        // teleport the player by changing "transform.position", because the
+        // CharacterController will just roll you back to its internal position.
+        //
+        // The "correct" way to avoid this would be to call CharacterController's
+        // "SetPosition()" method, like you would for a rigidbody.  Unfortunately,
+        // CharacterController doesn't HAVE a "SetPosition()" method.
+        //
+        // Thanks, Unity >_<
+        //
+        // To get around this, we disable the CharacterController, and then 
+        // immediately re-enable it.  This forces CharacterController to sync
+        // its internal position with "transform.position", avoiding that stupid
+        // rollback.
+        transform.position = position;
+        _controller.enabled = false;
+        _controller.enabled = true;
+    }
+
     public void Update()
     {
         if (_input.JumpPressed)
@@ -180,27 +207,6 @@ public class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLineFixed("Chained jump count: " + _chainedJumpCount);
         DebugDisplay.PrintLineFixed("Chained jump timer: " + _chainedJumpTimer);
         
-        // HACK: Allow the player to be teleported by directly modifying
-        // transform.position.
-        //
-        // CharacterController maintains its own private "position" field,
-        // which happens to trump "transform.position".  This means you can't
-        // teleport the player by changing "transform.position", because the
-        // CharacterController will just roll you back to its internal position.
-        //
-        // The "correct" way to avoid this would be to call CharacterController's
-        // "SetPosition()" method, like you would for a rigidbody.  Unfortunately,
-        // CharacterController doesn't HAVE a "SetPosition()" method.
-        //
-        // Thanks, Unity >_<
-        //
-        // To get around this, we disable the CharacterController, and then 
-        // immediately re-enable it.  This forces CharacterController to sync
-        // its internal position with "transform.position", avoiding that stupid
-        // rollback. 
-        _controller.enabled = false;
-        _controller.enabled = true;
-
         // Move with the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
 
