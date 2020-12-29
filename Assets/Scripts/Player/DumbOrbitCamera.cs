@@ -121,8 +121,8 @@ public class DumbOrbitCamera : MonoBehaviour
     private IEnumerable<Renderer> GetObstructingObjects()
     {
         RaycastHit[] hits = Physics.RaycastAll(
-            _target.position,
-            (transform.position - _target.position).normalized,
+            transform.position,
+            (_target.position - transform.position).normalized,
             Vector3.Distance(transform.position, _target.position)
         );
 
