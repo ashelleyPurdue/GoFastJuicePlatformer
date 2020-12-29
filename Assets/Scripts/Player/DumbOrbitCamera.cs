@@ -18,12 +18,19 @@ public class DumbOrbitCamera : MonoBehaviour
     private const float MAX_VANGLE_DEG = 180;
     private const float ORBIT_RADIUS = 15;
 
+    private const float PEEPHOLE_RADIUS = 0.25f;
+    private const float PEEPHOLE_OPEN_TIME = 0.25f;
+    private const float PEEPHOLE_GROW_SPEED = PEEPHOLE_RADIUS / PEEPHOLE_OPEN_TIME;
+
     // Services
     private IPlayerInput _input;
 
     // State variables
     private float _hAngleDeg;
     private float _vAngleDeg;
+
+    private bool _peepholeOpen => _originalMaterials.Count > 0;
+    private float _peepholeRadius = 0;
 
     private Dictionary<Renderer, Material> _originalMaterials
         = new Dictionary<Renderer, Material>();
@@ -59,8 +66,20 @@ public class DumbOrbitCamera : MonoBehaviour
         transform.position = pos;
         transform.LookAt(_target);
 
+       // Peephole stuff
+        bool peepholeOpen = ShouldOpenPeephole();
+
+        float targetRadius = peepholeOpen
+            ? PEEPHOLE_RADIUS
+            : 0;
+        _peepholeRadius = Mathf.MoveTowards(
+            _peepholeRadius,
+            targetRadius,
+            PEEPHOLE_GROW_SPEED * Time.deltaTime
+        );
+
         RestoreObstructingObjectMaterials();
-        if (_obstructorMaterial != null)
+        if (_peepholeRadius > 0 && _obstructorMaterial != null)
             ChangeObstructingObjectMaterials();
     }
 
@@ -84,9 +103,19 @@ public class DumbOrbitCamera : MonoBehaviour
             
             var replacementMat = new Material(_obstructorMaterial);
             replacementMat.CopyPropertiesFromMaterial(originalMat);
-
+            replacementMat.SetFloat("_PeepholeRadius", _peepholeRadius);
+            
             obst.material = replacementMat;
         }
+    }
+
+    private bool ShouldOpenPeephole()
+    {
+        return Physics.Raycast(
+            _target.position,
+            (transform.position - _target.position).normalized,
+            ORBIT_RADIUS
+        );
     }
 
     private IEnumerable<Renderer> GetObstructingObjects()
