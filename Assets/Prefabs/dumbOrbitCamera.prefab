@@ -110,3 +110,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _target: {fileID: 0}
+  _obstructorMaterial: {fileID: 2100000, guid: a5bfec4aa3e67894a93c85ce10b55c46, type: 2}
