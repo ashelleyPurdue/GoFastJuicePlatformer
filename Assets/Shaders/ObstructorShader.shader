@@ -8,6 +8,8 @@
         _Metallic ("Metallic", Range(0,1)) = 0.0
 
         _PeepholeRadius ("Peephole Radius", Range(0, 1)) = 0.25
+        _MaxDepth ("Max Depth", Range(0, 255)) = 15
+        _MinY ("Min Y", Range(0, 255)) = 0
     }
     SubShader
     {
@@ -33,13 +35,36 @@
             float2 uv_MainTex;
             float eyeDepth;
             float4 screenPos;
+            float3 worldPos : TEXCOORD0;
         };
+
+        float distance_from_center_screen(float4 screenPos)
+        {
+            float3 h = (0.5, 0.5, 0.5);
+            float3 pos = (screenPos.xyz / screenPos.w) - h;
+            float aspectRatio = _ScreenParams.x / _ScreenParams.y;
+            pos.x *= aspectRatio;
+
+            return sqrt((pos.x * pos.x) + (pos.y * pos.y));
+        }
+
+        float distance_from_camera(float3 worldPos)
+        {
+            // Find the distance between worldPos and the plane defined by
+            // the camera's forward vector.
+            float3 cameraForward = mul((float3x3)unity_CameraToWorld, float3(0,0,1));
+            float3 offsetFromCamera = worldPos - _WorldSpaceCameraPos;
+
+            return dot(offsetFromCamera, cameraForward);
+        }
 
         half _Glossiness;
         half _Metallic;
         fixed4 _Color;
 
         float _PeepholeRadius;
+        float _MaxDepth;
+        float _MinY;
 
         // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
         // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -59,15 +84,13 @@
             // Albedo comes from a texture tinted by color
             fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
 
-            // Make pixels in the center of the screen transparent.
-            float3 h = (0.5, 0.5, 0.5);
-            float3 screenPos = (IN.screenPos.xyz / IN.screenPos.w) - h;
+            // Make pixels in the center of the screen transparent, but only if:
+            // * They are above the player's feet in world space
+            // * They are closer to the screen than the player is
+            float centerDist = distance_from_center_screen(IN.screenPos);
+            float cameraDist = distance_from_camera(IN.worldPos);
 
-            float aspectRatio = _ScreenParams.x / _ScreenParams.y;
-            screenPos.x *= aspectRatio;
-
-            float dist = sqrt((screenPos.x * screenPos.x) + (screenPos.y * screenPos.y));
-            if (dist < _PeepholeRadius)
+            if (centerDist < _PeepholeRadius && IN.worldPos.y > _MinY && cameraDist < _MaxDepth)
                 c.a = 0;
 
             o.Albedo = c.rgb;
@@ -76,6 +99,7 @@
             o.Smoothness = _Glossiness;
             o.Alpha = c.a;
         }
+
         ENDCG
     }
     FallBack "Diffuse"

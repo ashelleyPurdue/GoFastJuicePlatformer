@@ -28,8 +28,6 @@ public class DumbOrbitCamera : MonoBehaviour
     // State variables
     private float _hAngleDeg;
     private float _vAngleDeg;
-
-    private bool _peepholeOpen => _originalMaterials.Count > 0;
     private float _peepholeRadius = 0;
 
     private Dictionary<Renderer, Material> _originalMaterials
@@ -66,10 +64,8 @@ public class DumbOrbitCamera : MonoBehaviour
         transform.position = pos;
         transform.LookAt(_target);
 
-       // Peephole stuff
-        bool peepholeOpen = ShouldOpenPeephole();
-
-        float targetRadius = peepholeOpen
+        // Play the peephole opening animation
+        float targetRadius = ShouldOpenPeephole()
             ? PEEPHOLE_RADIUS
             : 0;
         _peepholeRadius = Mathf.MoveTowards(
@@ -104,7 +100,9 @@ public class DumbOrbitCamera : MonoBehaviour
             var replacementMat = new Material(_obstructorMaterial);
             replacementMat.CopyPropertiesFromMaterial(originalMat);
             replacementMat.SetFloat("_PeepholeRadius", _peepholeRadius);
-            
+            replacementMat.SetFloat("_MinY", _target.position.y);
+            replacementMat.SetFloat("_MaxDepth", ORBIT_RADIUS);
+
             obst.material = replacementMat;
         }
     }
