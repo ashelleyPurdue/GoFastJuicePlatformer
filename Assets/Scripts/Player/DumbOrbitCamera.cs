@@ -59,19 +59,20 @@ public class DumbOrbitCamera : MonoBehaviour
         transform.position = pos;
         transform.LookAt(_target);
 
-        ChangeObstructingObjectMaterials();
+        RestoreObstructingObjectMaterials();
+        if (_obstructorMaterial != null)
+            ChangeObstructingObjectMaterials();
+    }
+
+    private void RestoreObstructingObjectMaterials()
+    {
+        foreach (Renderer obst in _originalMaterials.Keys)
+            obst.material = _originalMaterials[obst];
+        _originalMaterials.Clear();
     }
 
     private void ChangeObstructingObjectMaterials()
     {
-        // Return all previous obstructing objects to their original material
-        foreach (Renderer obst in _originalMaterials.Keys)
-            obst.material = _originalMaterials[obst];
-        _originalMaterials.Clear();
-
-        if (_obstructorMaterial == null)
-            return;
-
         // Get all the objects that are currently obstructing our vision
         var obstructors = GetObstructingObjects();
 
@@ -83,7 +84,7 @@ public class DumbOrbitCamera : MonoBehaviour
             
             var replacementMat = new Material(_obstructorMaterial);
             replacementMat.CopyPropertiesFromMaterial(originalMat);
-            
+
             obst.material = replacementMat;
         }
     }
