@@ -7,6 +7,7 @@ public class DumbOrbitCamera : MonoBehaviour
 {
     // Inspector parameters
     public Transform _target;
+    public Material _obstructorMaterial;
 
     // Constants
     private const bool INVERT_HORIZONTAL = true;
@@ -23,6 +24,9 @@ public class DumbOrbitCamera : MonoBehaviour
     // State variables
     private float _hAngleDeg;
     private float _vAngleDeg;
+
+    private Dictionary<Renderer, Material> _originalMaterials
+        = new Dictionary<Renderer, Material>();
 
     void Awake()
     {
@@ -54,6 +58,50 @@ public class DumbOrbitCamera : MonoBehaviour
         // Jump to the position and look at the thing
         transform.position = pos;
         transform.LookAt(_target);
+
+        ChangeObstructingObjectMaterials();
+    }
+
+    private void ChangeObstructingObjectMaterials()
+    {
+        // Return all previous obstructing objects to their original material
+        foreach (Renderer obst in _originalMaterials.Keys)
+            obst.material = _originalMaterials[obst];
+        _originalMaterials.Clear();
+
+        if (_obstructorMaterial == null)
+            return;
+
+        // Get all the objects that are currently obstructing our vision
+        var obstructors = GetObstructingObjects();
+
+        // Set them to the special obstructor material
+        foreach (Renderer obst in obstructors)
+        {
+            var originalMat = obst.material;
+            _originalMaterials.Add(obst, originalMat);
+            
+            var replacementMat = new Material(_obstructorMaterial);
+            replacementMat.CopyPropertiesFromMaterial(originalMat);
+            
+            obst.material = replacementMat;
+        }
+    }
+
+    private IEnumerable<Renderer> GetObstructingObjects()
+    {
+        RaycastHit[] hits = Physics.RaycastAll(
+            _target.position,
+            (transform.position - _target.position).normalized,
+            Vector3.Distance(transform.position, _target.position)
+        );
+
+        foreach (var h in hits)
+        {
+            var renderer = h.collider.GetComponent<Renderer>();
+            if (renderer != null)
+                yield return renderer;
+        }
     }
 
     private Vector3 SphericalToCartesian(float hAngleDeg, float vAngleDeg, float orbitRaidus)
