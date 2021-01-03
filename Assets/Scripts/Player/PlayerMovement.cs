@@ -23,9 +23,15 @@ public class PlayerMovement : MonoBehaviour
     
     public const float SHORT_JUMP_DECAY_RATE = 0.7f;
 
-    public const float FULL_JUMP_HEIGHT = 5;
-    public const float FULL_JUMP_RISE_TIME = 0.404f;
-    public const float FULL_JUMP_FALL_TIME = 0.328f;
+    // These constants will determine the initial jump velocity
+    // and rising/falling gravity strength
+    public const float FIRST_JUMP_HEIGHT = 5;
+    public const float FIRST_JUMP_RISE_TIME = 0.404f;
+    public const float FIRST_JUMP_FALL_TIME = 0.328f;
+
+    // This constant will determine the initial jump velocity when doing
+    // a chained jump.
+    public const float SECOND_JUMP_HEIGHT = 8;
 
     public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
@@ -65,6 +71,7 @@ public class PlayerMovement : MonoBehaviour
 
     // Computed jump/gravity values
     private float _jumpSpeed;
+    private float _secondJumpSpeed;
     private float _fallGravity;
     private float _riseGravity;
     private float _shortJumpRiseGravity;
@@ -110,14 +117,20 @@ public class PlayerMovement : MonoBehaviour
 
         // Compute jump parameters
         var jumpValues = GravityMath.ComputeGravity(
-            FULL_JUMP_HEIGHT,
-            FULL_JUMP_RISE_TIME,
-            FULL_JUMP_FALL_TIME
+            FIRST_JUMP_HEIGHT,
+            FIRST_JUMP_RISE_TIME,
+            FIRST_JUMP_FALL_TIME
         );
 
         _jumpSpeed   = jumpValues.JumpVelocity;
         _fallGravity = jumpValues.FallGravity;
         _riseGravity = jumpValues.RiseGravity;
+
+        _secondJumpSpeed = GravityMath.JumpVelForHeight(
+            SECOND_JUMP_HEIGHT,
+            _riseGravity
+        );
+
         Debug.Log("Jump speed: " + _jumpSpeed);
     }
 
@@ -487,9 +500,12 @@ public class PlayerMovement : MonoBehaviour
         VSpeed = _jumpSpeed;
         StartedJumping.Invoke();
 
-        // Give the player a speed boost every time they do 2 chained jumps
+        // Jump heigher and get a speed boost every time they do 2 chained jumps
         if (_chainedJumpCount % 2 == 0)
+        {
+            VSpeed = _secondJumpSpeed;
             HSpeed *= CHAINED_JUMP_HSPEED_MULT;
+        }
 
         // DEBUG: Record debug stats
         _debugJumpStartY = transform.position.y;

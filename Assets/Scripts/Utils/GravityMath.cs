@@ -31,6 +31,30 @@ public static class GravityMath
             FallGravity = fallGrav
         };
     }
+
+    public static float JumpVelForHeight(
+        float jumpHeight,
+        float gravityMetersPerSecondSquared
+    )
+    {
+        float fps = 1 / Time.fixedDeltaTime;
+        float discreteConverter = fps / (fps + 1);
+
+        float gravityMetersPerFrameSquared = gravityMetersPerSecondSquared / (fps * fps * discreteConverter);
+
+        // Simulate falling from that height.  If we assume that the jump arc is
+        // symmetrical, the velocity we hit the ground at should equal the
+        // velocity we left the ground at
+        float jumpVelMetersPerFrame = 0;
+        for (float y = jumpHeight; y > 0; y -= jumpVelMetersPerFrame * Time.fixedDeltaTime)
+        {
+            jumpVelMetersPerFrame += gravityMetersPerFrameSquared * Time.fixedDeltaTime;
+        }
+
+        // Convert it back into meters per second
+        float jumpVel = jumpVelMetersPerFrame * fps * discreteConverter;
+        return jumpVel;
+    }
 }
 
 public struct GravityValues
