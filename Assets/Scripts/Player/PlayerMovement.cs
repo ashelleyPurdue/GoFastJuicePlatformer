@@ -96,6 +96,10 @@ public class PlayerMovement : MonoBehaviour
     private float _ledgeGrabTimer = 0;
     private Vector3 _walkVelocity;
 
+    // Debugging metrics
+    private float _debugJumpStartY;
+    private float _debugJumpMaxY;
+
     public void Awake()
     {
         _input = GetComponent<IPlayerInput>();
@@ -201,17 +205,19 @@ public class PlayerMovement : MonoBehaviour
             WhileAirborne();
 
         ApplyLedgeGrabbing();
-
-        DebugDisplay.PrintLine("HSpeed: " + HSpeed);
-        DebugDisplay.PrintLine("VSpeed: " + VSpeed);
-        DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
-        DebugDisplay.PrintLine("Chained jump timer: " + _chainedJumpTimer);
         
         // Move with the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
 
         // Remember moving-platform stuff for next frame
         _ground.RecordFootprintPos();
+
+        // Display debugging metrics
+        DebugDisplay.PrintLine("HSpeed: " + HSpeed);
+        DebugDisplay.PrintLine("VSpeed: " + VSpeed);
+        DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
+        DebugDisplay.PrintLine("Chained jump timer: " + _chainedJumpTimer);
+        DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
     }
 
     private void WhileGrounded()
@@ -302,6 +308,10 @@ public class PlayerMovement : MonoBehaviour
 
     private void WhileAirborne()
     {
+        // DEBUG: Record stats
+        if (transform.position.y > _debugJumpMaxY)
+            _debugJumpMaxY = transform.position.y;
+
         // Apply gravity
         // Use more gravity when we're falling so the jump arc feels "squishier"
         float gravity = VSpeed > 0
@@ -480,6 +490,10 @@ public class PlayerMovement : MonoBehaviour
         // Give the player a speed boost every time they do 2 chained jumps
         if (_chainedJumpCount % 2 == 0)
             HSpeed *= CHAINED_JUMP_HSPEED_MULT;
+
+        // DEBUG: Record debug stats
+        _debugJumpStartY = transform.position.y;
+        _debugJumpMaxY = transform.position.y;
     }
 
     /// <summary>
