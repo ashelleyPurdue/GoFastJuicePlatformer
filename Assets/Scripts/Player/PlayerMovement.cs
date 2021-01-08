@@ -196,6 +196,8 @@ public class PlayerMovement : MonoBehaviour
 
     public void FixedUpdate()
     {
+        DebugDisplay.PrintLine($"Rise: {_riseGravity}");
+        DebugDisplay.PrintLine($"Fall: {_fallGravity}");
         // Detect various states
         _ground.UpdateGroundState();
         _ledge.UpdateLedgeDetectorState();
