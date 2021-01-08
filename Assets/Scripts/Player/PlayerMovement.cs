@@ -89,6 +89,8 @@ public class PlayerMovement : MonoBehaviour
     public bool IsGrabbingLedge {get; private set;}
     public bool IsWallSliding {get; private set;}
 
+    public int ChainedJumpCount => (_chainedJumpCount + 1) % 2;
+
     // State
     public float HAngleDeg {get; private set;}
     public float HSpeed {get; private set;}

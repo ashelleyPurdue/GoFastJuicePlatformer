@@ -56,6 +56,7 @@ public class CrappyPlayerVisuals : MonoBehaviour
         _animator.SetBool("IsGrounded", _ground.IsGrounded);
         _animator.SetBool("IsGrabbingLedge", _movement.IsGrabbingLedge);
         _animator.SetBool("IsWallSliding", _movement.IsWallSliding);
+        _animator.SetInteger("ChainedJumpCount", _movement.ChainedJumpCount);
     }
 
     private void FaceWallSlide()
