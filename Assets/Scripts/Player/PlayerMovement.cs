@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -67,7 +68,8 @@ public class PlayerMovement : MonoBehaviour
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
 
     // Events
-    public UnityEvent StartedJumping;
+    public event Action StartedJumping;
+    public event Action GrabbedLedge;
 
     // Computed jump/gravity values
     private float _jumpSpeed;
@@ -86,7 +88,7 @@ public class PlayerMovement : MonoBehaviour
         _walkVelocity +
         (Vector3.up * VSpeed);
 
-    public bool IsGrabbingLedge {get; private set;}
+    
     public bool IsWallSliding {get; private set;}
 
     public int ChainedJumpCount => (_chainedJumpCount + 1) % 2;
@@ -104,6 +106,8 @@ public class PlayerMovement : MonoBehaviour
 
     private float _ledgeGrabTimer = 0;
     private Vector3 _walkVelocity;
+
+    private bool _isLedgeGrabbing;
 
     // Debugging metrics
     private float _debugJumpStartY;
@@ -152,7 +156,7 @@ public class PlayerMovement : MonoBehaviour
         _chainedJumpTimer = 0;
         _chainedJumpCount = 0;
 
-        IsGrabbingLedge = false;
+        _isLedgeGrabbing = false;
         IsWallSliding = false;
 
         _ground.RecordFootprintPos();
@@ -469,21 +473,22 @@ public class PlayerMovement : MonoBehaviour
             // Jump up
             _jumpReleased = false;
             VSpeed = _jumpSpeed;
-            StartedJumping.Invoke();
+            StartedJumping?.Invoke();
         }
     }
 
     private void ApplyLedgeGrabbing()
     {
         // Grab the ledge if we can
-        if (!IsGrabbingLedge && CanGrabLedge() && VSpeed < 0)
+        if (!_isLedgeGrabbing && CanGrabLedge() && VSpeed < 0)
         {
-            IsGrabbingLedge = true;
+            _isLedgeGrabbing = true;
             _ledgeGrabTimer = LEDGE_GRAB_DURATION;
+            GrabbedLedge?.Invoke();
         }
 
         // HACK: override the VSpeed and HSpeed while the ledge is being grabbed
-        if (IsGrabbingLedge)
+        if (_isLedgeGrabbing)
         {
             VSpeed = LEDGE_GRAB_VSPEED;
             HSpeed = LEDGE_GRAB_HSPEED;
@@ -492,7 +497,7 @@ public class PlayerMovement : MonoBehaviour
             _ledgeGrabTimer -= Time.deltaTime;
             if (_ledgeGrabTimer <= 0)
             {
-                IsGrabbingLedge = false;
+                _isLedgeGrabbing = false;
             }
         }
     }
@@ -502,7 +507,7 @@ public class PlayerMovement : MonoBehaviour
         _chainedJumpCount++;
         _jumpReleased = false;
         VSpeed = _jumpSpeed;
-        StartedJumping.Invoke();
+        StartedJumping?.Invoke();
 
         // Jump heigher and get a speed boost every time they do 2 chained jumps
         if (_chainedJumpCount % 2 == 0)
