@@ -47,7 +47,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: player/Armature/root/collar/left_arm
+    path: player/Armature/root/collar/left_arm_upper
   - curve:
       serializedVersion: 2
       m_Curve:
@@ -81,7 +81,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: player/Armature/root/collar/right_arm
+    path: player/Armature/root/collar/right_arm_upper
   m_PositionCurves:
   - curve:
       serializedVersion: 2
@@ -204,7 +204,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.x
-    path: player/Armature/root/collar/left_arm
+    path: player/Armature/root/collar/left_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -241,7 +241,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.y
-    path: player/Armature/root/collar/left_arm
+    path: player/Armature/root/collar/left_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -278,7 +278,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.z
-    path: player/Armature/root/collar/left_arm
+    path: player/Armature/root/collar/left_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -315,7 +315,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.x
-    path: player/Armature/root/collar/right_arm
+    path: player/Armature/root/collar/right_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -352,7 +352,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.y
-    path: player/Armature/root/collar/right_arm
+    path: player/Armature/root/collar/right_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -389,7 +389,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.z
-    path: player/Armature/root/collar/right_arm
+    path: player/Armature/root/collar/right_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -511,7 +511,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.z
-    path: player/Armature/root/collar/left_arm
+    path: player/Armature/root/collar/left_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -521,7 +521,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.y
-    path: player/Armature/root/collar/left_arm
+    path: player/Armature/root/collar/left_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -531,7 +531,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.x
-    path: player/Armature/root/collar/left_arm
+    path: player/Armature/root/collar/left_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -541,7 +541,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.x
-    path: player/Armature/root/collar/right_arm
+    path: player/Armature/root/collar/right_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -551,7 +551,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.y
-    path: player/Armature/root/collar/right_arm
+    path: player/Armature/root/collar/right_arm_upper
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -561,7 +561,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.z
-    path: player/Armature/root/collar/right_arm
+    path: player/Armature/root/collar/right_arm_upper
     classID: 4
     script: {fileID: 0}
   m_HasGenericRootTransform: 0
