@@ -19,7 +19,7 @@ public interface IPlayerInput
     bool JumpHeld {get;}
 
     /// <summary>
-    /// Whether or not the jump button was pressed this frame
+    /// Whether or not the jump button was pressed this update frame
     /// </summary>
     /// <value></value>
     bool JumpPressed {get;}

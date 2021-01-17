@@ -53,7 +53,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void UpdateAnimatorParams()
     {
-        float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
+        float speedPercent = _movement.HSpeed / PlayerConstants.HSPEED_MAX_GROUND;
 
         _animator.SetFloat("RunSpeed", speedPercent);
         _animator.SetFloat("VSpeed", _movement.VSpeed);
@@ -68,19 +68,22 @@ public class PlayerAnimationController : MonoBehaviour
             return;
         }
 
-        if (_ground.IsGrounded)
+        switch (_movement.CurrentState)
         {
-            if (_movement.HSpeed > 0)
-                SetState(PLAYER_RUN, 0.25f);
-            else
-                SetState(PLAYER_IDLE, 0.25f);
+            case PlayerMovement.State.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
+            
+            case PlayerMovement.State.Walking:
+                if (_movement.HSpeed > 0)
+                    SetState(PLAYER_RUN, 0.25f);
+                else
+                    SetState(PLAYER_IDLE, 0.25f);
+                break;
+
+            case PlayerMovement.State.FreeFall:
+                if (_movement.VSpeed < 0)
+                    SetState(PLAYER_FALL, 0.25f);
+                break;
         }
-
-        if (!_ground.IsGrounded && _movement.VSpeed < 0)
-            SetState(PLAYER_FALL, 0.25f);
-
-        if (_movement.IsWallSliding)
-            SetState(PLAYER_WALL_SLIDE, 0.1f);
     }
 
     private void OnStartedJumping()
@@ -150,7 +153,7 @@ public class PlayerAnimationController : MonoBehaviour
     {
         var targetRot = FaceHAngle();
         
-        if (_movement.IsWallSliding)
+        if (_movement.CurrentState == PlayerMovement.State.WallSliding)
             targetRot = FaceWallSlide();
 
         if (_ground.IsGrounded)
@@ -176,7 +179,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Quaternion TiltWithSpeed(Quaternion targetRot)
     {
-        float speedPercent = _movement.HSpeed / PlayerMovement.HSPEED_MAX_GROUND;
+        float speedPercent = _movement.HSpeed / PlayerConstants.HSPEED_MAX_GROUND;
 
         var eulers = targetRot.eulerAngles;
         eulers.x = SignedPow(speedPercent, 3) * 20;

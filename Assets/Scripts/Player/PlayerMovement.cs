@@ -18,54 +18,6 @@ public class PlayerMovement : MonoBehaviour
     private PlayerWallDetector _wall;
     private CharacterController _controller;
 
-    // Constants
-    public const float BODY_HEIGHT = 1.58775f;
-    public const float BODY_RADIUS = 0.375f;
-    
-    public const float SHORT_JUMP_DECAY_RATE = 0.7f;
-
-    // These constants will determine the initial jump velocity
-    // and rising/falling gravity strength
-    public const float FIRST_JUMP_HEIGHT = 5;
-    public const float FIRST_JUMP_RISE_TIME = 0.404f;
-    public const float FIRST_JUMP_FALL_TIME = 0.328f;
-
-    // This constant will determine the initial jump velocity when doing
-    // a chained jump.
-    public const float SECOND_JUMP_HEIGHT = 8;
-
-    public const float HSPEED_MIN = 2;
-    public const float HSPEED_MAX_GROUND = 8;
-    public const float HSPEED_MAX_AIR = 20;
-
-    public const float TERMINAL_VELOCITY_AIR = -100;
-    public const float TERMINAL_VELOCITY_WALL_SLIDE = -10;
-
-    public const float HACCEL_GROUND = 15;
-    public const float HACCEL_AIR = 9;
-    public const float HACCEL_AIR_BACKWARDS = 15;
-
-
-    public const float BONK_SPEED = -3;
-    public const float LEDGE_GRAB_VSPEED = 11;
-    public const float LEDGE_GRAB_HSPEED = 4;
-    public const float LEDGE_GRAB_DURATION = 0.15f;
-
-    public const float ROT_SPEED_DEG = 360 * 2;
-    public const float FRICTION_GROUND = 15;
-    public const float FRICTION_WALL_SLIDE = 10;
-
-    public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
-    public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
-    
-    // If you jump again shortly after you land, you'll do a "chained jump."
-    // This is like the "double jump" from 3D Mario games.
-    public const float CHAINED_JUMP_HSPEED_MULT = 1.3f;
-    public const float CHAINED_JUMP_TIME_WINDOW = 0.1f;
-
-    public const float WALL_JUMP_HSPEED_MULT = 1.1f;
-
-    public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
 
     // Events
     public event Action StartedJumping;
@@ -79,7 +31,6 @@ public class PlayerMovement : MonoBehaviour
     private float _shortJumpRiseGravity;
     private float _wallSlideGravity => _riseGravity;
 
-
     // Accessors
     public Vector3 Forward => AngleForward(HAngleDeg);
 
@@ -88,15 +39,22 @@ public class PlayerMovement : MonoBehaviour
         _walkVelocity +
         (Vector3.up * VSpeed);
 
-    
-    public bool IsWallSliding {get; private set;}
-
     public int ChainedJumpCount => (_chainedJumpCount + 1) % 2;
 
     // State
     public float HAngleDeg {get; private set;}
     public float HSpeed {get; private set;}
     public float VSpeed {get; private set;}
+    private Vector3 _walkVelocity;
+
+    public enum State
+    {
+        Walking,
+        FreeFall,
+        WallSliding,
+        LedgeGrabbing
+    }
+    public State CurrentState {get; private set;}
 
     private float _lastJumpButtonPressTime = float.NegativeInfinity;
     private bool _jumpReleased;
@@ -105,9 +63,7 @@ public class PlayerMovement : MonoBehaviour
     private int _chainedJumpCount = 0;
 
     private float _ledgeGrabTimer = 0;
-    private Vector3 _walkVelocity;
 
-    private bool _isLedgeGrabbing;
 
     // Debugging metrics
     private float _debugJumpStartY;
@@ -123,9 +79,9 @@ public class PlayerMovement : MonoBehaviour
 
         // Compute jump parameters
         var jumpValues = GravityMath.ComputeGravity(
-            FIRST_JUMP_HEIGHT,
-            FIRST_JUMP_RISE_TIME,
-            FIRST_JUMP_FALL_TIME
+            PlayerConstants.FIRST_JUMP_HEIGHT,
+            PlayerConstants.FIRST_JUMP_RISE_TIME,
+            PlayerConstants.FIRST_JUMP_FALL_TIME
         );
 
         _jumpSpeed   = jumpValues.JumpVelocity;
@@ -133,7 +89,7 @@ public class PlayerMovement : MonoBehaviour
         _riseGravity = jumpValues.RiseGravity;
 
         _secondJumpSpeed = GravityMath.JumpVelForHeight(
-            SECOND_JUMP_HEIGHT,
+            PlayerConstants.SECOND_JUMP_HEIGHT,
             _riseGravity
         );
 
@@ -156,8 +112,7 @@ public class PlayerMovement : MonoBehaviour
         _chainedJumpTimer = 0;
         _chainedJumpCount = 0;
 
-        _isLedgeGrabbing = false;
-        IsWallSliding = false;
+        CurrentState = State.FreeFall;
 
         _ground.RecordFootprintPos();
         _ground.UpdateGroundState();
@@ -204,29 +159,30 @@ public class PlayerMovement : MonoBehaviour
     {
         DebugDisplay.PrintLine($"Rise: {_riseGravity}");
         DebugDisplay.PrintLine($"Fall: {_fallGravity}");
+
         // Detect various states
         _ground.UpdateGroundState();
         _ledge.UpdateLedgeDetectorState();
         _wall.UpdateWallState();
 
-        // Start wall-sliding if we're falling while touching a wall
-        // (and somewhat facing toward that wall)
-        IsWallSliding = 
-            !_ground.IsGrounded &&
-            _wall.IsTouchingWall &&
-            Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
-            VSpeed < 0;
+        // Transition states
+        switch (CurrentState)
+        {
+            case State.WallSliding: WallSlidingTransitions(); break;
+            case State.Walking: GroundedTransitions(); break;
+            case State.FreeFall: AirborneTransitions(); break;
+            case State.LedgeGrabbing: GrabbingLedgeTransitions(); break;
+        }
 
         // Adjust the velocity based on the current state
-        if (IsWallSliding)
-            WhileWallSliding();
-        else if (_ground.IsGrounded)
-            WhileGrounded();
-        else
-            WhileAirborne();
+        switch (CurrentState)
+        {
+            case State.WallSliding: WhileWallSliding(); break;
+            case State.Walking: WhileGrounded(); break;
+            case State.FreeFall: WhileAirborne(); break;
+            case State.LedgeGrabbing: WhileGrabbingLedge(); break;
+        }
 
-        ApplyLedgeGrabbing();
-        
         // Move with the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
 
@@ -241,7 +197,29 @@ public class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
     }
 
+    private void GroundedTransitions()
+    {
+        if (!_ground.IsGrounded)
+            CurrentState = State.FreeFall;
+    }
     private void WhileGrounded()
+    {
+        // Start the chained jump timer once we land
+        if (!_ground.WasGroundedLastFrame)
+            _chainedJumpTimer = PlayerConstants.CHAINED_JUMP_TIME_WINDOW;
+
+        // Reset the chained jump count if you wait too long after landing
+        _chainedJumpTimer -= Time.deltaTime;
+        if (_chainedJumpTimer < 0)
+        {
+            _chainedJumpTimer = 0;
+            _chainedJumpCount = 0;
+        }
+
+        GroundedPhysics();
+        GroundedControls();
+    }
+    private void GroundedPhysics()
     {
         // Stop falling when we hit the ground.
         VSpeed = 0;
@@ -254,20 +232,6 @@ public class PlayerMovement : MonoBehaviour
         // bring it back to zero so the player doesn't go flying backwards.
         if (HSpeed < 0)
             HSpeed = 0;
-
-        // Start the chained jump timer once we land
-        if (!_ground.WasGroundedLastFrame)
-            _chainedJumpTimer = CHAINED_JUMP_TIME_WINDOW;
-
-        // Reset the chained jump count if you wait too long after landing
-        _chainedJumpTimer -= Time.deltaTime;
-        if (_chainedJumpTimer < 0)
-        {
-            _chainedJumpTimer = 0;
-            _chainedJumpCount = 0;
-        }
-
-        GroundedControls();
     }
     private void GroundedControls()
     {
@@ -279,22 +243,22 @@ public class PlayerMovement : MonoBehaviour
 
         // Speed up/slow down with the left stick
         var inputVector = GetWalkInput();
-        float hSpeedIntended = inputVector.magnitude * HSPEED_MAX_GROUND;
+        float hSpeedIntended = inputVector.magnitude * PlayerConstants.HSPEED_MAX_GROUND;
 
-        if (hSpeedIntended < HSPEED_MIN)
+        if (hSpeedIntended < PlayerConstants.HSPEED_MIN)
             hSpeedIntended = 0;
 
         float accel = HSpeed < hSpeedIntended
-            ? HACCEL_GROUND
-            : FRICTION_GROUND;
+            ? PlayerConstants.HACCEL_GROUND
+            : PlayerConstants.FRICTION_GROUND;
 
         HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
 
         // HACK: Immediately accelerate to the minimum speed.
         // This makes the controls feel snappy and responsive, while still
         // having a feeling of acceleration.
-        if (hSpeedIntended > 0 && HSpeed < HSPEED_MIN)
-            HSpeed = HSPEED_MIN;
+        if (hSpeedIntended > 0 && HSpeed < PlayerConstants.HSPEED_MIN)
+            HSpeed = PlayerConstants.HSPEED_MIN;
 
         // Rotate with the left stick
         if (inputVector.magnitude > 0.001f)
@@ -306,11 +270,11 @@ public class PlayerMovement : MonoBehaviour
             HAngleDeg = Mathf.MoveTowardsAngle(
                 HAngleDeg,
                 targetAngleDeg,
-                ROT_SPEED_DEG * Time.deltaTime
+                PlayerConstants.ROT_SPEED_DEG * Time.deltaTime
             );
 
             // ...unless we're going really slow, then just pivot instantly.
-            if (HSpeed < MAX_PIVOT_SPEED)
+            if (HSpeed < PlayerConstants.MAX_PIVOT_SPEED)
                 HAngleDeg = targetAngleDeg;
         }
 
@@ -327,12 +291,49 @@ public class PlayerMovement : MonoBehaviour
         _walkVelocity = HSpeed * AngleForward(HAngleDeg);
     }
 
+    private void AirborneTransitions()
+    {
+        // Transition to walking if we're on the ground
+        if (_ground.IsGrounded)
+        {
+            CurrentState = State.Walking;
+            return;
+        }
+
+        bool isWallSliding =
+            VSpeed < 0 &&
+            _wall.IsTouchingWall &&
+            Forward.ComponentAlong(-_wall.LastWallNormal) > 0;
+
+        bool inLedgeGrabSweetSpot = 
+            _ledge.LedgePresent &&
+            _ledge.LastLedgeHeight >= PlayerConstants.BODY_HEIGHT / 2 &&
+            _ledge.LastLedgeHeight <= PlayerConstants.BODY_HEIGHT;
+
+        if (isWallSliding && inLedgeGrabSweetSpot)
+        {
+            StartGrabbingLedge();
+            return;
+        }
+
+        if (isWallSliding && !inLedgeGrabSweetSpot)
+        {
+            CurrentState = State.WallSliding;
+            return;
+        }
+    }
     private void WhileAirborne()
     {
         // DEBUG: Record stats
         if (transform.position.y > _debugJumpMaxY)
             _debugJumpMaxY = transform.position.y;
 
+        AirbornePhysics();
+        AirborneStrafingControls();
+        AirborneButtonControls();
+    }
+    private void AirbornePhysics()
+    {
         // Apply gravity
         // Use more gravity when we're falling so the jump arc feels "squishier"
         float gravity = VSpeed > 0
@@ -342,39 +343,39 @@ public class PlayerMovement : MonoBehaviour
         VSpeed -= gravity * Time.deltaTime;
 
         // Cap the VSpeed at the terminal velocity
-        if (VSpeed < TERMINAL_VELOCITY_AIR)
-            VSpeed = TERMINAL_VELOCITY_AIR;
+        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+            VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
 
         // Start going downwards if you bonk your head on the ceiling.
         // Don't bonk your head!
         if (VSpeed > 0 && _ground.IsBonkingHead)
-            VSpeed = BONK_SPEED;
-
-        AirborneControls();
+            VSpeed = PlayerConstants.BONK_SPEED;
     }
-    private void AirborneControls()
+    private void AirborneButtonControls()
     {
         if (!_input.JumpHeld)
             _jumpReleased = true;
 
-        // Cut the jump short if the button was released on the way up.
+        // Cut the jump short if the button was released on the way u
         // Immediately setting the VSpeed to 0 looks jarring, so instead we'll
         // exponentially decay it every frame.
         // Once it's decayed below a certain threshold, we'll let gravity do the
         // rest of the work so it still looks natural.
         if (VSpeed > (_jumpSpeed / 2) && _jumpReleased)
-            VSpeed *= SHORT_JUMP_DECAY_RATE;
+            VSpeed *= PlayerConstants.SHORT_JUMP_DECAY_RATE;
 
         // Let the player jump for a short period after walking off a ledge,
         // because everyone is human.  
         // Well, except maybe Wile E. Coyote, but he makes mistakes too. 
-        bool wasGroundedRecently = (Time.time - COYOTE_TIME < _ground.LastGroundedTime);
+        bool wasGroundedRecently = (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
         if (VSpeed < 0 && wasGroundedRecently && JumpPressedRecently())
         {
             StartGroundJump();
             DebugDisplay.PrintLine("Coyote-time jump!");
         }
-
+    }
+    private void AirborneStrafingControls()
+    {
         // In the air, we let the player "nudge" their velocity by applying a
         // force in the direction the stick is being pushed.
         // Unlike on the ground, you *will* lose speed and slide around if you
@@ -386,18 +387,18 @@ public class PlayerMovement : MonoBehaviour
         bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
         bool movingForwards = _walkVelocity.normalized.ComponentAlong(forward) > 0;
 
-        float accel = HACCEL_AIR;
-        float maxSpeed = HSPEED_MAX_AIR;
+        float accel = PlayerConstants.HACCEL_AIR;
+        float maxSpeed = PlayerConstants.HSPEED_MAX_AIR;
 
         // Reduce the speed limit when moving backwards.
         // If you're wanna go fast, you gotta go forward.
         if (!movingForwards)
-            maxSpeed = HSPEED_MAX_GROUND;
+            maxSpeed = PlayerConstants.HSPEED_MAX_GROUND;
 
         // Give them a little bit of help if they're pushing backwards
-        // on the stick, so it's easier to "abort" a poorly-timed jump.
+        // on the stick, so it's easier to "abort" a poorly-timed jum
         if (pushingBackwards)
-            accel = HACCEL_AIR_BACKWARDS;
+            accel = PlayerConstants.HACCEL_AIR_BACKWARDS;
 
         // Apply a force to get our new velocity.
         var oldVelocity = _walkVelocity;
@@ -409,15 +410,15 @@ public class PlayerMovement : MonoBehaviour
         float oldSpeed = oldVelocity.magnitude;
         float newSpeed = newVelocity.magnitude;
 
-        bool wasAboveGroundSpeedLimit = oldSpeed > HSPEED_MAX_GROUND;
-        bool nowAboveGroundSpeedLimit = newSpeed > HSPEED_MAX_GROUND;
+        bool wasAboveGroundSpeedLimit = oldSpeed > PlayerConstants.HSPEED_MAX_GROUND;
+        bool nowAboveGroundSpeedLimit = newSpeed > PlayerConstants.HSPEED_MAX_GROUND;
 
         if (newSpeed > oldSpeed)
         {
             if (wasAboveGroundSpeedLimit)
                 newSpeed = oldSpeed;
             else if (nowAboveGroundSpeedLimit)
-                newSpeed = HSPEED_MAX_GROUND;
+                newSpeed = PlayerConstants.HSPEED_MAX_GROUND;
         }
 
         // We WILL, however, slow them down if they're going past the max air
@@ -431,14 +432,34 @@ public class PlayerMovement : MonoBehaviour
         HSpeed = _walkVelocity.ComponentAlong(Forward);
     }
 
+    private void WallSlidingTransitions()
+    {
+        bool keepWallSliding = 
+            !_ground.IsGrounded &&
+            _wall.IsTouchingWall &&
+            Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
+            VSpeed < 0;
+
+        if (keepWallSliding)
+            CurrentState = State.WallSliding;
+        else if (_ground.IsGrounded)
+            CurrentState = State.Walking;
+        else
+            CurrentState = State.FreeFall;
+    }
     private void WhileWallSliding()
+    {
+        WallSlidingPhysics();
+        WallSlidingControls();
+    }
+    private void WallSlidingPhysics()
     {
         // Apply gravity
         float gravity = _wallSlideGravity;
         VSpeed -= gravity * Time.deltaTime;
 
-        if (VSpeed < TERMINAL_VELOCITY_WALL_SLIDE)
-            VSpeed = TERMINAL_VELOCITY_WALL_SLIDE;
+        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE)
+            VSpeed = PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE;
 
         // Cancel all walking velocity pointing "inside" the wall.
         _walkVelocity = _walkVelocity.ProjectOnPlane(_wall.LastWallNormal);
@@ -446,13 +467,11 @@ public class PlayerMovement : MonoBehaviour
 
         // Apply horizontal friction, since sliding on a wall naturally slows
         // you down.
-        HSpeed -= FRICTION_WALL_SLIDE * Time.deltaTime;
+        HSpeed -= PlayerConstants.FRICTION_WALL_SLIDE * Time.deltaTime;
         if (HSpeed < 0)
             HSpeed = 0;
 
         _walkVelocity = HSpeed * _walkVelocity.normalized;
-
-        WallSlidingControls();
     }
     private void WallSlidingControls()
     {
@@ -462,10 +481,10 @@ public class PlayerMovement : MonoBehaviour
             // Kick away from the wall
             var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
             float kickSpeed = Mathf.Max(
-                HSPEED_MAX_GROUND,
+                PlayerConstants.HSPEED_MAX_GROUND,
                 HSpeed
             );
-            kickSpeed *= WALL_JUMP_HSPEED_MULT;
+            kickSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
 
             _walkVelocity = kickDir * kickSpeed;
             HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
@@ -477,29 +496,25 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void ApplyLedgeGrabbing()
+    private void GrabbingLedgeTransitions()
     {
-        // Grab the ledge if we can
-        if (!_isLedgeGrabbing && CanGrabLedge() && VSpeed < 0)
-        {
-            _isLedgeGrabbing = true;
-            _ledgeGrabTimer = LEDGE_GRAB_DURATION;
-            GrabbedLedge?.Invoke();
-        }
+        if (_ledgeGrabTimer <= 0)
+            CurrentState = State.FreeFall;
+    }
+    private void WhileGrabbingLedge()
+    {
+        VSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
+        HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
+        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
 
-        // HACK: override the VSpeed and HSpeed while the ledge is being grabbed
-        if (_isLedgeGrabbing)
-        {
-            VSpeed = LEDGE_GRAB_VSPEED;
-            HSpeed = LEDGE_GRAB_HSPEED;
-            _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+        _ledgeGrabTimer -= Time.deltaTime;
+    }
 
-            _ledgeGrabTimer -= Time.deltaTime;
-            if (_ledgeGrabTimer <= 0)
-            {
-                _isLedgeGrabbing = false;
-            }
-        }
+    private void StartGrabbingLedge()
+    {
+        CurrentState = State.LedgeGrabbing;
+        _ledgeGrabTimer = PlayerConstants.LEDGE_GRAB_DURATION;
+        GrabbedLedge?.Invoke();
     }
 
     private void StartGroundJump()
@@ -513,7 +528,7 @@ public class PlayerMovement : MonoBehaviour
         if (_chainedJumpCount % 2 == 0)
         {
             VSpeed = _secondJumpSpeed;
-            HSpeed *= CHAINED_JUMP_HSPEED_MULT;
+            HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
         }
 
         // DEBUG: Record debug stats
@@ -556,27 +571,7 @@ public class PlayerMovement : MonoBehaviour
 
     private bool JumpPressedRecently()
     {
-        return (Time.time - EARLY_JUMP_TIME < _lastJumpButtonPressTime);
-    }
-
-    private bool CanGrabLedge()
-    {
-        DebugDisplay.DrawPoint(Color.red, transform.position + (Vector3.up * _ledge.LastLedgeHeight));
-        if (!_ledge.LedgePresent)
-            return false;
-
-        // Only grab the ledge if it's in the sweet spot
-        if (_ledge.LastLedgeHeight < BODY_HEIGHT / 2)
-            return false;
-        
-        if (_ledge.LastLedgeHeight > BODY_HEIGHT)
-            return false;
-
-        // Only grab the ledge if we're wall-sliding
-        if (!IsWallSliding)
-            return false;
-
-        return true;
+        return (Time.time - PlayerConstants.EARLY_JUMP_TIME < _lastJumpButtonPressTime);
     }
 
     private Vector3 AngleForward(float angleDeg)

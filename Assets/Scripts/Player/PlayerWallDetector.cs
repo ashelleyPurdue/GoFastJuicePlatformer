@@ -15,8 +15,8 @@ public class PlayerWallDetector : MonoBehaviour
         // Do a capsule overlap to see if we're touching a wall
         var wallHits = CylinderPhysics.OverlapCylinder(
             transform.position,
-            PlayerMovement.BODY_RADIUS + WALL_CHECK_DIST,
-            PlayerMovement.BODY_HEIGHT
+            PlayerConstants.BODY_RADIUS + WALL_CHECK_DIST,
+            PlayerConstants.BODY_HEIGHT
         );
         IsTouchingWall = wallHits.Any(c => c.transform != this.transform);
 
@@ -69,12 +69,12 @@ public class PlayerWallDetector : MonoBehaviour
         var orientation = Quaternion.LookRotation(forward, Vector3.up);
 
         var halfExtents = new Vector3(
-            PlayerMovement.BODY_RADIUS,
-            PlayerMovement.BODY_HEIGHT / 2,
-            PlayerMovement.BODY_RADIUS
+            PlayerConstants.BODY_RADIUS,
+            PlayerConstants.BODY_HEIGHT / 2,
+            PlayerConstants.BODY_RADIUS
         );
 
-        var boxCenter = transform.position + (Vector3.up * PlayerMovement.BODY_HEIGHT / 2);
+        var boxCenter = transform.position + (Vector3.up * PlayerConstants.BODY_HEIGHT / 2);
 
         RaycastHit hit;
         bool hitAnything = Physics.BoxCast(

@@ -80,8 +80,8 @@ public class PlayerGroundDetector : MonoBehaviour
     private bool CheckBonkingHead()
     {
         return CylinderPhysics.CylinderCast(
-            transform.position + (Vector3.up * PlayerMovement.BODY_HEIGHT),
-            PlayerMovement.BODY_RADIUS,
+            transform.position + (Vector3.up * PlayerConstants.BODY_HEIGHT),
+            PlayerConstants.BODY_RADIUS,
             GROUND_DETECTOR_THICKNESS,
             Vector3.up,
             GROUND_DETECTOR_THICKNESS / 2
@@ -97,7 +97,7 @@ public class PlayerGroundDetector : MonoBehaviour
     {
         return CylinderPhysics.CircleCast(
             transform.position + (Vector3.up * RAYCAST_OFFSET),
-            PlayerMovement.BODY_RADIUS,
+            PlayerConstants.BODY_RADIUS,
             RAYCAST_DISTANCE,
             Vector3.down,
             QueryTriggerInteraction.Ignore

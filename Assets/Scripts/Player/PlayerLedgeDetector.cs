@@ -12,7 +12,7 @@ public class PlayerLedgeDetector : MonoBehaviour
 
     public void UpdateLedgeDetectorState()
     {
-        const float bodyRadius = PlayerMovement.BODY_RADIUS;
+        const float bodyRadius = PlayerConstants.BODY_RADIUS;
         const float distance = 0.13f;
 
         // TODO: Add comments, some of them clever.
