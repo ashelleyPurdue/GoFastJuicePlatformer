@@ -8,12 +8,14 @@ namespace DitzelGames.FastIK
     /// <summary>
     /// Fabrik IK Solver
     /// </summary>
+    [ExecuteInEditMode]
     public class FastIKFabric : MonoBehaviour
     {
         /// <summary>
         /// Chain length of bones
         /// </summary>
         public int ChainLength = 2;
+        private int PrevChainLength = -1;   // To detect changes in edit mode
 
         /// <summary>
         /// Target the chain should bent to
@@ -50,11 +52,6 @@ namespace DitzelGames.FastIK
 
 
         // Start is called before the first frame update
-        void Awake()
-        {
-            Init();
-        }
-
         void Init()
         {
             //initial array
@@ -74,13 +71,7 @@ namespace DitzelGames.FastIK
             }
 
             //init target
-            if (Target == null)
-            {
-                Target = new GameObject(gameObject.name + " Target").transform;
-                SetPositionRootSpace(Target, GetPositionRootSpace(transform));
-            }
             StartRotationTarget = GetRotationRootSpace(Target);
-
 
             //init data
             var current = transform;
@@ -105,9 +96,6 @@ namespace DitzelGames.FastIK
 
                 current = current.parent;
             }
-
-
-
         }
 
         // Update is called once per frame
@@ -121,8 +109,11 @@ namespace DitzelGames.FastIK
             if (Target == null)
                 return;
 
-            if (BonesLength.Length != ChainLength)
+            if (BonesLength == null || ChainLength != PrevChainLength || BonesLength.Length != ChainLength)
+            {
                 Init();
+                PrevChainLength = ChainLength;
+            }
 
             //Fabric
 
@@ -187,14 +178,17 @@ namespace DitzelGames.FastIK
                 }
             }
 
-            //set position & rotation
-            for (int i = 0; i < Positions.Length; i++)
+            //set position & rotation(but only in play mode)
+            if (Application.isPlaying)
             {
-                if (i == Positions.Length - 1)
-                    SetRotationRootSpace(Bones[i], Quaternion.Inverse(targetRotation) * StartRotationTarget * Quaternion.Inverse(StartRotationBone[i]));
-                else
-                    SetRotationRootSpace(Bones[i], Quaternion.FromToRotation(StartDirectionSucc[i], Positions[i + 1] - Positions[i]) * Quaternion.Inverse(StartRotationBone[i]));
-                SetPositionRootSpace(Bones[i], Positions[i]);
+                for (int i = 0; i < Positions.Length; i++)
+                {
+                    if (i == Positions.Length - 1)
+                        SetRotationRootSpace(Bones[i], Quaternion.Inverse(targetRotation) * StartRotationTarget * Quaternion.Inverse(StartRotationBone[i]));
+                    else
+                        SetRotationRootSpace(Bones[i], Quaternion.FromToRotation(StartDirectionSucc[i], Positions[i + 1] - Positions[i]) * Quaternion.Inverse(StartRotationBone[i]));
+                    SetPositionRootSpace(Bones[i], Positions[i]);
+                }
             }
         }
 
@@ -234,17 +228,31 @@ namespace DitzelGames.FastIK
         void OnDrawGizmos()
         {
 #if UNITY_EDITOR
+            if (!enabled || Root == null)
+                return;
+                
             var current = this.transform;
-            for (int i = 0; i < ChainLength && current != null && current.parent != null; i++)
+            Vector3 origin = Root.position;
+            for (int i = 0; i < Positions.Length - 1; i++)
             {
-                var scale = Vector3.Distance(current.position, current.parent.position) * 0.1f;
-                Handles.matrix = Matrix4x4.TRS(current.position, Quaternion.FromToRotation(Vector3.up, current.parent.position - current.position), new Vector3(scale, Vector3.Distance(current.parent.position, current.position), scale));
+                Vector3 currentPoint = origin + (Vector3)(Root.localToWorldMatrix * Positions[i]);
+                Vector3 nextPoint    = origin + (Vector3)(Root.localToWorldMatrix * Positions[i + 1]);
+
+                float dist = Vector3.Distance(currentPoint, nextPoint);
+                float scale = dist * 0.1f;
+                var rot = Quaternion.FromToRotation(
+                    Vector3.up,
+                    nextPoint - currentPoint
+                );
+                Handles.matrix = Matrix4x4.TRS(
+                    currentPoint,
+                    rot,
+                    new Vector3(scale, dist, scale)
+                );
                 Handles.color = Color.green;
                 Handles.DrawWireCube(Vector3.up * 0.5f, Vector3.one);
-                current = current.parent;
             }
-        }
 #endif
-
+        }
     }
 }
