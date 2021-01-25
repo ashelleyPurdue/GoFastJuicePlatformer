@@ -52,7 +52,8 @@ public class PlayerMovement : MonoBehaviour
         Walking,
         FreeFall,
         WallSliding,
-        LedgeGrabbing
+        LedgeGrabbing,
+        Rolling
     }
     public State CurrentState {get; private set;}
 
@@ -67,6 +68,10 @@ public class PlayerMovement : MonoBehaviour
     private float _ledgeGrabTimer = 0;
 
     private float _jumpRedirectTimer = 0;
+    
+    private float _rollTimer = 0;
+    private float _rollCooldown = 0;
+    private float _lastRollStopTime = 0;
 
     // Debugging metrics
     private float _debugJumpStartY;
@@ -114,6 +119,7 @@ public class PlayerMovement : MonoBehaviour
         _ledgeGrabTimer = 0;
         _chainedJumpTimer = 0;
         _chainedJumpCount = 0;
+        _rollTimer = 0;
 
         CurrentState = State.FreeFall;
 
@@ -171,6 +177,8 @@ public class PlayerMovement : MonoBehaviour
         _ledge.UpdateLedgeDetectorState();
         _wall.UpdateWallState();
 
+        AdvanceCooldowns();
+
         // Transition states
         switch (CurrentState)
         {
@@ -178,6 +186,7 @@ public class PlayerMovement : MonoBehaviour
             case State.Walking: GroundedTransitions(); break;
             case State.FreeFall: AirborneTransitions(); break;
             case State.LedgeGrabbing: GrabbingLedgeTransitions(); break;
+            case State.Rolling: RollingTransitions(); break;
         }
 
         // Adjust the velocity based on the current state
@@ -187,6 +196,7 @@ public class PlayerMovement : MonoBehaviour
             case State.Walking: WhileGrounded(); break;
             case State.FreeFall: WhileAirborne(); break;
             case State.LedgeGrabbing: WhileGrabbingLedge(); break;
+            case State.Rolling: WhileRolling(); break;
         }
 
         // Move with the current velocity
@@ -202,6 +212,16 @@ public class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLine("Chained jump timer: " + _chainedJumpTimer);
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
         DebugDisplay.PrintLine("Current state: " + CurrentState);
+    }
+
+    /// <summary>
+    /// Certain actions, like rolling, have a cooldown period.
+    /// The timer for each cooldown needs to *always* be ticking down, independent
+    /// of what state we're in.  Hence, we have a separate method for it.
+    /// </summary>
+    private void AdvanceCooldowns()
+    {
+        _rollCooldown -= Time.deltaTime;
     }
 
     private void GroundedTransitions()
@@ -291,13 +311,17 @@ public class PlayerMovement : MonoBehaviour
     }
     private void GroundedButtonControls()
     {
-        // Jump when the button is pressed and we're on the ground.
-        // Well, OK, that's a little too strict.  
-        // We should let the player press the jump button a little bit before 
-        // hitting the ground.
         if (JumpPressedRecently())
         {
-            StartGroundJump();
+            if (StoppedRollingRecently())
+                StartRollJump();
+            else
+                StartGroundJump();
+        }
+
+        if (AttackPressedRecently() && _rollCooldown <= 0)
+        {
+            StartRolling();
         }
     }
     
@@ -538,6 +562,57 @@ public class PlayerMovement : MonoBehaviour
         GrabbedLedge?.Invoke();
     }
 
+    private void RollingTransitions()
+    {
+        if (_rollTimer <= 0)
+        {
+            _lastRollStopTime = Time.time;
+
+            // Slow back down, so the player doesn't have ridiculous speed when
+            // the roll stops
+            HSpeed = 0;
+            _walkVelocity = Vector3.zero;
+
+            // Transition to the correct state, based on if we're in the air
+            // or not.
+            if (_ground.IsGrounded)
+                CurrentState = State.Walking;
+            else
+                CurrentState = State.FreeFall;
+
+            // Start the cooldown, so the player can't immediately
+            // roll again.
+            _rollCooldown = PlayerConstants.ROLL_COOLDOWN;
+        }
+    }
+    private void WhileRolling()
+    {
+        // Let the player change their direction for a very short about of time
+        // at the beginning of their roll
+        if (_rollTimer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME)
+            HAngleDeg = GetHAngleDegInput();
+
+        // Let the player jump out of a roll.
+        if (JumpPressedRecently())
+        {
+            StartRollJump();
+            return;
+        }
+
+        _rollTimer -= Time.deltaTime;
+    }
+    private void StartRolling()
+    {
+        // Set the velocity
+        VSpeed = 0;
+        HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
+        SyncWalkVelocityToHSpeed();
+
+        // Book keeping
+        _rollTimer = PlayerConstants.ROLL_TIME;
+        CurrentState = State.Rolling;
+    }
+
     private void StartGroundJump()
     {
         // DEBUG: Record debug stats
@@ -561,6 +636,29 @@ public class PlayerMovement : MonoBehaviour
         _chainedJumpCount++;
         _jumpReleased = false;
         _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
+        StartedJumping?.Invoke();
+    }
+
+    private void StartRollJump()
+    {
+        // DEBUG: Record debug stats
+        _debugJumpStartY = transform.position.y;
+        _debugJumpMaxY = transform.position.y;
+
+        InstantlyFaceLeftStick();
+
+        // Cap their HSpeed at something reasonable.
+        // Otherwise, they'd conserve their rolling HSpeed into the
+        // jump, which would result in a *super* ridiculous long jump.
+        // We only want rolling jumps to be *slightly* ridiculous.
+        HSpeed = PlayerConstants.ROLL_JUMP_HSPEED;
+        VSpeed = _jumpSpeed;
+        SyncWalkVelocityToHSpeed();
+
+        _chainedJumpCount = 0;
+        _jumpReleased = false;
+        _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
+        CurrentState = State.Walking;
         StartedJumping?.Invoke();
     }
 
@@ -616,6 +714,11 @@ public class PlayerMovement : MonoBehaviour
     private bool WasGroundedRecently()
     {
         return (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
+    }
+
+    private bool StoppedRollingRecently()
+    {
+        return (Time.time - PlayerConstants.COYOTE_TIME < _lastRollStopTime);
     }
 
     private bool JumpPressedRecently()

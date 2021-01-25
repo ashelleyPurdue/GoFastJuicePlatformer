@@ -25,6 +25,7 @@ public class PlayerAnimationController : MonoBehaviour
     private const string PLAYER_LEDGE_GRAB = "PlayerLedgeGrab";
     private const string PLAYER_JUMP_0 = "PlayerJump_0";
     private const string PLAYER_JUMP_1 = "PlayerJump_1";
+    private const string PLAYER_ROLL = "PlayerRoll";
 
     private float _forceSetStateTimer = 0;
     
@@ -67,7 +68,8 @@ public class PlayerAnimationController : MonoBehaviour
         switch (_movement.CurrentState)
         {
             case PlayerMovement.State.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
-            
+            case PlayerMovement.State.Rolling: SetState(PLAYER_ROLL, 0.1f); break;
+
             case PlayerMovement.State.Walking:
                 if (_movement.HSpeed > 0)
                     SetState(PLAYER_RUN, 0.25f);
