@@ -219,7 +219,11 @@ public class PlayerMovement : MonoBehaviour
         }
 
         GroundedPhysics();
-        GroundedControls();
+        GroundedStickControls();
+        GroundedButtonControls();
+        
+        // Update the velocity based on HSpeed
+        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
     }
     private void GroundedPhysics()
     {
@@ -235,7 +239,8 @@ public class PlayerMovement : MonoBehaviour
         if (HSpeed < 0)
             HSpeed = 0;
     }
-    private void GroundedControls()
+
+    private void GroundedStickControls()
     {
         // On the ground, we let the player turn without sliding around or losing
         // speed.
@@ -279,7 +284,9 @@ public class PlayerMovement : MonoBehaviour
             if (HSpeed < PlayerConstants.MAX_PIVOT_SPEED)
                 HAngleDeg = targetAngleDeg;
         }
-
+    }
+    private void GroundedButtonControls()
+    {
         // Jump when the button is pressed and we're on the ground.
         // Well, OK, that's a little too strict.  
         // We should let the player press the jump button a little bit before 
@@ -288,11 +295,8 @@ public class PlayerMovement : MonoBehaviour
         {
             StartGroundJump();
         }
-
-        // Update the velocity based on HSpeed
-        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
     }
-
+    
     private void AirborneTransitions()
     {
         // Transition to walking if we're on the ground
