@@ -43,10 +43,6 @@ public class PlayerAnimationController : MonoBehaviour
     void Update()
     {
         UpdateRotation();
-    }
-
-    void FixedUpdate()
-    {
         UpdateAnimatorParams();
         NaturalStateTransitions();
     }
