@@ -195,6 +195,7 @@ public class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
         DebugDisplay.PrintLine("Chained jump timer: " + _chainedJumpTimer);
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
+        DebugDisplay.PrintLine("Current state: " + CurrentState);
     }
 
     private void GroundedTransitions()
