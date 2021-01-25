@@ -16,4 +16,7 @@ public class PlayerInputImpl : MonoBehaviour, IPlayerInput
 
     public bool JumpHeld => Input.GetButton("Jump");
     public bool JumpPressed => Input.GetButtonDown("Jump");
+
+    public bool AttackHeld => Input.GetButton("Attack");
+    public bool AttackPressed => Input.GetButtonDown("Attack");
 }
