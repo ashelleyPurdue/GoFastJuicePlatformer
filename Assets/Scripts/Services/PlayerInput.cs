@@ -23,4 +23,16 @@ public interface IPlayerInput
     /// </summary>
     /// <value></value>
     bool JumpPressed {get;}
+
+    /// <summary>
+    /// Whether or not the attack button is currently being held
+    /// </summary>
+    /// <value></value>
+    bool AttackHeld {get;}
+
+    /// <summary>
+    /// Whether or not the attack button was pressed this update frame
+    /// </summary>
+    /// <value></value>
+    bool AttackPressed {get;}
 }
