@@ -52,7 +52,8 @@ public class PlayerMovement : MonoBehaviour
         Walking,
         FreeFall,
         WallSliding,
-        LedgeGrabbing
+        LedgeGrabbing,
+        Kicking
     }
     public State CurrentState {get; private set;}
 
@@ -178,6 +179,7 @@ public class PlayerMovement : MonoBehaviour
             case State.Walking: GroundedTransitions(); break;
             case State.FreeFall: AirborneTransitions(); break;
             case State.LedgeGrabbing: GrabbingLedgeTransitions(); break;
+            case State.Kicking: KickingTransitions(); break;
         }
 
         // Adjust the velocity based on the current state
@@ -187,6 +189,7 @@ public class PlayerMovement : MonoBehaviour
             case State.Walking: WhileGrounded(); break;
             case State.FreeFall: WhileAirborne(); break;
             case State.LedgeGrabbing: WhileGrabbingLedge(); break;
+            case State.Kicking: WhileKicking(); break;
         }
 
         // Move with the current velocity
@@ -540,6 +543,21 @@ public class PlayerMovement : MonoBehaviour
         CurrentState = State.LedgeGrabbing;
         _ledgeGrabTimer = PlayerConstants.LEDGE_GRAB_DURATION;
         GrabbedLedge?.Invoke();
+    }
+
+    private void KickingTransitions()
+    {
+
+    }
+
+    private void WhileKicking()
+    {
+
+    }
+
+    private void StartKicking()
+    {
+
     }
 
     private void StartGroundJump()
