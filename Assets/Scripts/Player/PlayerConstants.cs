@@ -55,6 +55,6 @@ public static class PlayerConstants
 
     public const float JUMP_REDIRECT_TIME = 0.1f;
     
-    public const float KICK_DURATION = 0.25f;
+    public const float KICK_DURATION = 0.35f;
     public const float KICK_COOLDOWN = 0.25f;
 }
