@@ -59,6 +59,8 @@ public class PlayerMovement : MonoBehaviour
     private float _lastJumpButtonPressTime = float.NegativeInfinity;
     private bool _jumpReleased;
 
+    private float _lastAttackButtonPressTime = float.NegativeInfinity;
+
     private float _chainedJumpTimer = 0;
     private int _chainedJumpCount = 0;
 
@@ -154,6 +156,9 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_input.JumpPressed)
             _lastJumpButtonPressTime = Time.time;
+
+        if (_input.AttackPressed)
+            _lastAttackButtonPressTime = Time.time;
     }
 
     public void FixedUpdate()
@@ -616,6 +621,11 @@ public class PlayerMovement : MonoBehaviour
     private bool JumpPressedRecently()
     {
         return (Time.time - PlayerConstants.EARLY_JUMP_TIME < _lastJumpButtonPressTime);
+    }
+
+    private bool AttackPressedRecently()
+    {
+        return (Time.time - Time.fixedDeltaTime < _lastAttackButtonPressTime);
     }
 
     private Vector3 AngleForward(float angleDeg)
