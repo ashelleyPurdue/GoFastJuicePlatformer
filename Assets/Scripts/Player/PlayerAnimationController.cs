@@ -54,6 +54,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         _animator.SetFloat("RunSpeed", speedPercent);
         _animator.SetFloat("VSpeed", _movement.VSpeed);
+        _animator.SetFloat("KickTimer", _movement.KickTimerPercent);
     }
 
     private void NaturalStateTransitions()
