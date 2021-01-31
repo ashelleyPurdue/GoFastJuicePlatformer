@@ -152,7 +152,7 @@ public class PlayerAnimationController : MonoBehaviour
         if (_movement.CurrentState == PlayerMovement.State.WallSliding)
             targetRot = FaceWallSlide();
 
-        if (_ground.IsGrounded)
+        if (_movement.CurrentState == PlayerMovement.State.Walking)
             targetRot = TiltWithSpeed(targetRot);
 
         return targetRot;
