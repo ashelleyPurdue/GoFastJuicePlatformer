@@ -270,7 +270,7 @@ public class PlayerMovement : MonoBehaviour
         {
             // Gradually rotate until we're facing the direction the stick
             // is pointing
-            float targetAngleDeg = Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
+            float targetAngleDeg = GetHAngleDegInput();
 
             HAngleDeg = Mathf.MoveTowardsAngle(
                 HAngleDeg,
@@ -571,6 +571,17 @@ public class PlayerMovement : MonoBehaviour
             adjustedInput.Normalize();
 
         return adjustedInput;
+    }
+
+    /// <summary>
+    /// Returns the intended HAngleDeg based on the left stick's input, relative
+    /// to camera space.
+    /// </summary>
+    /// <returns></returns>
+    private float GetHAngleDegInput()
+    {
+        var inputVector = GetWalkInput();
+        return Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
     }
 
     private bool JumpPressedRecently()
