@@ -598,7 +598,7 @@ public class PlayerMovement : MonoBehaviour
         VSpeed = 0;
 
         // Lose a little bit of hspeed
-        HSpeed *= 0.8f;
+        HSpeed *= PlayerConstants.KICK_HSPEED_MULT;
     }
 
     private void StartGroundJump()

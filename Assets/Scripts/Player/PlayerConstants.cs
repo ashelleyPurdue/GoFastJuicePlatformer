@@ -57,4 +57,5 @@ public static class PlayerConstants
     
     public const float KICK_DURATION = 0.35f;
     public const float KICK_COOLDOWN = 0.25f;
+    public const float KICK_HSPEED_MULT = 0.5f;
 }
