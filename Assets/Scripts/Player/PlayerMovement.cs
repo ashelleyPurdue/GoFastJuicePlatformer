@@ -41,6 +41,8 @@ public class PlayerMovement : MonoBehaviour
 
     public int ChainedJumpCount => (_chainedJumpCount + 1) % 2;
 
+    public float KickTimerPercent => 1f - (_kickTimer / PlayerConstants.KICK_DURATION);
+
     // State
     public float HAngleDeg {get; private set;}
     public float HSpeed {get; private set;}
