@@ -586,6 +586,7 @@ public class PlayerMovement : MonoBehaviour
     private void WhileKicking()
     {
         _kickTimer -= Time.deltaTime;
+        AirborneStrafingControls();
         // TODO: Enable hitbox?
     }
 
