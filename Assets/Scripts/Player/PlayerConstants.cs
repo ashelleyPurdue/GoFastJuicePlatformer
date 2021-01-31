@@ -54,4 +54,7 @@ public static class PlayerConstants
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
 
     public const float JUMP_REDIRECT_TIME = 0.1f;
+    
+    public const float KICK_DURATION = 0.25f;
+    public const float KICK_COOLDOWN = 0.25f;
 }

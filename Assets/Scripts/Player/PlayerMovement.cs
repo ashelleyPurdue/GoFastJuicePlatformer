@@ -68,6 +68,9 @@ public class PlayerMovement : MonoBehaviour
     private float _ledgeGrabTimer = 0;
 
     private float _jumpRedirectTimer = 0;
+    
+    private float _kickTimer = 0;
+    private float _kickCooldownTimer = 0;
 
     // Debugging metrics
     private float _debugJumpStartY;
@@ -172,6 +175,8 @@ public class PlayerMovement : MonoBehaviour
         _ledge.UpdateLedgeDetectorState();
         _wall.UpdateWallState();
 
+        AdvanceCooldowns();
+
         // Transition states
         switch (CurrentState)
         {
@@ -206,6 +211,17 @@ public class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
         DebugDisplay.PrintLine("Current state: " + CurrentState);
     }
+
+    /// <summary>
+    /// Certain actions, like attacking, have a cooldown period.
+    /// The timer for each cooldown needs to *always* be ticking down, independent
+    /// of what state we're in.  Hence, we have a separate method for it.
+    /// </summary>
+    private void AdvanceCooldowns()
+    {
+        _kickCooldownTimer -= Time.deltaTime;
+    }
+
 
     private void GroundedTransitions()
     {
@@ -303,6 +319,9 @@ public class PlayerMovement : MonoBehaviour
         {
             StartGroundJump();
         }
+
+        if (AttackPressedRecently() && _kickCooldownTimer <= 0)
+            StartKicking();
     }
     
     private void AirborneTransitions()
@@ -387,6 +406,10 @@ public class PlayerMovement : MonoBehaviour
             StartGroundJump();
             DebugDisplay.PrintLine("Coyote-time jump!");
         }
+
+        // Kick when the attack button is pressed
+        if (AttackPressedRecently() && _kickCooldownTimer <= 0)
+            StartKicking();
     }
     private void AirborneStrafingControls()
     {
@@ -547,17 +570,33 @@ public class PlayerMovement : MonoBehaviour
 
     private void KickingTransitions()
     {
+        if (_kickTimer <= 0)
+        {
+            _kickCooldownTimer = PlayerConstants.KICK_COOLDOWN;
 
+            if (_ground.IsGrounded)
+                CurrentState = State.Walking;
+            else
+                CurrentState = State.FreeFall;
+        }
     }
 
     private void WhileKicking()
     {
-
+        _kickTimer -= Time.deltaTime;
+        // TODO: Enable hitbox?
     }
 
     private void StartKicking()
     {
+        _kickTimer = PlayerConstants.KICK_DURATION;
+        CurrentState = State.Kicking;
 
+        // Don't fall while kicking
+        VSpeed = 0;
+
+        // Lose a little bit of hspeed
+        HSpeed *= 0.8f;
     }
 
     private void StartGroundJump()
