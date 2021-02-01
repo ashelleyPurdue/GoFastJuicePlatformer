@@ -541,6 +541,13 @@ public class PlayerMovement : MonoBehaviour
             HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
         }
 
+        // Instantly face the direction the left stick tilting
+        if (GetWalkInput().magnitude > 0.001f)
+        {
+            HAngleDeg = GetHAngleDegInput();
+            _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+        }
+
         // DEBUG: Record debug stats
         _debugJumpStartY = transform.position.y;
         _debugJumpMaxY = transform.position.y;
