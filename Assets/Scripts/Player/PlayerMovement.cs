@@ -585,9 +585,20 @@ public class PlayerMovement : MonoBehaviour
 
     private void WhileKicking()
     {
-        _kickTimer -= Time.deltaTime;
+        // Let the player change their direction for a very short about of time
+        // at the beginning of their kick
+        if (_kickTimer > PlayerConstants.KICK_DURATION - PlayerConstants.KICK_REDIRECT_TIME)
+        {
+            if (GetWalkInput().magnitude > 0.001f)
+            {
+                HAngleDeg = GetHAngleDegInput();
+                _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+            }
+        }
+
         AirborneStrafingControls();
-        // TODO: Enable hitbox?
+
+        _kickTimer -= Time.deltaTime;
     }
 
     private void StartKicking()
