@@ -64,6 +64,7 @@ public class PlayerMovement : MonoBehaviour
 
     private float _ledgeGrabTimer = 0;
 
+    private float _jumpRedirectTimer = 0;
 
     // Debugging metrics
     private float _debugJumpStartY;
@@ -377,6 +378,20 @@ public class PlayerMovement : MonoBehaviour
     }
     private void AirborneStrafingControls()
     {
+        // Allow the player to change their direction for free for a short time
+        // after jumping.  After that time is up, air strafing controls kick in
+        if (_jumpRedirectTimer >= 0)
+        {
+            _jumpRedirectTimer -= Time.deltaTime;
+            if (GetWalkInput().magnitude > 0.001f)
+            {
+                HAngleDeg = GetHAngleDegInput();
+                _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+            }
+
+            return;
+        }
+
         // In the air, we let the player "nudge" their velocity by applying a
         // force in the direction the stick is being pushed.
         // Unlike on the ground, you *will* lose speed and slide around if you
@@ -538,6 +553,10 @@ public class PlayerMovement : MonoBehaviour
             HAngleDeg = GetHAngleDegInput();
             _walkVelocity = HSpeed * AngleForward(HAngleDeg);
         }
+
+        // Allow the player to change their direction for free for a short time
+        // after jumping.
+        _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
 
         // DEBUG: Record debug stats
         _debugJumpStartY = transform.position.y;

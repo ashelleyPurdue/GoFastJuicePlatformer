@@ -52,4 +52,6 @@ public static class PlayerConstants
     public const float WALL_JUMP_HSPEED_MULT = 1.1f;
 
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
+
+    public const float JUMP_REDIRECT_TIME = 0.1f;
 }
