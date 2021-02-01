@@ -606,18 +606,16 @@ public class PlayerMovement : MonoBehaviour
         _kickTimer = PlayerConstants.KICK_DURATION;
         CurrentState = State.Kicking;
 
+        // Immediately pivot in the direction of the left stick
+        if (GetWalkInput().magnitude > 0.001f)
+            HAngleDeg = GetHAngleDegInput();
+
         // Don't fall while kicking
         VSpeed = 0;
 
         // Lose a little bit of hspeed
         HSpeed *= PlayerConstants.KICK_HSPEED_MULT;
-
-        // Immediately pivot in the direction of the left stick
-        if (GetWalkInput().magnitude > 0.001f)
-        {
-            HAngleDeg = GetHAngleDegInput();
-            _walkVelocity = HSpeed * AngleForward(HAngleDeg);
-        }
+        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
     }
 
     private void StartGroundJump()
