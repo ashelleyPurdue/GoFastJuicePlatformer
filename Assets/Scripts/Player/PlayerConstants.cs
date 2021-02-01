@@ -27,7 +27,7 @@ public static class PlayerConstants
     public const float TERMINAL_VELOCITY_WALL_SLIDE = -10;
 
     public const float HACCEL_GROUND = 15;
-    public const float HACCEL_AIR = 9;
+    public const float HACCEL_AIR = 13;
     public const float HACCEL_AIR_BACKWARDS = 15;
 
 
