@@ -222,8 +222,7 @@ public class PlayerMovement : MonoBehaviour
         GroundedStickControls();
         GroundedButtonControls();
         
-        // Update the velocity based on HSpeed
-        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+        SyncWalkVelocityToHSpeed();
     }
     private void GroundedPhysics()
     {
@@ -387,7 +386,7 @@ public class PlayerMovement : MonoBehaviour
         if (_jumpRedirectTimer >= 0)
         {
             InstantlyFaceLeftStick();
-            _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+            SyncWalkVelocityToHSpeed();
 
             _jumpRedirectTimer -= Time.deltaTime;
             return;
@@ -522,7 +521,7 @@ public class PlayerMovement : MonoBehaviour
     {
         VSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
         HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
-        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+        SyncWalkVelocityToHSpeed();
 
         _ledgeGrabTimer -= Time.deltaTime;
     }
@@ -551,8 +550,7 @@ public class PlayerMovement : MonoBehaviour
             HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
         }
 
-        // Update the walk velocity to match the HSpeed
-        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
+        SyncWalkVelocityToHSpeed();
 
         // Book keeping
         _chainedJumpCount++;
@@ -565,6 +563,11 @@ public class PlayerMovement : MonoBehaviour
     {
         if (GetWalkInput().magnitude > 0.001f)
             HAngleDeg = GetHAngleDegInput();
+    }
+
+    private void SyncWalkVelocityToHSpeed()
+    {
+        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
     }
 
     /// <summary>
