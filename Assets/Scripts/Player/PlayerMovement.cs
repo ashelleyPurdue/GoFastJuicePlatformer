@@ -372,9 +372,9 @@ public class PlayerMovement : MonoBehaviour
 
         // Let the player jump for a short period after walking off a ledge,
         // because everyone is human.  
-        // Well, except maybe Wile E. Coyote, but he makes mistakes too. 
-        bool wasGroundedRecently = (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
-        if (VSpeed < 0 && wasGroundedRecently && JumpPressedRecently())
+        // This is called "coyote time", named after the tragic life of the late
+        // Wile E. Coyote.
+        if (VSpeed < 0 && WasGroundedRecently() && JumpPressedRecently())
         {
             StartGroundJump();
             DebugDisplay.PrintLine("Coyote-time jump!");
@@ -603,6 +603,11 @@ public class PlayerMovement : MonoBehaviour
     {
         var inputVector = GetWalkInput();
         return Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
+    }
+
+    private bool WasGroundedRecently()
+    {
+        return (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
     }
 
     private bool JumpPressedRecently()
