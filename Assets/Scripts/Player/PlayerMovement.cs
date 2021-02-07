@@ -386,13 +386,10 @@ public class PlayerMovement : MonoBehaviour
         // after jumping.  After that time is up, air strafing controls kick in
         if (_jumpRedirectTimer >= 0)
         {
-            _jumpRedirectTimer -= Time.deltaTime;
-            if (GetWalkInput().magnitude > 0.001f)
-            {
-                HAngleDeg = GetHAngleDegInput();
-                _walkVelocity = HSpeed * AngleForward(HAngleDeg);
-            }
+            InstantlyFaceLeftStick();
+            _walkVelocity = HSpeed * AngleForward(HAngleDeg);
 
+            _jumpRedirectTimer -= Time.deltaTime;
             return;
         }
 
@@ -543,10 +540,8 @@ public class PlayerMovement : MonoBehaviour
         _debugJumpStartY = transform.position.y;
         _debugJumpMaxY = transform.position.y;
 
-        // Instantly face the direction the left stick tilting
-        if (GetWalkInput().magnitude > 0.001f)
-            HAngleDeg = GetHAngleDegInput();
-
+        InstantlyFaceLeftStick();
+        
         VSpeed = _jumpSpeed;
 
         // Jump heigher and get a speed boost every time they do 2 chained jumps
@@ -564,6 +559,12 @@ public class PlayerMovement : MonoBehaviour
         _jumpReleased = false;
         _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
         StartedJumping?.Invoke();
+    }
+
+    private void InstantlyFaceLeftStick()
+    {
+        if (GetWalkInput().magnitude > 0.001f)
+            HAngleDeg = GetHAngleDegInput();
     }
 
     /// <summary>
