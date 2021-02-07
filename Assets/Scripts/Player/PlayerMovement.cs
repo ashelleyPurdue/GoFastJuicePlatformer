@@ -539,32 +539,31 @@ public class PlayerMovement : MonoBehaviour
 
     private void StartGroundJump()
     {
-        _chainedJumpCount++;
-        _jumpReleased = false;
+        // DEBUG: Record debug stats
+        _debugJumpStartY = transform.position.y;
+        _debugJumpMaxY = transform.position.y;
+
+        // Instantly face the direction the left stick tilting
+        if (GetWalkInput().magnitude > 0.001f)
+            HAngleDeg = GetHAngleDegInput();
+
         VSpeed = _jumpSpeed;
-        StartedJumping?.Invoke();
 
         // Jump heigher and get a speed boost every time they do 2 chained jumps
-        if (_chainedJumpCount % 2 == 0)
+        if (_chainedJumpCount % 2 == 1)
         {
             VSpeed = _secondJumpSpeed;
             HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
         }
 
-        // Instantly face the direction the left stick tilting
-        if (GetWalkInput().magnitude > 0.001f)
-        {
-            HAngleDeg = GetHAngleDegInput();
-            _walkVelocity = HSpeed * AngleForward(HAngleDeg);
-        }
+        // Update the walk velocity to match the HSpeed
+        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
 
-        // Allow the player to change their direction for free for a short time
-        // after jumping.
+        // Book keeping
+        _chainedJumpCount++;
+        _jumpReleased = false;
         _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
-
-        // DEBUG: Record debug stats
-        _debugJumpStartY = transform.position.y;
-        _debugJumpMaxY = transform.position.y;
+        StartedJumping?.Invoke();
     }
 
     /// <summary>
