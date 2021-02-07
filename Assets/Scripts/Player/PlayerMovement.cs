@@ -577,22 +577,16 @@ public class PlayerMovement : MonoBehaviour
             _input.LeftStick.y
         );
         
-        // Rotate it into camera space
-        var adjustedInput = 
-            Camera.main.transform.forward * rawInput.z +
-            Camera.main.transform.right * rawInput.x;
-        
-        // "flatten" it so that the y-coordinate is zero, while preserving the
-        // magnitude.
-        adjustedInput.y = 0;
-        adjustedInput.Normalize();
-        adjustedInput *= rawInput.magnitude;
-
         // Cap the magnitude at 1.0, because some people like to play with
         // keyboards.
-        if (adjustedInput.magnitude > 1)
-            adjustedInput.Normalize();
+        if (rawInput.magnitude > 1)
+            rawInput.Normalize();
 
+        // Rotate it into camera space
+        var adjustedInput = 
+            Camera.main.transform.forward.Flattened().normalized * rawInput.z +
+            Camera.main.transform.right.Flattened().normalized * rawInput.x;
+        
         return adjustedInput;
     }
 
