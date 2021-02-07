@@ -36,6 +36,9 @@ public static class PlayerConstants
     public const float LEDGE_GRAB_HSPEED = 4;
     public const float LEDGE_GRAB_DURATION = 0.15f;
 
+    public const float DIVE_JUMP_HEIGHT = 4;
+    public const float DIVE_HSPEED = 13;
+    public const float DIVE_GRAVITY = 100;
 
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION_GROUND = 15;

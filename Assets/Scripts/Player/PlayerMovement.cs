@@ -21,11 +21,13 @@ public class PlayerMovement : MonoBehaviour
 
     // Events
     public event Action StartedJumping;
+    public event Action StartedDiving;
     public event Action GrabbedLedge;
 
     // Computed jump/gravity values
     private float _jumpSpeed;
     private float _secondJumpSpeed;
+    private float _diveJumpVspeed;
     private float _fallGravity;
     private float _riseGravity;
     private float _shortJumpRiseGravity;
@@ -53,7 +55,8 @@ public class PlayerMovement : MonoBehaviour
         FreeFall,
         WallSliding,
         LedgeGrabbing,
-        Rolling
+        Rolling,
+        Diving
     }
     public State CurrentState {get; private set;}
 
@@ -99,6 +102,11 @@ public class PlayerMovement : MonoBehaviour
         _secondJumpSpeed = GravityMath.JumpVelForHeight(
             PlayerConstants.SECOND_JUMP_HEIGHT,
             _riseGravity
+        );
+
+        _diveJumpVspeed = GravityMath.JumpVelForHeight(
+            PlayerConstants.DIVE_JUMP_HEIGHT,
+            PlayerConstants.DIVE_GRAVITY
         );
 
         Debug.Log("Jump speed: " + _jumpSpeed);
@@ -183,6 +191,7 @@ public class PlayerMovement : MonoBehaviour
         switch (CurrentState)
         {
             case State.WallSliding: WallSlidingTransitions(); break;
+            case State.Diving: DivingTransitions(); break;
             case State.Walking: GroundedTransitions(); break;
             case State.FreeFall: AirborneTransitions(); break;
             case State.LedgeGrabbing: GrabbingLedgeTransitions(); break;
@@ -193,6 +202,7 @@ public class PlayerMovement : MonoBehaviour
         switch (CurrentState)
         {
             case State.WallSliding: WhileWallSliding(); break;
+            case State.Diving: WhileDiving(); break;
             case State.Walking: WhileGrounded(); break;
             case State.FreeFall: WhileAirborne(); break;
             case State.LedgeGrabbing: WhileGrabbingLedge(); break;
@@ -407,6 +417,13 @@ public class PlayerMovement : MonoBehaviour
             StartGroundJump();
             DebugDisplay.PrintLine("Coyote-time jump!");
         }
+
+        // Dive when the attack button is pressed.
+        if (AttackPressedRecently())
+        {
+            StartDiving();
+            return;
+        }
     }
     private void AirborneStrafingControls()
     {
@@ -541,6 +558,26 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void DivingTransitions()
+    {
+        // Roll when we hit the ground
+        if (_ground.IsGrounded)
+            StartRolling();
+    }
+    private void WhileDiving()
+    {
+        // Apply gravity
+        // Use more gravity when we're falling so the jump arc feels "squishier"
+        VSpeed -= PlayerConstants.DIVE_GRAVITY * Time.deltaTime;
+
+        // TODO: This logic is copy/pasted from WhileAirborn().  Refactor.
+        // Cap the VSpeed at the terminal velocity
+        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+            VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+
+        SyncWalkVelocityToHSpeed();
+    }
+
     private void GrabbingLedgeTransitions()
     {
         if (_ledgeGrabTimer <= 0)
@@ -620,7 +657,7 @@ public class PlayerMovement : MonoBehaviour
         _debugJumpMaxY = transform.position.y;
 
         InstantlyFaceLeftStick();
-        
+
         VSpeed = _jumpSpeed;
 
         // Jump heigher and get a speed boost every time they do 2 chained jumps
@@ -660,6 +697,18 @@ public class PlayerMovement : MonoBehaviour
         _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
         CurrentState = State.Walking;
         StartedJumping?.Invoke();
+    }
+    
+    private void StartDiving()
+    {
+        InstantlyFaceLeftStick();
+
+        HSpeed = PlayerConstants.DIVE_HSPEED;
+        VSpeed = _diveJumpVspeed;
+
+        _chainedJumpCount = 0;
+        CurrentState = State.Diving;
+        StartedDiving?.Invoke();
     }
 
     private void InstantlyFaceLeftStick()

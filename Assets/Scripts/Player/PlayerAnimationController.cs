@@ -26,6 +26,7 @@ public class PlayerAnimationController : MonoBehaviour
     private const string PLAYER_JUMP_0 = "PlayerJump_0";
     private const string PLAYER_JUMP_1 = "PlayerJump_1";
     private const string PLAYER_ROLL = "PlayerRoll";
+    private const string PLAYER_DIVE = "PlayerDive";
 
     private float _forceSetStateTimer = 0;
     
@@ -37,6 +38,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         // Subscribe to events
         _movement.StartedJumping += OnStartedJumping;
+        _movement.StartedDiving += OnStartedDiving;
         _movement.GrabbedLedge += OnGrabbedLedge;
     }
 
@@ -67,6 +69,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         switch (_movement.CurrentState)
         {
+            case PlayerMovement.State.Diving: SetState(PLAYER_DIVE, 0.1f); break;
             case PlayerMovement.State.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
             case PlayerMovement.State.Rolling: SetState(PLAYER_ROLL, 0.1f); break;
 
@@ -90,6 +93,11 @@ public class PlayerAnimationController : MonoBehaviour
             ? PLAYER_JUMP_0
             : PLAYER_JUMP_1;
         ForceSetState(state);
+    }
+
+    private void OnStartedDiving()
+    {
+        ForceSetState(PLAYER_DIVE, 0.1f, 0.25f);
     }
 
     private void OnGrabbedLedge()
