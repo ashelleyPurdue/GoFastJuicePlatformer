@@ -575,6 +575,16 @@ public class PlayerMovement : MonoBehaviour
         if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
             VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
 
+        // Reduce HSpeed until it's at the minimum
+        float initSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
+        float finalSpeed = PlayerConstants.DIVE_HSPEED_FINAL;
+        float slowTime = PlayerConstants.DIVE_HSPEED_SLOW_TIME;
+        float friction = (initSpeed - finalSpeed) / slowTime;
+
+        HSpeed -= friction * Time.deltaTime;
+        if (HSpeed < finalSpeed)
+            HSpeed = finalSpeed;
+
         SyncWalkVelocityToHSpeed();
     }
 
@@ -703,7 +713,7 @@ public class PlayerMovement : MonoBehaviour
     {
         InstantlyFaceLeftStick();
 
-        HSpeed = PlayerConstants.DIVE_HSPEED;
+        HSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
         VSpeed = _diveJumpVspeed;
 
         _chainedJumpCount = 0;
