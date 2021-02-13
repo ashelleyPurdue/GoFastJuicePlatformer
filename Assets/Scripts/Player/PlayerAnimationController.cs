@@ -157,6 +157,9 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Quaternion GetTargetRot()
     {
+        if (_movement.CurrentState == PlayerMovement.State.Diving)
+            return GetTargetRotDiving();
+
         var targetRot = FaceHAngle();
         
         if (_movement.CurrentState == PlayerMovement.State.WallSliding)
@@ -194,6 +197,11 @@ public class PlayerAnimationController : MonoBehaviour
         return targetRot;
     }
     
+    private Quaternion GetTargetRotDiving()
+    {
+        return Quaternion.LookRotation(_movement.TotalVelocity.normalized);
+    }
+
     private float SignedPow(float f, float p)
     {
         return Mathf.Pow(f, p) * Mathf.Sign(f);
