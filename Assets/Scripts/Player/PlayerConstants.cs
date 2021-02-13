@@ -4,7 +4,7 @@ using UnityEngine;
 
 public static class PlayerConstants
 {
-    public const float BODY_HEIGHT = 1.58775f;
+    public const float BODY_HEIGHT = 1.4558f;
     public const float BODY_RADIUS = 0.375f;
     
     public const float SHORT_JUMP_DECAY_RATE = 0.7f;
