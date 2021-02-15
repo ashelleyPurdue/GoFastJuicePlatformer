@@ -341,9 +341,21 @@ public class PlayerMovement : MonoBehaviour
         if (_ground.IsGrounded)
         {
             CurrentState = State.Walking;
+
+            // Reduce the HSpeed based on the stick magnitude.
+            // This lets you avoid sliding(AKA: "sticking" the landing) by
+            // moving the left stick to neutral.
+            // This doesn't take away *all* of your momentum, because that would
+            // look stiff and unnatural.  
+            float hSpeedMult = _input.LeftStick.magnitude + PlayerConstants.MIN_LANDING_HSPEED_MULT;
+            if (hSpeedMult > 1)
+                hSpeedMult = 1;
+            HSpeed *= hSpeedMult;
+
             return;
         }
 
+        // Transition to either ledge grabbing or wall sliding
         bool isWallSliding =
             VSpeed < 0 &&
             _wall.IsTouchingWall &&
