@@ -65,4 +65,6 @@ public static class PlayerConstants
     public const float ROLL_COOLDOWN = 0.5f;
     public const float ROLL_DISTANCE = 5;
     public const float ROLL_JUMP_HSPEED = 10;
+
+    public const float LEFT_STICK_DEADZONE = 0.001f;
 }

@@ -302,7 +302,7 @@ public class PlayerMovement : MonoBehaviour
             HSpeed = PlayerConstants.HSPEED_MIN;
 
         // Rotate with the left stick
-        if (inputVector.magnitude > 0.001f)
+        if (!IsLeftStickNeutral())
         {
             // Gradually rotate until we're facing the direction the stick
             // is pointing
@@ -723,7 +723,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void InstantlyFaceLeftStick()
     {
-        if (GetWalkInput().magnitude > 0.001f)
+        if (!IsLeftStickNeutral())
             HAngleDeg = GetHAngleDegInput();
     }
 
@@ -768,6 +768,15 @@ public class PlayerMovement : MonoBehaviour
     {
         var inputVector = GetWalkInput();
         return Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
+    }
+
+    /// <summary>
+    /// Is the left stick in a neutral position(IE: in the deadzone?)
+    /// </summary>
+    /// <returns></returns>
+    private bool IsLeftStickNeutral()
+    {
+        return _input.LeftStick.magnitude < PlayerConstants.LEFT_STICK_DEADZONE;
     }
 
     private bool WasGroundedRecently()
