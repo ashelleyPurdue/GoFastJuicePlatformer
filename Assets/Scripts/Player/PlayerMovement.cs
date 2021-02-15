@@ -751,24 +751,7 @@ public class PlayerMovement : MonoBehaviour
     /// <returns></returns>
     private Vector3 GetWalkInput()
     {
-        var rawInput = new Vector3
-        (
-            _input.LeftStick.x,
-            0,
-            _input.LeftStick.y
-        );
-        
-        // Cap the magnitude at 1.0, because some people like to play with
-        // keyboards.
-        if (rawInput.magnitude > 1)
-            rawInput.Normalize();
-
-        // Rotate it into camera space
-        var adjustedInput = 
-            Camera.main.transform.forward.Flattened().normalized * rawInput.z +
-            Camera.main.transform.right.Flattened().normalized * rawInput.x;
-        
-        return adjustedInput;
+        return InputUtils.LeftStickToWorldSpace(_input.LeftStick);
     }
 
     /// <summary>
