@@ -8,15 +8,28 @@ public class DebugDisplay : MonoBehaviour
     private static string _queuedLines = "";
     private static string _queuedFixedLines = "";
 
+    private static DebugDisplay _instance = null;
+
     private string _displayedLines = "";
     private string _displayedFixedLines = "";
 
     public static void PrintLine(string line)
     {
+        // Don't print anything if there's no instance of DebugDisplay
+        // in the scene.  This prevents lines from queueing up indefinitely
+        // and causing a memory leak.
+        if (_instance == null)
+            return;
+
         if (Time.inFixedTimeStep)
             _queuedFixedLines += line + "\n";
         else
             _queuedLines += line + "\n";
+    }
+
+    public void Awake()
+    {
+        _instance = this;
     }
 
     public void Update()
