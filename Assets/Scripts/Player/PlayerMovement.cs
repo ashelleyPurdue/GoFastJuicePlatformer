@@ -663,6 +663,8 @@ public class PlayerMovement : MonoBehaviour
         if (_rollTimer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME)
             HAngleDeg = GetHAngleDegInput();
 
+        SyncWalkVelocityToHSpeed();
+
         // Let the player jump out of a roll.
         if (JumpPressedRecently())
         {
