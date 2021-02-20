@@ -39,7 +39,8 @@ public static class PlayerConstants
     public const float DIVE_JUMP_HEIGHT = 4;
     public const float DIVE_GRAVITY = 100;
     public const float DIVE_HSPEED_INITIAL = 20;
-    public const float DIVE_HSPEED_FINAL = 10;
+    public const float DIVE_HSPEED_FINAL_MAX = 10;
+    public const float DIVE_HSPEED_FINAL_MIN = 5f;
     public const float DIVE_HSPEED_SLOW_TIME = 0.5f;
 
     public const float ROT_SPEED_DEG = 360 * 2;

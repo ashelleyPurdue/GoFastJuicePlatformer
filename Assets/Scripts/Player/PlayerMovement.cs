@@ -588,11 +588,23 @@ public class PlayerMovement : MonoBehaviour
             VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
 
         // Reduce HSpeed until it's at the minimum
+        // If the player is pushing backwards on the left stick, reduce the speed
+        // faster and let them slow down more
         float initSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
-        float finalSpeed = PlayerConstants.DIVE_HSPEED_FINAL;
+        float finalSpeed = PlayerConstants.DIVE_HSPEED_FINAL_MAX;
         float slowTime = PlayerConstants.DIVE_HSPEED_SLOW_TIME;
-        float friction = (initSpeed - finalSpeed) / slowTime;
+        
+        float stickBackwardsComponent = -LeftStickForwardsComponent();
+        if (stickBackwardsComponent > 0)
+        {
+            finalSpeed = Mathf.Lerp(
+                PlayerConstants.DIVE_HSPEED_FINAL_MAX,
+                PlayerConstants.DIVE_HSPEED_FINAL_MIN,
+                stickBackwardsComponent
+            );
+        }
 
+        float friction = (initSpeed - finalSpeed) / slowTime;
         HSpeed -= friction * Time.deltaTime;
         if (HSpeed < finalSpeed)
             HSpeed = finalSpeed;
