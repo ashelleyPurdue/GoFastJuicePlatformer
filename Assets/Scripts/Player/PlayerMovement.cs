@@ -676,9 +676,9 @@ public class PlayerMovement : MonoBehaviour
     }
     private void StartRolling()
     {
-        // Set the velocity
         VSpeed = 0;
         HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
+        InstantlyFaceLeftStick();
         SyncWalkVelocityToHSpeed();
 
         // Book keeping
