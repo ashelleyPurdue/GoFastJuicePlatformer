@@ -774,6 +774,13 @@ public class PlayerMovement : MonoBehaviour
         return _input.LeftStick.magnitude < PlayerConstants.LEFT_STICK_DEADZONE;
     }
 
+    private float LeftStickForwardsComponent()
+    {
+        var inputVector = GetWalkInput();
+        var forward = AngleForward(HAngleDeg);
+        return inputVector.ComponentAlong(forward);
+    }
+
     private bool WasGroundedRecently()
     {
         return (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
