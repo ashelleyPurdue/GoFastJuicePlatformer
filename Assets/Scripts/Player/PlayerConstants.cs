@@ -57,6 +57,10 @@ public static class PlayerConstants
 
     public const float WALL_JUMP_MIN_HSPEED = 10;
     public const float WALL_JUMP_HSPEED_MULT = 1.1f;
+    public const float WALL_JUMP_MIN_HDIST = 1; // air strafing is disabled after
+                                                // a wall jump until the player
+                                                // has moved this far away from
+                                                // the wall.
 
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.
 

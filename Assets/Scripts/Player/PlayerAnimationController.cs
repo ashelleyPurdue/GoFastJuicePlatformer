@@ -80,6 +80,7 @@ public class PlayerAnimationController : MonoBehaviour
                     SetState(PLAYER_IDLE, 0.25f);
                 break;
 
+            case PlayerMovement.State.WallJumping:
             case PlayerMovement.State.FreeFall:
                 if (_movement.VSpeed < 0)
                     SetState(PLAYER_FALL, 0.25f);

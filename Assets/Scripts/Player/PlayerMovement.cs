@@ -54,6 +54,7 @@ public class PlayerMovement : MonoBehaviour
         Walking,
         FreeFall,
         WallSliding,
+        WallJumping,
         LedgeGrabbing,
         Rolling,
         Diving
@@ -75,6 +76,8 @@ public class PlayerMovement : MonoBehaviour
     private float _rollTimer = 0;
     private float _rollCooldown = 0;
     private float _lastRollStopTime = 0;
+
+    private Vector3 _lastWallJumpPos;
 
     // Debugging metrics
     private float _debugJumpStartY;
@@ -190,23 +193,25 @@ public class PlayerMovement : MonoBehaviour
         // Transition states
         switch (CurrentState)
         {
-            case State.WallSliding: WallSlidingTransitions(); break;
-            case State.Diving: DivingTransitions(); break;
             case State.Walking: GroundedTransitions(); break;
             case State.FreeFall: AirborneTransitions(); break;
+            case State.WallSliding: WallSlidingTransitions(); break;
+            case State.WallJumping: WallJumpingTransitions(); break;
             case State.LedgeGrabbing: GrabbingLedgeTransitions(); break;
             case State.Rolling: RollingTransitions(); break;
+            case State.Diving: DivingTransitions(); break;
         }
 
         // Adjust the velocity based on the current state
         switch (CurrentState)
         {
-            case State.WallSliding: WhileWallSliding(); break;
-            case State.Diving: WhileDiving(); break;
             case State.Walking: WhileGrounded(); break;
             case State.FreeFall: WhileAirborne(); break;
+            case State.WallSliding: WhileWallSliding(); break;
+            case State.WallJumping: WhileWallJumping(); break;
             case State.LedgeGrabbing: WhileGrabbingLedge(); break;
             case State.Rolling: WhileRolling(); break;
+            case State.Diving: WhileDiving(); break;
         }
 
         // Move with the current velocity
@@ -556,6 +561,34 @@ public class PlayerMovement : MonoBehaviour
             StartWallJump();
     }
 
+    private void WallJumpingTransitions()
+    {
+        // After we have moved a minimum distance away from the wall, switch to
+        // FreeFalling so air strafing can be re-enabled.
+        float distFromWall = Vector3.Distance(
+            _lastWallJumpPos.Flattened(),
+            transform.position.Flattened()
+        );
+        if (distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST)
+            CurrentState = State.FreeFall;
+
+        // All of the usual free fall transitions apply too.
+        AirborneTransitions();
+    }
+    private void WhileWallJumping()
+    {
+        // DEBUG: Record stats
+        if (transform.position.y > _debugJumpMaxY)
+            _debugJumpMaxY = transform.position.y;
+
+        AirbornePhysics();
+        // NOTE: Air strafing is intentionally disabled in this state.
+        // It gets re-enabled when the state changes back to FreeFalling, after
+        // the player has moved a minimum distance away from the wall.
+        // See WallJumpingTransitions().
+        AirborneButtonControls();
+    }
+
     private void DivingTransitions()
     {
         // Roll when we hit the ground
@@ -727,7 +760,9 @@ public class PlayerMovement : MonoBehaviour
 
         // Book keeping
         _chainedJumpCount = 0;
+        _lastWallJumpPos = transform.position;
         _jumpReleased = false;
+        CurrentState = State.WallJumping;
         StartedJumping?.Invoke();
     }
 
