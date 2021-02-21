@@ -553,28 +553,7 @@ public class PlayerMovement : MonoBehaviour
     {
         // Wall kick when we press the jump button
         if (JumpPressedRecently())
-        {
-            // Reflect off of the wall at the angle we approached it at
-            var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
-            HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
-
-            // Kick off of the wall at the same speed we approached the wall at
-            // (not the speed that we slowed down to while we were sliding), plus
-            // a little bonus.
-            // If we weren't already moving at max ground speed, then speed up
-            // to there.
-            HSpeed = Mathf.Max(
-                PlayerConstants.HSPEED_MAX_GROUND,
-                HSpeed
-            );
-            HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
-            SyncWalkVelocityToHSpeed();
-
-            // Jump up
-            _jumpReleased = false;
-            VSpeed = _jumpSpeed;
-            StartedJumping?.Invoke();
-        }
+            StartWallJump();
     }
 
     private void DivingTransitions()
@@ -716,6 +695,30 @@ public class PlayerMovement : MonoBehaviour
         _chainedJumpCount++;
         _jumpReleased = false;
         _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
+        StartedJumping?.Invoke();
+    }
+
+    private void StartWallJump()
+    {
+        // Reflect off of the wall at the angle we approached it at
+        var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
+        HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
+
+        // Kick off of the wall at the same speed we approached the wall at
+        // (not the speed that we slowed down to while we were sliding), plus
+        // a little bonus.
+        // If we weren't already moving at max ground speed, then speed up
+        // to there.
+        HSpeed = Mathf.Max(
+            PlayerConstants.HSPEED_MAX_GROUND,
+            HSpeed
+        );
+        HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
+        SyncWalkVelocityToHSpeed();
+
+        // Jump up
+        _jumpReleased = false;
+        VSpeed = _jumpSpeed;
         StartedJumping?.Invoke();
     }
 
