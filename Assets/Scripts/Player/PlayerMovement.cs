@@ -700,6 +700,12 @@ public class PlayerMovement : MonoBehaviour
 
     private void StartWallJump()
     {
+        // DEBUG: Record debug stats
+        _debugJumpStartY = transform.position.y;
+        _debugJumpMaxY = transform.position.y;
+
+        VSpeed = _jumpSpeed;
+
         // Reflect off of the wall at the angle we approached it at
         var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
         HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
@@ -716,9 +722,9 @@ public class PlayerMovement : MonoBehaviour
         HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
         SyncWalkVelocityToHSpeed();
 
-        // Jump up
+        // Book keeping
+        _chainedJumpCount = 0;
         _jumpReleased = false;
-        VSpeed = _jumpSpeed;
         StartedJumping?.Invoke();
     }
 
