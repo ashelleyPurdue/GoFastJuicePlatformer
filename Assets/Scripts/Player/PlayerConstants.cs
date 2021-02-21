@@ -55,6 +55,7 @@ public static class PlayerConstants
     public const float CHAINED_JUMP_HSPEED_MULT = 1.3f;
     public const float CHAINED_JUMP_TIME_WINDOW = 0.1f;
 
+    public const float WALL_JUMP_MIN_HSPEED = 10;
     public const float WALL_JUMP_HSPEED_MULT = 1.1f;
 
     public const float MAX_PIVOT_SPEED = 0.25f; // If you're below this speed, you can pivot on a dime.

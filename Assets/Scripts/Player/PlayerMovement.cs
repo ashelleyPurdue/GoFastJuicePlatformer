@@ -710,16 +710,19 @@ public class PlayerMovement : MonoBehaviour
         var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
         HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
 
-        // Kick off of the wall at the same speed we approached the wall at
-        // (not the speed that we slowed down to while we were sliding), plus
-        // a little bonus.
-        // If we weren't already moving at max ground speed, then speed up
-        // to there.
+        // Kick off of the wall at a speed that's *at least* WALL_JUMP_MIN_HSPEED.
+        // If we were already going faster than that before touching the wall,
+        // then use *that* speed instead.  This way, you'll never lose speed by
+        // wall jumping.
         HSpeed = Mathf.Max(
-            PlayerConstants.HSPEED_MAX_GROUND,
+            PlayerConstants.WALL_JUMP_MIN_HSPEED,
             HSpeed
         );
+
+        // On top of that, give the player a *boost* to their HSpeed, as a reward
+        // for wall jumping.
         HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
+
         SyncWalkVelocityToHSpeed();
 
         // Book keeping
