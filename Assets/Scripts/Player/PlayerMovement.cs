@@ -536,32 +536,39 @@ public class PlayerMovement : MonoBehaviour
             VSpeed = PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE;
 
         // Cancel all walking velocity pointing "inside" the wall.
+        // We're intentionally letting _walkVelocity and HSpeed get out of sync
+        // here, so that the original HSpeed will be resumed when we wall kick.
         _walkVelocity = _walkVelocity.ProjectOnPlane(_wall.LastWallNormal);
-        HSpeed = _walkVelocity.magnitude;
 
         // Apply horizontal friction, since sliding on a wall naturally slows
         // you down.
-        HSpeed -= PlayerConstants.FRICTION_WALL_SLIDE * Time.deltaTime;
-        if (HSpeed < 0)
-            HSpeed = 0;
+        float slidingHSpeed = _walkVelocity.magnitude;
+        slidingHSpeed -= PlayerConstants.FRICTION_WALL_SLIDE * Time.deltaTime;
+        if (slidingHSpeed < 0)
+            slidingHSpeed = 0;
 
-        _walkVelocity = HSpeed * _walkVelocity.normalized;
+        _walkVelocity = slidingHSpeed * _walkVelocity.normalized;
     }
     private void WallSlidingControls()
     {
         // Wall kick when we press the jump button
         if (JumpPressedRecently())
         {
-            // Kick away from the wall
+            // Reflect off of the wall at the angle we approached it at
             var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
-            float kickSpeed = Mathf.Max(
+            HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
+
+            // Kick off of the wall at the same speed we approached the wall at
+            // (not the speed that we slowed down to while we were sliding), plus
+            // a little bonus.
+            // If we weren't already moving at max ground speed, then speed up
+            // to there.
+            HSpeed = Mathf.Max(
                 PlayerConstants.HSPEED_MAX_GROUND,
                 HSpeed
             );
-            kickSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
-
-            _walkVelocity = kickDir * kickSpeed;
-            HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
+            HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
+            SyncWalkVelocityToHSpeed();
 
             // Jump up
             _jumpReleased = false;
