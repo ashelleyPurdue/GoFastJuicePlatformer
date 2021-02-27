@@ -8,7 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerWallDetector))]
 public class PlayerAnimationController : MonoBehaviour
 {
-    private const float MODEL_ROT_SPEED_DEG_PER_SEC = 720;
+    private readonly float TWEEN_HALF_LIFE = 1f / 60;
 
     public Transform _model;
     public Animator _animator;
@@ -156,10 +156,11 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void UpdateRotation()
     {
-        _model.rotation = Quaternion.RotateTowards(
+        _model.rotation = TweenUtils.DecayTowards(
             _model.rotation, 
             GetTargetRot(),
-            MODEL_ROT_SPEED_DEG_PER_SEC * Time.deltaTime
+            TWEEN_HALF_LIFE,
+            Time.deltaTime
         );
     }
 
@@ -170,7 +171,7 @@ public class PlayerAnimationController : MonoBehaviour
             case PlayerMovement.State.Diving: return GetTargetRotDiving();
             case PlayerMovement.State.WallSliding: return FaceWallSlide();
             case PlayerMovement.State.Walking: return TiltWithSpeed(FaceHAngle());
-            
+
             default: return FaceHAngle();
         }
     }
