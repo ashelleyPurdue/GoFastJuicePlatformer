@@ -165,18 +165,14 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Quaternion GetTargetRot()
     {
-        if (_movement.CurrentState == PlayerMovement.State.Diving)
-            return GetTargetRotDiving();
-
-        var targetRot = FaceHAngle();
-        
-        if (_movement.CurrentState == PlayerMovement.State.WallSliding)
-            targetRot = FaceWallSlide();
-
-        if (_movement.CurrentState == PlayerMovement.State.Walking)
-            targetRot = TiltWithSpeed(targetRot);
-
-        return targetRot;
+        switch (_movement.CurrentState)
+        {
+            case PlayerMovement.State.Diving: return GetTargetRotDiving();
+            case PlayerMovement.State.WallSliding: return FaceWallSlide();
+            case PlayerMovement.State.Walking: return TiltWithSpeed(FaceHAngle());
+            
+            default: return FaceHAngle();
+        }
     }
 
     private Quaternion FaceWallSlide()
