@@ -27,6 +27,7 @@ public class PlayerAnimationController : MonoBehaviour
     private const string PLAYER_JUMP_1 = "PlayerJump_1";
     private const string PLAYER_ROLL = "PlayerRoll";
     private const string PLAYER_DIVE = "PlayerDive";
+    private const string PLAYER_BONK = "PlayerBonk";
 
     private float _forceSetStateTimer = 0;
     
@@ -40,6 +41,7 @@ public class PlayerAnimationController : MonoBehaviour
         _movement.StartedJumping += OnStartedJumping;
         _movement.StartedDiving += OnStartedDiving;
         _movement.GrabbedLedge += OnGrabbedLedge;
+        _movement.Bonked += OnBonked;
     }
 
     
@@ -104,6 +106,11 @@ public class PlayerAnimationController : MonoBehaviour
     private void OnGrabbedLedge()
     {
         ForceSetState(PLAYER_LEDGE_GRAB, 0, 0.25f);
+    }
+
+    private void OnBonked()
+    {
+        ForceSetState(PLAYER_BONK, 0, PlayerConstants.BONK_DURATION);
     }
 
     /// <summary>

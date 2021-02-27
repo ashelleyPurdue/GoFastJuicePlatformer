@@ -23,6 +23,7 @@ public class PlayerMovement : MonoBehaviour
     public event Action StartedJumping;
     public event Action StartedDiving;
     public event Action GrabbedLedge;
+    public event Action Bonked;
 
     // Computed jump/gravity values
     private float _jumpSpeed;
@@ -57,7 +58,8 @@ public class PlayerMovement : MonoBehaviour
         WallJumping,
         LedgeGrabbing,
         Rolling,
-        Diving
+        Diving,
+        Bonking
     }
     public State CurrentState {get; private set;}
 
@@ -76,6 +78,9 @@ public class PlayerMovement : MonoBehaviour
     private float _rollTimer = 0;
     private float _rollCooldown = 0;
     private float _lastRollStopTime = 0;
+
+    private float _bonkTimer = 0;
+    private int _bonkBounceCount = 0;
 
     private Vector3 _lastWallJumpPos;
 
@@ -131,6 +136,8 @@ public class PlayerMovement : MonoBehaviour
         _chainedJumpTimer = 0;
         _chainedJumpCount = 0;
         _rollTimer = 0;
+        _bonkTimer = 0;
+        _bonkBounceCount = 0;
 
         CurrentState = State.FreeFall;
 
@@ -200,6 +207,7 @@ public class PlayerMovement : MonoBehaviour
             case State.LedgeGrabbing: GrabbingLedgeTransitions(); break;
             case State.Rolling: RollingTransitions(); break;
             case State.Diving: DivingTransitions(); break;
+            case State.Bonking: BonkingTransitions(); break;
         }
 
         // Adjust the velocity based on the current state
@@ -212,6 +220,7 @@ public class PlayerMovement : MonoBehaviour
             case State.LedgeGrabbing: WhileGrabbingLedge(); break;
             case State.Rolling: WhileRolling(); break;
             case State.Diving: WhileDiving(); break;
+            case State.Bonking: WhileBonking(); break;
         }
 
         // Move with the current velocity
@@ -223,6 +232,7 @@ public class PlayerMovement : MonoBehaviour
         // Display debugging metrics
         DebugDisplay.PrintLine("HSpeed: " + HSpeed);
         DebugDisplay.PrintLine("VSpeed: " + VSpeed);
+        DebugDisplay.PrintLine("HAngleDeg: " + HAngleDeg);
         DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
         DebugDisplay.PrintLine("Chained jump timer: " + _chainedJumpTimer);
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
@@ -594,6 +604,10 @@ public class PlayerMovement : MonoBehaviour
         // Roll when we hit the ground
         if (_ground.IsGrounded)
             StartRolling();
+
+        // Bonk if we hit a wall
+        if (ShouldBonkAgainstWall())
+            StartBonking();
     }
     private void WhileDiving()
     {
@@ -654,6 +668,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void RollingTransitions()
     {
+        // Stop rolling after the timer expires
         if (_rollTimer <= 0)
         {
             _lastRollStopTime = Time.time;
@@ -673,6 +688,13 @@ public class PlayerMovement : MonoBehaviour
             // Start the cooldown, so the player can't immediately
             // roll again.
             _rollCooldown = PlayerConstants.ROLL_COOLDOWN;
+        }
+
+        // Start bonking if we're moving into a wall.
+        if (ShouldBonkAgainstWall())
+        {
+            StartBonking();
+            return;
         }
     }
     private void WhileRolling()
@@ -703,6 +725,53 @@ public class PlayerMovement : MonoBehaviour
         // Book keeping
         _rollTimer = PlayerConstants.ROLL_TIME;
         CurrentState = State.Rolling;
+    }
+
+    private void BonkingTransitions()
+    {
+        if (_bonkTimer <= 0)
+        {
+            if (!_ground.IsGrounded)
+                CurrentState = State.FreeFall;
+            else
+                CurrentState = State.Walking;
+        }
+    }
+    private void WhileBonking()
+    {
+        // Apply gravity
+        VSpeed -= PlayerConstants.BONK_GRAVITY * Time.deltaTime;
+        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+            VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+
+        // Bounce against the floor
+        if (_ground.IsGrounded && VSpeed < 0 && _bonkBounceCount < PlayerConstants.BONK_MAX_BOUNCE_COUNT)
+        {
+            VSpeed *= -PlayerConstants.BONK_BOUNCE_MULTIPLIER;
+            _bonkBounceCount++;
+        }
+
+        // Apply friction
+        float bonkFriction = Mathf.Abs(PlayerConstants.BONK_START_HSPEED / PlayerConstants.BONK_SLOW_TIME);
+        HSpeed = Mathf.MoveTowards(HSpeed, 0, bonkFriction * Time.deltaTime);
+        SyncWalkVelocityToHSpeed();
+
+        // Tick the timer down.  It starts after we've bounced once.
+        if (_bonkBounceCount >= 1)
+            _bonkTimer -= Time.deltaTime;
+    }
+    private void StartBonking()
+    {
+        VSpeed = PlayerConstants.BONK_START_VSPEED;
+        HSpeed = PlayerConstants.BONK_START_HSPEED;
+        HAngleDeg = GetHAngleDegFromForward(-_wall.LastWallNormal);
+        SyncWalkVelocityToHSpeed();
+
+        _bonkTimer = PlayerConstants.BONK_DURATION;
+        _bonkBounceCount = 0;
+
+        CurrentState = State.Bonking;
+        Bonked?.Invoke();
     }
 
     private void StartGroundJump()
@@ -878,11 +947,30 @@ public class PlayerMovement : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// Returns the HAngleDeg that would result in the given forward.
+    /// </summary>
+    /// <param name="forward"></param>
+    /// <returns></returns>
+    private float GetHAngleDegFromForward(Vector3 forward)
+    {
+        var flatForward = forward.Flattened();
+        float radians = Mathf.Atan2(flatForward.z, flatForward.x);
+        return radians * Mathf.Rad2Deg;
+    }
+
     private Vector3 ReflectOffOfSurface(Vector3 v, Vector3 surfaceNormal)
     {
         var vectorAlongSurface = v.ProjectOnPlane(surfaceNormal);
         var vectorIntoSurface = v - vectorAlongSurface;
 
         return -vectorIntoSurface + vectorAlongSurface;
+    }
+
+    private bool ShouldBonkAgainstWall()
+    {
+        return 
+            _wall.IsTouchingWall &&
+            Forward.ComponentAlong(-_wall.LastWallNormal) > 0.5f;
     }
 }

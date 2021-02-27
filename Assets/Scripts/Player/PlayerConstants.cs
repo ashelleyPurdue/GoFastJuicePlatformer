@@ -31,7 +31,7 @@ public static class PlayerConstants
     public const float HACCEL_AIR_BACKWARDS = 30;
     public const float MIN_LANDING_HSPEED_MULT = 0.25f;
 
-    public const float BONK_SPEED = -3;
+    public const float BONK_SPEED = -3; // TODO: Rename this to "head bonk speed"
     public const float LEDGE_GRAB_VSPEED = 11;
     public const float LEDGE_GRAB_HSPEED = 4;
     public const float LEDGE_GRAB_DURATION = 0.15f;
@@ -42,6 +42,14 @@ public static class PlayerConstants
     public const float DIVE_HSPEED_FINAL_MAX = 10;
     public const float DIVE_HSPEED_FINAL_MIN = 5f;
     public const float DIVE_HSPEED_SLOW_TIME = 0.5f;
+
+    public const float BONK_START_VSPEED = 10f;
+    public const float BONK_START_HSPEED = -5f;
+    public const float BONK_GRAVITY = 50;
+    public const float BONK_SLOW_TIME = 0.75f;
+    public const float BONK_DURATION = 0.3f;
+    public const float BONK_MAX_BOUNCE_COUNT = 1;
+    public const float BONK_BOUNCE_MULTIPLIER = 0.25f;
 
     public const float ROT_SPEED_DEG = 360 * 2;
     public const float FRICTION_GROUND = 15;
