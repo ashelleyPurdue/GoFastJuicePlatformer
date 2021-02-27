@@ -701,7 +701,8 @@ public class PlayerMovement : MonoBehaviour
     {
         // Let the player change their direction for a very short about of time
         // at the beginning of their roll
-        if (_rollTimer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME)
+        bool withinRedirectWindow = _rollTimer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME;
+        if (withinRedirectWindow && !IsLeftStickNeutral())
             HAngleDeg = GetHAngleDegInput();
 
         SyncWalkVelocityToHSpeed();
