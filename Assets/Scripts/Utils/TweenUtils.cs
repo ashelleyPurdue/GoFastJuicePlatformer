@@ -59,12 +59,16 @@ public static class TweenUtils
         float deltaTime
     )
     {
-        float deltaAngle = Mathf.DeltaAngle(current, target);
-        float speed = (deltaAngle / 2) / halfLife;
-        return Mathf.MoveTowardsAngle(
-            current,
-            target,
-            speed * deltaTime
+        var currentRot = Quaternion.Euler(0, current, 0).normalized;
+        var targetRot = Quaternion.Euler(0, target, 0).normalized;
+        
+        var tweenedRot = DecayTowards(
+            currentRot,
+            targetRot,
+            halfLife,
+            deltaTime
         );
+
+        return tweenedRot.eulerAngles.y;
     }
 }
