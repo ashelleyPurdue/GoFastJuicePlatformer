@@ -9,6 +9,7 @@ using UnityEngine.Events;
 [RequireComponent(typeof(PlayerLedgeDetector))]
 [RequireComponent(typeof(PlayerWallDetector))]
 [RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(PlayerRollAttackHitbox))]
 public class PlayerMovement : MonoBehaviour
 {
     // Required components
@@ -16,6 +17,7 @@ public class PlayerMovement : MonoBehaviour
     private PlayerGroundDetector _ground;
     private PlayerLedgeDetector _ledge;
     private PlayerWallDetector _wall;
+    private PlayerRollAttackHitbox _rollHitbox;
     private CharacterController _controller;
 
 
@@ -94,6 +96,7 @@ public class PlayerMovement : MonoBehaviour
         _ground = GetComponent<PlayerGroundDetector>();
         _ledge = GetComponent<PlayerLedgeDetector>();
         _wall = GetComponent<PlayerWallDetector>();
+        _rollHitbox = GetComponent<PlayerRollAttackHitbox>();
         _controller = GetComponent<CharacterController>();
 
         // Compute jump parameters
@@ -699,6 +702,9 @@ public class PlayerMovement : MonoBehaviour
     }
     private void WhileRolling()
     {
+        // Damage things
+        _rollHitbox.ApplyDamage();
+
         // Let the player change their direction for a very short about of time
         // at the beginning of their roll
         bool withinRedirectWindow = _rollTimer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME;
