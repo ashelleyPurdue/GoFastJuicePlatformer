@@ -10,6 +10,7 @@ using UnityEngine.Events;
 [RequireComponent(typeof(PlayerWallDetector))]
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(PlayerRollAttackHitbox))]
+[RequireComponent(typeof(PlayerDiveAttackHitbox))]
 public class PlayerMovement : MonoBehaviour
 {
     // Required components
@@ -18,6 +19,7 @@ public class PlayerMovement : MonoBehaviour
     private PlayerLedgeDetector _ledge;
     private PlayerWallDetector _wall;
     private PlayerRollAttackHitbox _rollHitbox;
+    private PlayerDiveAttackHitbox _diveHitbox;
     private CharacterController _controller;
 
 
@@ -97,6 +99,7 @@ public class PlayerMovement : MonoBehaviour
         _ledge = GetComponent<PlayerLedgeDetector>();
         _wall = GetComponent<PlayerWallDetector>();
         _rollHitbox = GetComponent<PlayerRollAttackHitbox>();
+        _diveHitbox = GetComponent<PlayerDiveAttackHitbox>();
         _controller = GetComponent<CharacterController>();
 
         // Compute jump parameters
@@ -614,6 +617,9 @@ public class PlayerMovement : MonoBehaviour
     }
     private void WhileDiving()
     {
+        // Damage things
+        _diveHitbox.ApplyDamage();
+
         // Apply gravity
         // Use more gravity when we're falling so the jump arc feels "squishier"
         VSpeed -= PlayerConstants.DIVE_GRAVITY * Time.deltaTime;
