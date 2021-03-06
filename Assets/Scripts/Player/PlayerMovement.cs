@@ -65,7 +65,84 @@ public class PlayerMovement : MonoBehaviour
         Diving,
         Bonking
     }
-    public State CurrentState {get; private set;}
+    public State CurrentState
+    {
+        get => _currentState;
+        set => ChangeState(value);
+    }
+    private State _currentState;
+
+    private abstract class AbstractPlayerState
+    {
+        protected PlayerMovement _shared;
+        protected PlayerGroundDetector _ground => _shared._ground;
+        protected PlayerWallDetector _wall => _shared._wall;
+        protected PlayerLedgeDetector _ledge => _shared._ledge;
+
+        protected IPlayerInput _input => _shared._input;
+
+        protected float HAngleDeg
+        {
+            get => _shared.HAngleDeg;
+            set => _shared.HAngleDeg = value;
+        }
+        protected float HSpeed
+        {
+            get => _shared.HSpeed;
+            set => _shared.HSpeed = value;
+        }
+        protected float VSpeed
+        {
+            get => _shared.VSpeed;
+            set => _shared.VSpeed = value;
+        }
+        
+        public AbstractPlayerState(PlayerMovement shared)
+        {
+            _shared = shared;
+        }
+
+        public virtual void ResetState() {}
+
+        public virtual void OnStateEnter() {}
+        public virtual void OnStateExit() {}
+
+        public virtual void EarlyFixedUpdate() {}
+        public virtual void FixedUpdate() {}
+        public virtual void LateFixedUpdate() {}
+
+        protected void ChangeState(State newState)
+        {
+            _shared.ChangeState(newState);
+        }
+
+        protected void SyncWalkVelocityToHSpeed() => _shared.SyncWalkVelocityToHSpeed();
+        protected void InstantlyFaceLeftStick() => _shared.InstantlyFaceLeftStick();
+
+        protected bool WasGroundedRecently() => _shared.WasGroundedRecently();
+
+        protected Vector3 GetWalkInput() => _shared.GetWalkInput();
+        protected float GetHAngleDegInput() => _shared.GetHAngleDegInput();
+
+        protected bool IsLeftStickNeutral() => _shared.IsLeftStickNeutral();
+        protected float LeftStickForwardsComponent() => _shared.LeftStickForwardsComponent();
+
+        protected bool JumpPressedRecently() => _shared.JumpPressedRecently();
+        protected bool AttackPressedRecently() => _shared.AttackPressedRecently();
+    }
+    private Dictionary<State, AbstractPlayerState> _states;
+
+    private void ChangeState(State newState)
+    {
+        var oldState = CurrentState;
+        _currentState = newState;
+
+        if (_states.ContainsKey(oldState))
+            _states[oldState].OnStateExit();
+        
+        if (_states.ContainsKey(newState))
+            _states[newState].OnStateEnter();
+    }
 
     private float _lastJumpButtonPressTime = float.NegativeInfinity;
     private bool _jumpReleased;
@@ -75,18 +152,10 @@ public class PlayerMovement : MonoBehaviour
     private float _chainedJumpTimer = 0;
     private int _chainedJumpCount = 0;
 
-    private float _ledgeGrabTimer = 0;
-
     private float _jumpRedirectTimer = 0;
     
-    private float _rollTimer = 0;
     private float _rollCooldown = 0;
     private float _lastRollStopTime = 0;
-
-    private float _bonkTimer = 0;
-    private int _bonkBounceCount = 0;
-
-    private Vector3 _lastWallJumpPos;
 
     // Debugging metrics
     private float _debugJumpStartY;
@@ -123,6 +192,18 @@ public class PlayerMovement : MonoBehaviour
             PlayerConstants.DIVE_GRAVITY
         );
 
+        _states = new Dictionary<State, AbstractPlayerState>
+        {
+            {State.Walking, new WalkingState(this)},
+            {State.FreeFall, new FreeFallState(this)},
+            {State.WallSliding, new WallSlidingState(this)},
+            {State.WallJumping, new WallJumpingState(this)},
+            {State.Rolling, new RollingState(this)},
+            {State.Diving, new DivingState(this)},
+            {State.Bonking, new BonkingState(this)},
+            {State.LedgeGrabbing, new GrabbingLedgeState(this)}
+        };
+
         Debug.Log("Jump speed: " + _jumpSpeed);
     }
 
@@ -138,12 +219,8 @@ public class PlayerMovement : MonoBehaviour
 
         _lastJumpButtonPressTime = float.NegativeInfinity;
         _jumpReleased = false;
-        _ledgeGrabTimer = 0;
         _chainedJumpTimer = 0;
         _chainedJumpCount = 0;
-        _rollTimer = 0;
-        _bonkTimer = 0;
-        _bonkBounceCount = 0;
 
         CurrentState = State.FreeFall;
 
@@ -153,6 +230,11 @@ public class PlayerMovement : MonoBehaviour
 
         _wall.UpdateWallState();
         _ledge.UpdateLedgeDetectorState();
+
+        // Tell all the state objects to reset as well.
+        // Wow, the word "state" really is overused, huh?
+        foreach (var state in _states.Keys)
+            _states[state].ResetState();
     }
 
     /// <summary>
@@ -203,34 +285,20 @@ public class PlayerMovement : MonoBehaviour
 
         AdvanceCooldowns();
 
-        // Transition states
-        switch (CurrentState)
-        {
-            case State.Walking: GroundedTransitions(); break;
-            case State.FreeFall: AirborneTransitions(); break;
-            case State.WallSliding: WallSlidingTransitions(); break;
-            case State.WallJumping: WallJumpingTransitions(); break;
-            case State.LedgeGrabbing: GrabbingLedgeTransitions(); break;
-            case State.Rolling: RollingTransitions(); break;
-            case State.Diving: DivingTransitions(); break;
-            case State.Bonking: BonkingTransitions(); break;
-        }
+        // Run state logic that needs to be done early.
+        // Usually, this is where state transitions happen.
+        _states[CurrentState].EarlyFixedUpdate();
 
-        // Adjust the velocity based on the current state
-        switch (CurrentState)
-        {
-            case State.Walking: WhileGrounded(); break;
-            case State.FreeFall: WhileAirborne(); break;
-            case State.WallSliding: WhileWallSliding(); break;
-            case State.WallJumping: WhileWallJumping(); break;
-            case State.LedgeGrabbing: WhileGrabbingLedge(); break;
-            case State.Rolling: WhileRolling(); break;
-            case State.Diving: WhileDiving(); break;
-            case State.Bonking: WhileBonking(); break;
-        }
+        // Run the current state's main logic.
+        // Note that CurrentState may have been changed by EarlyFixedUpdate()
+        _states[CurrentState].FixedUpdate();
 
         // Move with the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
+
+        // Run state logic that needs to be done after the player has been
+        // moved.
+        _states[CurrentState].LateFixedUpdate();
 
         // Remember moving-platform stuff for next frame
         _ground.RecordFootprintPos();
@@ -255,537 +323,646 @@ public class PlayerMovement : MonoBehaviour
         _rollCooldown -= Time.deltaTime;
     }
 
-    private void GroundedTransitions()
+    private class WalkingState : AbstractPlayerState
     {
-        if (!_ground.IsGrounded)
-            CurrentState = State.FreeFall;
-    }
-    private void WhileGrounded()
-    {
-        // Start the chained jump timer once we land
-        if (!_ground.WasGroundedLastFrame)
-            _chainedJumpTimer = PlayerConstants.CHAINED_JUMP_TIME_WINDOW;
+        public WalkingState(PlayerMovement shared)
+            : base(shared) {}
 
-        // Reset the chained jump count if you wait too long after landing
-        _chainedJumpTimer -= Time.deltaTime;
-        if (_chainedJumpTimer < 0)
+        public override void ResetState() {}
+
+        public override void EarlyFixedUpdate()
         {
-            _chainedJumpTimer = 0;
-            _chainedJumpCount = 0;
+            if (!_ground.IsGrounded)
+                ChangeState(State.FreeFall);
+        }
+        public override void FixedUpdate()
+        {
+            // Start the chained jump timer once we land
+            if (!_ground.WasGroundedLastFrame)
+                _shared._chainedJumpTimer = PlayerConstants.CHAINED_JUMP_TIME_WINDOW;
+
+            // Reset the chained jump count if you wait too long after landing
+            _shared._chainedJumpTimer -= Time.deltaTime;
+            if (_shared._chainedJumpTimer < 0)
+            {
+                _shared._chainedJumpTimer = 0;
+                _shared._chainedJumpCount = 0;
+            }
+
+            Physics();
+            StickControls();
+            ButtonControls();
+            
+            _shared.SyncWalkVelocityToHSpeed();
+        }
+        private void Physics()
+        {
+            // Stop falling when we hit the ground.
+            VSpeed = 0;
+
+            // HACK: Snap to the ground if we're hovering over it a little bit.
+            if (_ground.HeightAboveGround > 0)
+                VSpeed = -_ground.HeightAboveGround / Time.deltaTime;
+            
+            // If we obtained negative hspeed while in the air(EG: from air braking),
+            // bring it back to zero so the player doesn't go flying backwards.
+            if (HSpeed < 0)
+                HSpeed = 0;
         }
 
-        GroundedPhysics();
-        GroundedStickControls();
-        GroundedButtonControls();
-        
-        SyncWalkVelocityToHSpeed();
-    }
-    private void GroundedPhysics()
-    {
-        // Stop falling when we hit the ground.
-        VSpeed = 0;
-
-        // HACK: Snap to the ground if we're hovering over it a little bit.
-        if (_ground.HeightAboveGround > 0)
-            VSpeed = -_ground.HeightAboveGround / Time.deltaTime;
-        
-        // If we obtained negative hspeed while in the air(EG: from air braking),
-        // bring it back to zero so the player doesn't go flying backwards.
-        if (HSpeed < 0)
-            HSpeed = 0;
-    }
-
-    private void GroundedStickControls()
-    {
-        // On the ground, we let the player turn without sliding around or losing
-        // speed.
-        // We do this by keeping track of their speed and angle separately.
-        // The target speed is controlled by the magnitude of the left stick.
-        // The target angle is controlled by the direction of the left stick.
-
-        // Speed up/slow down with the left stick
-        var inputVector = GetWalkInput();
-        float hSpeedIntended = inputVector.magnitude * PlayerConstants.HSPEED_MAX_GROUND;
-
-        if (hSpeedIntended < PlayerConstants.HSPEED_MIN)
-            hSpeedIntended = 0;
-
-        float accel = HSpeed < hSpeedIntended
-            ? PlayerConstants.HACCEL_GROUND
-            : PlayerConstants.FRICTION_GROUND;
-
-        HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
-
-        // HACK: Immediately accelerate to the minimum speed.
-        // This makes the controls feel snappy and responsive, while still
-        // having a feeling of acceleration.
-        if (hSpeedIntended > 0 && HSpeed < PlayerConstants.HSPEED_MIN)
-            HSpeed = PlayerConstants.HSPEED_MIN;
-
-        // Rotate with the left stick
-        if (!IsLeftStickNeutral())
+        private void StickControls()
         {
-            // Gradually rotate until we're facing the direction the stick
-            // is pointing
-            float targetAngleDeg = GetHAngleDegInput();
+            // On the ground, we let the player turn without sliding around or losing
+            // speed.
+            // We do this by keeping track of their speed and angle separately.
+            // The target speed is controlled by the magnitude of the left stick.
+            // The target angle is controlled by the direction of the left stick.
 
-            HAngleDeg = Mathf.MoveTowardsAngle(
-                HAngleDeg,
-                targetAngleDeg,
-                PlayerConstants.ROT_SPEED_DEG * Time.deltaTime
-            );
+            // Speed up/slow down with the left stick
+            var inputVector = GetWalkInput();
+            float hSpeedIntended = inputVector.magnitude * PlayerConstants.HSPEED_MAX_GROUND;
 
-            // ...unless we're going really slow, then just pivot instantly.
-            if (HSpeed < PlayerConstants.MAX_PIVOT_SPEED)
-                HAngleDeg = targetAngleDeg;
+            if (hSpeedIntended < PlayerConstants.HSPEED_MIN)
+                hSpeedIntended = 0;
+
+            float accel = HSpeed < hSpeedIntended
+                ? PlayerConstants.HACCEL_GROUND
+                : PlayerConstants.FRICTION_GROUND;
+
+            HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
+
+            // HACK: Immediately accelerate to the minimum speed.
+            // This makes the controls feel snappy and responsive, while still
+            // having a feeling of acceleration.
+            if (hSpeedIntended > 0 && HSpeed < PlayerConstants.HSPEED_MIN)
+                HSpeed = PlayerConstants.HSPEED_MIN;
+
+            // Rotate with the left stick
+            if (!IsLeftStickNeutral())
+            {
+                // Gradually rotate until we're facing the direction the stick
+                // is pointing
+                float targetAngleDeg = GetHAngleDegInput();
+
+                HAngleDeg = Mathf.MoveTowardsAngle(
+                    HAngleDeg,
+                    targetAngleDeg,
+                    PlayerConstants.ROT_SPEED_DEG * Time.deltaTime
+                );
+
+                // ...unless we're going really slow, then just pivot instantly.
+                if (HSpeed < PlayerConstants.MAX_PIVOT_SPEED)
+                    HAngleDeg = targetAngleDeg;
+            }
+        }
+        private void ButtonControls()
+        {
+            if (JumpPressedRecently())
+            {
+                if (_shared.StoppedRollingRecently())
+                    _shared.StartRollJump();
+                else
+                    _shared.StartGroundJump();
+            }
+
+            if (AttackPressedRecently() && _shared._rollCooldown <= 0)
+            {
+                ChangeState(State.Rolling);
+            }
         }
     }
-    private void GroundedButtonControls()
+
+    private class FreeFallState : AbstractPlayerState
     {
-        if (JumpPressedRecently())
+        public FreeFallState(PlayerMovement shared)
+            : base(shared) {}
+
+        public override void ResetState() {}
+
+        public override void EarlyFixedUpdate()
         {
-            if (StoppedRollingRecently())
-                StartRollJump();
+            // Transition to walking if we're on the ground
+            if (_ground.IsGrounded)
+            {
+                ChangeState(State.Walking);
+
+                // Reduce the HSpeed based on the stick magnitude.
+                // This lets you avoid sliding(AKA: "sticking" the landing) by
+                // moving the left stick to neutral.
+                // This doesn't take away *all* of your momentum, because that would
+                // look stiff and unnatural.  
+                float hSpeedMult = _input.LeftStick.magnitude + PlayerConstants.MIN_LANDING_HSPEED_MULT;
+                if (hSpeedMult > 1)
+                    hSpeedMult = 1;
+                HSpeed *= hSpeedMult;
+
+                return;
+            }
+
+            // Transition to either ledge grabbing or wall sliding
+            bool isWallSliding =
+                VSpeed < 0 &&
+                _wall.IsTouchingWall &&
+                _shared.Forward.ComponentAlong(-_wall.LastWallNormal) > 0;
+
+            bool inLedgeGrabSweetSpot = 
+                _ledge.LedgePresent &&
+                _ledge.LastLedgeHeight >= PlayerConstants.BODY_HEIGHT / 2 &&
+                _ledge.LastLedgeHeight <= PlayerConstants.BODY_HEIGHT;
+
+            if (isWallSliding && inLedgeGrabSweetSpot)
+            {
+                ChangeState(State.LedgeGrabbing);
+                return;
+            }
+
+            if (isWallSliding && !inLedgeGrabSweetSpot)
+            {
+                ChangeState(State.WallSliding);
+                return;
+            }
+        }
+        public override void FixedUpdate()
+        {
+            // DEBUG: Record stats
+            if (_shared.transform.position.y > _shared._debugJumpMaxY)
+                _shared._debugJumpMaxY = _shared.transform.position.y;
+
+            Physics();
+            StrafingControls();
+            ButtonControls();
+        }
+        
+        protected void Physics()
+        {
+            // Apply gravity
+            // Use more gravity when we're falling so the jump arc feels "squishier"
+            float gravity = VSpeed > 0
+                ? _shared._riseGravity
+                : _shared._fallGravity;
+
+            VSpeed -= gravity * Time.deltaTime;
+
+            // Cap the VSpeed at the terminal velocity
+            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+                VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+
+            // Start going downwards if you bonk your head on the ceiling.
+            // Don't bonk your head!
+            if (VSpeed > 0 && _ground.IsBonkingHead)
+                VSpeed = PlayerConstants.BONK_SPEED;
+        }
+        protected void ButtonControls()
+        {
+            if (!_input.JumpHeld)
+                _shared._jumpReleased = true;
+
+            // Cut the jump short if the button was released on the way u
+            // Immediately setting the VSpeed to 0 looks jarring, so instead we'll
+            // exponentially decay it every frame.
+            // Once it's decayed below a certain threshold, we'll let gravity do the
+            // rest of the work so it still looks natural.
+            if (VSpeed > (_shared._jumpSpeed / 2) && _shared._jumpReleased)
+                VSpeed *= PlayerConstants.SHORT_JUMP_DECAY_RATE;
+
+            // Let the player jump for a short period after walking off a ledge,
+            // because everyone is human.  
+            // This is called "coyote time", named after the tragic life of the late
+            // Wile E. Coyote.
+            if (VSpeed < 0 && WasGroundedRecently() && JumpPressedRecently())
+            {
+                _shared.StartGroundJump();
+                DebugDisplay.PrintLine("Coyote-time jump!");
+            }
+
+            // Dive when the attack button is pressed.
+            if (AttackPressedRecently())
+            {
+                ChangeState(State.Diving);
+                return;
+            }
+        }
+        protected void StrafingControls()
+        {
+            // Allow the player to change their direction for free for a short time
+            // after jumping.  After that time is up, air strafing controls kick in
+            if (_shared._jumpRedirectTimer >= 0)
+            {
+                InstantlyFaceLeftStick();
+                SyncWalkVelocityToHSpeed();
+
+                _shared._jumpRedirectTimer -= Time.deltaTime;
+                return;
+            }
+
+            // In the air, we let the player "nudge" their velocity by applying a
+            // force in the direction the stick is being pushed.
+            // Unlike on the ground, you *will* lose speed and slide around if you
+            // try to change your direction.
+            var inputVector = GetWalkInput();
+
+            Vector3 forward = _shared.AngleForward(HAngleDeg);
+            bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
+            bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
+            bool movingForwards = _shared._walkVelocity.normalized.ComponentAlong(forward) > 0;
+
+            float accel = PlayerConstants.HACCEL_AIR;
+            float maxSpeed = PlayerConstants.HSPEED_MAX_AIR;
+
+            // Reduce the speed limit when moving backwards.
+            // If you're wanna go fast, you gotta go forward.
+            if (!movingForwards)
+                maxSpeed = PlayerConstants.HSPEED_MAX_GROUND;
+
+            // Give them a little bit of help if they're pushing backwards
+            // on the stick, so it's easier to "abort" a poorly-timed jum
+            if (pushingBackwards)
+                accel = PlayerConstants.HACCEL_AIR_BACKWARDS;
+
+            // Apply a force to get our new velocity.
+            var oldVelocity = _shared._walkVelocity;
+            var newVelocity = _shared._walkVelocity + (inputVector * accel * Time.deltaTime);
+            
+            // Only let the player accellerate up to the normal ground speed.
+            // We won't slow them down if they're already going faster than that,
+            // though (eg: due to the speed boost from chained jumping)
+            float oldSpeed = oldVelocity.magnitude;
+            float newSpeed = newVelocity.magnitude;
+
+            bool wasAboveGroundSpeedLimit = oldSpeed > PlayerConstants.HSPEED_MAX_GROUND;
+            bool nowAboveGroundSpeedLimit = newSpeed > PlayerConstants.HSPEED_MAX_GROUND;
+
+            if (newSpeed > oldSpeed)
+            {
+                if (wasAboveGroundSpeedLimit)
+                    newSpeed = oldSpeed;
+                else if (nowAboveGroundSpeedLimit)
+                    newSpeed = PlayerConstants.HSPEED_MAX_GROUND;
+            }
+
+            // We WILL, however, slow them down if they're going past the max air
+            // speed.  That's a hard maximum.
+            if (newSpeed > maxSpeed)
+                _shared._walkVelocity = _shared._walkVelocity.normalized * maxSpeed;
+
+            _shared._walkVelocity = newVelocity.normalized * newSpeed;
+
+            // Keep HSpeed up-to-date, so it'll be correct when we land.
+            HSpeed = _shared._walkVelocity.ComponentAlong(_shared.Forward);
+        }
+
+    }
+
+    private class WallSlidingState : AbstractPlayerState
+    {
+        public WallSlidingState(PlayerMovement shared)
+            : base(shared) {}
+
+        public override void EarlyFixedUpdate()
+        {
+            bool keepWallSliding = 
+                !_ground.IsGrounded &&
+                _wall.IsTouchingWall &&
+                _shared.Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
+                VSpeed < 0;
+
+            if (keepWallSliding)
+                ChangeState(State.WallSliding);
+            else if (_ground.IsGrounded)
+                ChangeState(State.Walking);
             else
-                StartGroundJump();
+                ChangeState(State.FreeFall);
         }
 
-        if (AttackPressedRecently() && _rollCooldown <= 0)
+        public override void FixedUpdate()
         {
-            StartRolling();
-        }
-    }
-    
-    private void AirborneTransitions()
-    {
-        // Transition to walking if we're on the ground
-        if (_ground.IsGrounded)
-        {
-            CurrentState = State.Walking;
-
-            // Reduce the HSpeed based on the stick magnitude.
-            // This lets you avoid sliding(AKA: "sticking" the landing) by
-            // moving the left stick to neutral.
-            // This doesn't take away *all* of your momentum, because that would
-            // look stiff and unnatural.  
-            float hSpeedMult = _input.LeftStick.magnitude + PlayerConstants.MIN_LANDING_HSPEED_MULT;
-            if (hSpeedMult > 1)
-                hSpeedMult = 1;
-            HSpeed *= hSpeedMult;
-
-            return;
+            Physics();
+            Controls();
         }
 
-        // Transition to either ledge grabbing or wall sliding
-        bool isWallSliding =
-            VSpeed < 0 &&
-            _wall.IsTouchingWall &&
-            Forward.ComponentAlong(-_wall.LastWallNormal) > 0;
-
-        bool inLedgeGrabSweetSpot = 
-            _ledge.LedgePresent &&
-            _ledge.LastLedgeHeight >= PlayerConstants.BODY_HEIGHT / 2 &&
-            _ledge.LastLedgeHeight <= PlayerConstants.BODY_HEIGHT;
-
-        if (isWallSliding && inLedgeGrabSweetSpot)
+        private void Physics()
         {
-            StartGrabbingLedge();
-            return;
+            // Apply gravity
+            float gravity = _shared._wallSlideGravity;
+            VSpeed -= gravity * Time.deltaTime;
+
+            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE)
+                VSpeed = PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE;
+
+            // Cancel all walking velocity pointing "inside" the wall.
+            // We're intentionally letting _walkVelocity and HSpeed get out of sync
+            // here, so that the original HSpeed will be resumed when we wall kick.
+            _shared._walkVelocity = _shared._walkVelocity.ProjectOnPlane(_wall.LastWallNormal);
+
+            // Apply horizontal friction, since sliding on a wall naturally slows
+            // you down.
+            float slidingHSpeed = _shared._walkVelocity.magnitude;
+            slidingHSpeed -= PlayerConstants.FRICTION_WALL_SLIDE * Time.deltaTime;
+            if (slidingHSpeed < 0)
+                slidingHSpeed = 0;
+
+            _shared._walkVelocity = slidingHSpeed * _shared._walkVelocity.normalized;
         }
 
-        if (isWallSliding && !inLedgeGrabSweetSpot)
+        private void Controls()
         {
-            CurrentState = State.WallSliding;
-            return;
+            // Wall kick when we press the jump button
+            if (JumpPressedRecently())
+                _shared.StartWallJump();
         }
     }
-    private void WhileAirborne()
+
+    private class WallJumpingState : FreeFallState
     {
-        // DEBUG: Record stats
-        if (transform.position.y > _debugJumpMaxY)
-            _debugJumpMaxY = transform.position.y;
+        private Vector3 _lastWallJumpPos;
 
-        AirbornePhysics();
-        AirborneStrafingControls();
-        AirborneButtonControls();
-    }
-    private void AirbornePhysics()
-    {
-        // Apply gravity
-        // Use more gravity when we're falling so the jump arc feels "squishier"
-        float gravity = VSpeed > 0
-            ? _riseGravity
-            : _fallGravity;
+        public WallJumpingState(PlayerMovement shared)
+            : base(shared) {}
 
-        VSpeed -= gravity * Time.deltaTime;
-
-        // Cap the VSpeed at the terminal velocity
-        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
-            VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
-
-        // Start going downwards if you bonk your head on the ceiling.
-        // Don't bonk your head!
-        if (VSpeed > 0 && _ground.IsBonkingHead)
-            VSpeed = PlayerConstants.BONK_SPEED;
-    }
-    private void AirborneButtonControls()
-    {
-        if (!_input.JumpHeld)
-            _jumpReleased = true;
-
-        // Cut the jump short if the button was released on the way u
-        // Immediately setting the VSpeed to 0 looks jarring, so instead we'll
-        // exponentially decay it every frame.
-        // Once it's decayed below a certain threshold, we'll let gravity do the
-        // rest of the work so it still looks natural.
-        if (VSpeed > (_jumpSpeed / 2) && _jumpReleased)
-            VSpeed *= PlayerConstants.SHORT_JUMP_DECAY_RATE;
-
-        // Let the player jump for a short period after walking off a ledge,
-        // because everyone is human.  
-        // This is called "coyote time", named after the tragic life of the late
-        // Wile E. Coyote.
-        if (VSpeed < 0 && WasGroundedRecently() && JumpPressedRecently())
+        public override void ResetState()
         {
-            StartGroundJump();
-            DebugDisplay.PrintLine("Coyote-time jump!");
+            _lastWallJumpPos = Vector3.zero;
+            base.ResetState();
         }
 
-        // Dive when the attack button is pressed.
-        if (AttackPressedRecently())
+        public override void OnStateEnter()
         {
-            StartDiving();
-            return;
+            base.OnStateEnter();
+            _lastWallJumpPos = _shared.transform.position;
+        }
+
+        public override void EarlyFixedUpdate()
+        {
+            // After we have moved a minimum distance away from the wall, switch to
+            // FreeFalling so air strafing can be re-enabled.
+            float distFromWall = Vector3.Distance(
+                _lastWallJumpPos.Flattened(),
+                _shared.transform.position.Flattened()
+            );
+            if (distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST)
+                ChangeState(State.FreeFall);
+
+            // All of the usual free fall transitions apply too.
+            base.EarlyFixedUpdate();
+        }
+
+        public override void FixedUpdate()
+        {
+            // DEBUG: Record stats
+            if (_shared.transform.position.y > _shared._debugJumpMaxY)
+                _shared._debugJumpMaxY = _shared.transform.position.y;
+
+            base.Physics();
+            base.ButtonControls();
+            // NOTE: Air strafing is intentionally disabled in this state.
+            // It gets re-enabled when the state changes back to FreeFalling, after
+            // the player has moved a minimum distance away from the wall.
         }
     }
-    private void AirborneStrafingControls()
+
+    private class DivingState : AbstractPlayerState
     {
-        // Allow the player to change their direction for free for a short time
-        // after jumping.  After that time is up, air strafing controls kick in
-        if (_jumpRedirectTimer >= 0)
+        public DivingState(PlayerMovement shared)
+            : base(shared) {}
+
+        public override void OnStateEnter()
         {
+            InstantlyFaceLeftStick();
+
+            HSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
+            VSpeed = _shared._diveJumpVspeed;
+
+            _shared._chainedJumpCount = 0;
+            _shared.StartedDiving?.Invoke();
+        }
+
+        public override void EarlyFixedUpdate()
+        {
+            // Roll when we hit the ground
+            if (_ground.IsGrounded)
+                ChangeState(State.Rolling);
+
+            // Bonk if we hit a wall
+            if (_shared.ShouldBonkAgainstWall())
+                ChangeState(State.Bonking);
+        }
+        public override void FixedUpdate()
+        {
+            // Damage things
+            _shared._diveHitbox.ApplyDamage();
+
+            // Apply gravity
+            // Use more gravity when we're falling so the jump arc feels "squishier"
+            VSpeed -= PlayerConstants.DIVE_GRAVITY * Time.deltaTime;
+
+            // TODO: This logic is copy/pasted from WhileAirborn().  Refactor.
+            // Cap the VSpeed at the terminal velocity
+            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+                VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+
+            // Reduce HSpeed until it's at the minimum
+            // If the player is pushing backwards on the left stick, reduce the speed
+            // faster and let them slow down more
+            float initSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
+            float finalSpeed = PlayerConstants.DIVE_HSPEED_FINAL_MAX;
+            float slowTime = PlayerConstants.DIVE_HSPEED_SLOW_TIME;
+            
+            float stickBackwardsComponent = -LeftStickForwardsComponent();
+            if (stickBackwardsComponent > 0)
+            {
+                finalSpeed = Mathf.Lerp(
+                    PlayerConstants.DIVE_HSPEED_FINAL_MAX,
+                    PlayerConstants.DIVE_HSPEED_FINAL_MIN,
+                    stickBackwardsComponent
+                );
+            }
+
+            float friction = (initSpeed - finalSpeed) / slowTime;
+            HSpeed -= friction * Time.deltaTime;
+            if (HSpeed < finalSpeed)
+                HSpeed = finalSpeed;
+
+            SyncWalkVelocityToHSpeed();
+        }
+    }
+
+    private class GrabbingLedgeState : AbstractPlayerState
+    {
+        private float _timer;
+
+        public GrabbingLedgeState(PlayerMovement shared)
+            : base(shared) {}
+
+        public override void ResetState()
+        {
+            _timer = 0;
+        }
+
+        public override void OnStateEnter()
+        {
+            _timer = PlayerConstants.LEDGE_GRAB_DURATION;
+            _shared.GrabbedLedge?.Invoke();
+        }
+
+        public override void EarlyFixedUpdate()
+        {
+            if (_timer <= 0)
+                _shared.CurrentState = State.FreeFall;
+        }
+        
+        public override void FixedUpdate()
+        {
+            _shared.VSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
+            _shared.HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
+            _shared.SyncWalkVelocityToHSpeed();
+
+            _timer -= Time.deltaTime;
+        }
+    }
+
+    private class RollingState : AbstractPlayerState
+    {
+        private float _timer;
+
+        public RollingState(PlayerMovement shared)
+            : base(shared) {}
+
+        public override void ResetState()
+        {
+            _timer = 0;
+        }
+
+        public override void OnStateEnter()
+        {
+            VSpeed = 0;
+            HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
             InstantlyFaceLeftStick();
             SyncWalkVelocityToHSpeed();
 
-            _jumpRedirectTimer -= Time.deltaTime;
-            return;
+            _timer = PlayerConstants.ROLL_TIME;
         }
 
-        // In the air, we let the player "nudge" their velocity by applying a
-        // force in the direction the stick is being pushed.
-        // Unlike on the ground, you *will* lose speed and slide around if you
-        // try to change your direction.
-        var inputVector = GetWalkInput();
-
-        Vector3 forward = AngleForward(HAngleDeg);
-        bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
-        bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
-        bool movingForwards = _walkVelocity.normalized.ComponentAlong(forward) > 0;
-
-        float accel = PlayerConstants.HACCEL_AIR;
-        float maxSpeed = PlayerConstants.HSPEED_MAX_AIR;
-
-        // Reduce the speed limit when moving backwards.
-        // If you're wanna go fast, you gotta go forward.
-        if (!movingForwards)
-            maxSpeed = PlayerConstants.HSPEED_MAX_GROUND;
-
-        // Give them a little bit of help if they're pushing backwards
-        // on the stick, so it's easier to "abort" a poorly-timed jum
-        if (pushingBackwards)
-            accel = PlayerConstants.HACCEL_AIR_BACKWARDS;
-
-        // Apply a force to get our new velocity.
-        var oldVelocity = _walkVelocity;
-        var newVelocity = _walkVelocity + (inputVector * accel * Time.deltaTime);
-        
-        // Only let the player accellerate up to the normal ground speed.
-        // We won't slow them down if they're already going faster than that,
-        // though (eg: due to the speed boost from chained jumping)
-        float oldSpeed = oldVelocity.magnitude;
-        float newSpeed = newVelocity.magnitude;
-
-        bool wasAboveGroundSpeedLimit = oldSpeed > PlayerConstants.HSPEED_MAX_GROUND;
-        bool nowAboveGroundSpeedLimit = newSpeed > PlayerConstants.HSPEED_MAX_GROUND;
-
-        if (newSpeed > oldSpeed)
+        public override void OnStateExit()
         {
-            if (wasAboveGroundSpeedLimit)
-                newSpeed = oldSpeed;
-            else if (nowAboveGroundSpeedLimit)
-                newSpeed = PlayerConstants.HSPEED_MAX_GROUND;
-        }
-
-        // We WILL, however, slow them down if they're going past the max air
-        // speed.  That's a hard maximum.
-        if (newSpeed > maxSpeed)
-            _walkVelocity = _walkVelocity.normalized * maxSpeed;
-
-        _walkVelocity = newVelocity.normalized * newSpeed;
-
-        // Keep HSpeed up-to-date, so it'll be correct when we land.
-        HSpeed = _walkVelocity.ComponentAlong(Forward);
-    }
-
-    private void WallSlidingTransitions()
-    {
-        bool keepWallSliding = 
-            !_ground.IsGrounded &&
-            _wall.IsTouchingWall &&
-            Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
-            VSpeed < 0;
-
-        if (keepWallSliding)
-            CurrentState = State.WallSliding;
-        else if (_ground.IsGrounded)
-            CurrentState = State.Walking;
-        else
-            CurrentState = State.FreeFall;
-    }
-    private void WhileWallSliding()
-    {
-        WallSlidingPhysics();
-        WallSlidingControls();
-    }
-    private void WallSlidingPhysics()
-    {
-        // Apply gravity
-        float gravity = _wallSlideGravity;
-        VSpeed -= gravity * Time.deltaTime;
-
-        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE)
-            VSpeed = PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE;
-
-        // Cancel all walking velocity pointing "inside" the wall.
-        // We're intentionally letting _walkVelocity and HSpeed get out of sync
-        // here, so that the original HSpeed will be resumed when we wall kick.
-        _walkVelocity = _walkVelocity.ProjectOnPlane(_wall.LastWallNormal);
-
-        // Apply horizontal friction, since sliding on a wall naturally slows
-        // you down.
-        float slidingHSpeed = _walkVelocity.magnitude;
-        slidingHSpeed -= PlayerConstants.FRICTION_WALL_SLIDE * Time.deltaTime;
-        if (slidingHSpeed < 0)
-            slidingHSpeed = 0;
-
-        _walkVelocity = slidingHSpeed * _walkVelocity.normalized;
-    }
-    private void WallSlidingControls()
-    {
-        // Wall kick when we press the jump button
-        if (JumpPressedRecently())
-            StartWallJump();
-    }
-
-    private void WallJumpingTransitions()
-    {
-        // After we have moved a minimum distance away from the wall, switch to
-        // FreeFalling so air strafing can be re-enabled.
-        float distFromWall = Vector3.Distance(
-            _lastWallJumpPos.Flattened(),
-            transform.position.Flattened()
-        );
-        if (distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST)
-            CurrentState = State.FreeFall;
-
-        // All of the usual free fall transitions apply too.
-        AirborneTransitions();
-    }
-    private void WhileWallJumping()
-    {
-        // DEBUG: Record stats
-        if (transform.position.y > _debugJumpMaxY)
-            _debugJumpMaxY = transform.position.y;
-
-        AirbornePhysics();
-        // NOTE: Air strafing is intentionally disabled in this state.
-        // It gets re-enabled when the state changes back to FreeFalling, after
-        // the player has moved a minimum distance away from the wall.
-        // See WallJumpingTransitions().
-        AirborneButtonControls();
-    }
-
-    private void DivingTransitions()
-    {
-        // Roll when we hit the ground
-        if (_ground.IsGrounded)
-            StartRolling();
-
-        // Bonk if we hit a wall
-        if (ShouldBonkAgainstWall())
-            StartBonking();
-    }
-    private void WhileDiving()
-    {
-        // Damage things
-        _diveHitbox.ApplyDamage();
-
-        // Apply gravity
-        // Use more gravity when we're falling so the jump arc feels "squishier"
-        VSpeed -= PlayerConstants.DIVE_GRAVITY * Time.deltaTime;
-
-        // TODO: This logic is copy/pasted from WhileAirborn().  Refactor.
-        // Cap the VSpeed at the terminal velocity
-        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
-            VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
-
-        // Reduce HSpeed until it's at the minimum
-        // If the player is pushing backwards on the left stick, reduce the speed
-        // faster and let them slow down more
-        float initSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
-        float finalSpeed = PlayerConstants.DIVE_HSPEED_FINAL_MAX;
-        float slowTime = PlayerConstants.DIVE_HSPEED_SLOW_TIME;
-        
-        float stickBackwardsComponent = -LeftStickForwardsComponent();
-        if (stickBackwardsComponent > 0)
-        {
-            finalSpeed = Mathf.Lerp(
-                PlayerConstants.DIVE_HSPEED_FINAL_MAX,
-                PlayerConstants.DIVE_HSPEED_FINAL_MIN,
-                stickBackwardsComponent
-            );
-        }
-
-        float friction = (initSpeed - finalSpeed) / slowTime;
-        HSpeed -= friction * Time.deltaTime;
-        if (HSpeed < finalSpeed)
-            HSpeed = finalSpeed;
-
-        SyncWalkVelocityToHSpeed();
-    }
-
-    private void GrabbingLedgeTransitions()
-    {
-        if (_ledgeGrabTimer <= 0)
-            CurrentState = State.FreeFall;
-    }
-    private void WhileGrabbingLedge()
-    {
-        VSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
-        HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
-        SyncWalkVelocityToHSpeed();
-
-        _ledgeGrabTimer -= Time.deltaTime;
-    }
-
-    private void StartGrabbingLedge()
-    {
-        CurrentState = State.LedgeGrabbing;
-        _ledgeGrabTimer = PlayerConstants.LEDGE_GRAB_DURATION;
-        GrabbedLedge?.Invoke();
-    }
-
-    private void RollingTransitions()
-    {
-        // Stop rolling after the timer expires
-        if (_rollTimer <= 0)
-        {
-            _lastRollStopTime = Time.time;
-
-            // Slow back down, so the player doesn't have ridiculous speed when
-            // the roll stops
-            HSpeed = 0;
-            _walkVelocity = Vector3.zero;
-
-            // Transition to the correct state, based on if we're in the air
-            // or not.
-            if (_ground.IsGrounded)
-                CurrentState = State.Walking;
-            else
-                CurrentState = State.FreeFall;
-
             // Start the cooldown, so the player can't immediately
             // roll again.
-            _rollCooldown = PlayerConstants.ROLL_COOLDOWN;
+            _shared._rollCooldown = PlayerConstants.ROLL_COOLDOWN;
         }
 
-        // Start bonking if we're moving into a wall.
-        if (ShouldBonkAgainstWall())
+        public override void EarlyFixedUpdate()
         {
-            StartBonking();
-            return;
+            // Stop rolling after the timer expires
+            if (_timer <= 0)
+            {
+                _shared._lastRollStopTime = Time.time;
+
+                // Slow back down, so the player doesn't have ridiculous speed when
+                // the roll stops
+                HSpeed = 0;
+                _shared._walkVelocity = Vector3.zero;
+
+                // Transition to the correct state, based on if we're in the air
+                // or not.
+                if (_ground.IsGrounded)
+                    ChangeState(State.Walking);
+                else
+                    ChangeState(State.FreeFall);
+            }
+
+            // Start bonking if we're moving into a wall.
+            if (_shared.ShouldBonkAgainstWall())
+            {
+                ChangeState(State.Bonking);
+                return;
+            }
         }
-    }
-    private void WhileRolling()
-    {
-        // Damage things
-        _rollHitbox.ApplyDamage();
-
-        // Let the player change their direction for a very short about of time
-        // at the beginning of their roll
-        bool withinRedirectWindow = _rollTimer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME;
-        if (withinRedirectWindow && !IsLeftStickNeutral())
-            HAngleDeg = GetHAngleDegInput();
-
-        SyncWalkVelocityToHSpeed();
-
-        // Let the player jump out of a roll.
-        if (JumpPressedRecently())
+        public override void FixedUpdate()
         {
-            StartRollJump();
-            return;
+            // Damage things
+            _shared._rollHitbox.ApplyDamage();
+
+            // Let the player change their direction for a very short about of time
+            // at the beginning of their roll
+            bool withinRedirectWindow = _timer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME;
+            if (withinRedirectWindow && !IsLeftStickNeutral())
+                HAngleDeg = GetHAngleDegInput();
+
+            SyncWalkVelocityToHSpeed();
+
+            // Let the player jump out of a roll.
+            if (JumpPressedRecently())
+            {
+                _shared.StartRollJump();
+                return;
+            }
+
+            _timer -= Time.deltaTime;
         }
-
-        _rollTimer -= Time.deltaTime;
-    }
-    private void StartRolling()
-    {
-        VSpeed = 0;
-        HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
-        InstantlyFaceLeftStick();
-        SyncWalkVelocityToHSpeed();
-
-        // Book keeping
-        _rollTimer = PlayerConstants.ROLL_TIME;
-        CurrentState = State.Rolling;
     }
 
-    private void BonkingTransitions()
+    private class BonkingState : AbstractPlayerState
     {
-        if (_bonkTimer <= 0)
+        private float _timer;
+        private int _bounceCount;
+
+        public BonkingState(PlayerMovement shared)
+            : base(shared) {}
+
+        public override void ResetState()
         {
-            if (!_ground.IsGrounded)
-                CurrentState = State.FreeFall;
-            else
-                CurrentState = State.Walking;
+            _timer = 0;
+            _bounceCount = 0;
         }
-    }
-    private void WhileBonking()
-    {
-        // Apply gravity
-        VSpeed -= PlayerConstants.BONK_GRAVITY * Time.deltaTime;
-        if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
-            VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
 
-        // Bounce against the floor
-        if (_ground.IsGrounded && VSpeed < 0 && _bonkBounceCount < PlayerConstants.BONK_MAX_BOUNCE_COUNT)
+        public override void OnStateEnter()
         {
-            VSpeed *= -PlayerConstants.BONK_BOUNCE_MULTIPLIER;
-            _bonkBounceCount++;
+            VSpeed = PlayerConstants.BONK_START_VSPEED;
+            HSpeed = PlayerConstants.BONK_START_HSPEED;
+            HAngleDeg = _shared.GetHAngleDegFromForward(-_wall.LastWallNormal);
+            SyncWalkVelocityToHSpeed();
+
+            _timer = PlayerConstants.BONK_DURATION;
+            _bounceCount = 0;
+
+            _shared.Bonked?.Invoke();
         }
 
-        // Apply friction
-        float bonkFriction = Mathf.Abs(PlayerConstants.BONK_START_HSPEED / PlayerConstants.BONK_SLOW_TIME);
-        HSpeed = Mathf.MoveTowards(HSpeed, 0, bonkFriction * Time.deltaTime);
-        SyncWalkVelocityToHSpeed();
+        public override void EarlyFixedUpdate()
+        {
+            if (_timer <= 0)
+            {
+                if (!_ground.IsGrounded)
+                    ChangeState(State.FreeFall);
+                else
+                    ChangeState(State.Walking);
+            }
+        }
 
-        // Tick the timer down.  It starts after we've bounced once.
-        if (_bonkBounceCount >= 1)
-            _bonkTimer -= Time.deltaTime;
+        public override void FixedUpdate()
+        {
+            // Apply gravity
+            VSpeed -= PlayerConstants.BONK_GRAVITY * Time.deltaTime;
+            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+                VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+
+            // Bounce against the floor
+            if (_ground.IsGrounded && VSpeed < 0 && _bounceCount < PlayerConstants.BONK_MAX_BOUNCE_COUNT)
+            {
+                VSpeed *= -PlayerConstants.BONK_BOUNCE_MULTIPLIER;
+                _bounceCount++;
+            }
+
+            // Apply friction
+            float bonkFriction = Mathf.Abs(PlayerConstants.BONK_START_HSPEED / PlayerConstants.BONK_SLOW_TIME);
+            HSpeed = Mathf.MoveTowards(HSpeed, 0, bonkFriction * Time.deltaTime);
+            SyncWalkVelocityToHSpeed();
+
+            // Tick the timer down.  It starts after we've bounced once.
+            if (_bounceCount >= 1)
+                _timer -= Time.deltaTime;
+        }
     }
-    private void StartBonking()
-    {
-        VSpeed = PlayerConstants.BONK_START_VSPEED;
-        HSpeed = PlayerConstants.BONK_START_HSPEED;
-        HAngleDeg = GetHAngleDegFromForward(-_wall.LastWallNormal);
-        SyncWalkVelocityToHSpeed();
 
-        _bonkTimer = PlayerConstants.BONK_DURATION;
-        _bonkBounceCount = 0;
-
-        CurrentState = State.Bonking;
-        Bonked?.Invoke();
-    }
 
     private void StartGroundJump()
     {
@@ -842,9 +1019,8 @@ public class PlayerMovement : MonoBehaviour
 
         // Book keeping
         _chainedJumpCount = 0;
-        _lastWallJumpPos = transform.position;
         _jumpReleased = false;
-        CurrentState = State.WallJumping;
+        ChangeState(State.WallJumping);
         StartedJumping?.Invoke();
     }
 
@@ -871,18 +1047,6 @@ public class PlayerMovement : MonoBehaviour
         StartedJumping?.Invoke();
     }
     
-    private void StartDiving()
-    {
-        InstantlyFaceLeftStick();
-
-        HSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
-        VSpeed = _diveJumpVspeed;
-
-        _chainedJumpCount = 0;
-        CurrentState = State.Diving;
-        StartedDiving?.Invoke();
-    }
-
     private void InstantlyFaceLeftStick()
     {
         if (!IsLeftStickNeutral())
