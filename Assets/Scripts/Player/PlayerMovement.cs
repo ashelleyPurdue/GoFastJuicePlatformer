@@ -74,8 +74,6 @@ public partial class PlayerMovement : MonoBehaviour
 
     private Dictionary<State, AbstractPlayerState> _states;
 
-
-
     private float _lastJumpButtonPressTime = float.NegativeInfinity;
     private bool _jumpReleased;
 
@@ -267,157 +265,6 @@ public partial class PlayerMovement : MonoBehaviour
         _rollCooldown -= Time.deltaTime;
     }
 
-    private void StartGroundJump()
-    {
-        // DEBUG: Record debug stats
-        _debugJumpStartY = transform.position.y;
-        _debugJumpMaxY = transform.position.y;
-
-        InstantlyFaceLeftStick();
-
-        VSpeed = _jumpSpeed;
-
-        // Jump heigher and get a speed boost every time they do 2 chained jumps
-        if (_chainedJumpCount % 2 == 1)
-        {
-            VSpeed = _secondJumpSpeed;
-            HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
-        }
-
-        SyncWalkVelocityToHSpeed();
-
-        // Book keeping
-        _chainedJumpCount++;
-        _jumpReleased = false;
-        _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
-        StartedJumping?.Invoke();
-    }
-
-    private void StartWallJump()
-    {
-        // DEBUG: Record debug stats
-        _debugJumpStartY = transform.position.y;
-        _debugJumpMaxY = transform.position.y;
-
-        VSpeed = _jumpSpeed;
-
-        // Reflect off of the wall at the angle we approached it at
-        var kickDir = ReflectOffOfSurface(Forward, _wall.LastWallNormal);
-        HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
-
-        // Kick off of the wall at a speed that's *at least* WALL_JUMP_MIN_HSPEED.
-        // If we were already going faster than that before touching the wall,
-        // then use *that* speed instead.  This way, you'll never lose speed by
-        // wall jumping.
-        HSpeed = Mathf.Max(
-            PlayerConstants.WALL_JUMP_MIN_HSPEED,
-            HSpeed
-        );
-
-        // On top of that, give the player a *boost* to their HSpeed, as a reward
-        // for wall jumping.
-        HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
-
-        SyncWalkVelocityToHSpeed();
-
-        // Book keeping
-        _chainedJumpCount = 0;
-        _jumpReleased = false;
-        ChangeState(State.WallJumping);
-        StartedJumping?.Invoke();
-    }
-
-    private void StartRollJump()
-    {
-        // DEBUG: Record debug stats
-        _debugJumpStartY = transform.position.y;
-        _debugJumpMaxY = transform.position.y;
-
-        InstantlyFaceLeftStick();
-
-        // Cap their HSpeed at something reasonable.
-        // Otherwise, they'd conserve their rolling HSpeed into the
-        // jump, which would result in a *super* ridiculous long jump.
-        // We only want rolling jumps to be *slightly* ridiculous.
-        HSpeed = PlayerConstants.ROLL_JUMP_HSPEED;
-        VSpeed = _jumpSpeed;
-        SyncWalkVelocityToHSpeed();
-
-        _chainedJumpCount = 0;
-        _jumpReleased = false;
-        _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
-        CurrentState = State.Walking;
-        StartedJumping?.Invoke();
-    }
-    
-    private void InstantlyFaceLeftStick()
-    {
-        if (!IsLeftStickNeutral())
-            HAngleDeg = GetHAngleDegInput();
-    }
-
-    private void SyncWalkVelocityToHSpeed()
-    {
-        _walkVelocity = HSpeed * AngleForward(HAngleDeg);
-    }
-
-    /// <summary>
-    /// Returns a vector representing the left control stick, relative to camera
-    /// space.
-    /// </summary>
-    /// <returns></returns>
-    private Vector3 GetWalkInput()
-    {
-        return InputUtils.LeftStickToWorldSpace(_input.LeftStick);
-    }
-
-    /// <summary>
-    /// Returns the intended HAngleDeg based on the left stick's input, relative
-    /// to camera space.
-    /// </summary>
-    /// <returns></returns>
-    private float GetHAngleDegInput()
-    {
-        var inputVector = GetWalkInput();
-        return Mathf.Atan2(inputVector.z, inputVector.x) * Mathf.Rad2Deg;
-    }
-
-    /// <summary>
-    /// Is the left stick in a neutral position(IE: in the deadzone?)
-    /// </summary>
-    /// <returns></returns>
-    private bool IsLeftStickNeutral()
-    {
-        return _input.LeftStick.magnitude < PlayerConstants.LEFT_STICK_DEADZONE;
-    }
-
-    private float LeftStickForwardsComponent()
-    {
-        var inputVector = GetWalkInput();
-        var forward = AngleForward(HAngleDeg);
-        return inputVector.ComponentAlong(forward);
-    }
-
-    private bool WasGroundedRecently()
-    {
-        return (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
-    }
-
-    private bool StoppedRollingRecently()
-    {
-        return (Time.time - PlayerConstants.COYOTE_TIME < _lastRollStopTime);
-    }
-
-    private bool JumpPressedRecently()
-    {
-        return (Time.time - PlayerConstants.EARLY_JUMP_TIME < _lastJumpButtonPressTime);
-    }
-
-    private bool AttackPressedRecently()
-    {
-        return (Time.time - Time.fixedDeltaTime < _lastAttackButtonPressTime);
-    }
-
     private Vector3 AngleForward(float angleDeg)
     {
         return new Vector3(
@@ -425,32 +272,5 @@ public partial class PlayerMovement : MonoBehaviour
             0,
             Mathf.Sin(Mathf.Deg2Rad * angleDeg)
         );
-    }
-
-    /// <summary>
-    /// Returns the HAngleDeg that would result in the given forward.
-    /// </summary>
-    /// <param name="forward"></param>
-    /// <returns></returns>
-    private float GetHAngleDegFromForward(Vector3 forward)
-    {
-        var flatForward = forward.Flattened();
-        float radians = Mathf.Atan2(flatForward.z, flatForward.x);
-        return radians * Mathf.Rad2Deg;
-    }
-
-    private Vector3 ReflectOffOfSurface(Vector3 v, Vector3 surfaceNormal)
-    {
-        var vectorAlongSurface = v.ProjectOnPlane(surfaceNormal);
-        var vectorIntoSurface = v - vectorAlongSurface;
-
-        return -vectorIntoSurface + vectorAlongSurface;
-    }
-
-    private bool ShouldBonkAgainstWall()
-    {
-        return 
-            _wall.IsTouchingWall &&
-            Forward.ComponentAlong(-_wall.LastWallNormal) > 0.5f;
     }
 }

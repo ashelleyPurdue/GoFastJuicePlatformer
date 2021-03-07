@@ -35,7 +35,7 @@ public partial class PlayerMovement
             bool isWallSliding =
                 VSpeed < 0 &&
                 _wall.IsTouchingWall &&
-                _shared.Forward.ComponentAlong(-_wall.LastWallNormal) > 0;
+                Forward.ComponentAlong(-_wall.LastWallNormal) > 0;
 
             bool inLedgeGrabSweetSpot = 
                 _ledge.LedgePresent &&
@@ -57,8 +57,8 @@ public partial class PlayerMovement
         public override void FixedUpdate()
         {
             // DEBUG: Record stats
-            if (_shared.transform.position.y > _shared._debugJumpMaxY)
-                _shared._debugJumpMaxY = _shared.transform.position.y;
+            if (transform.position.y > _debugJumpMaxY)
+                _debugJumpMaxY = transform.position.y;
 
             Physics();
             StrafingControls();
@@ -103,7 +103,7 @@ public partial class PlayerMovement
             // Wile E. Coyote.
             if (VSpeed < 0 && WasGroundedRecently() && JumpPressedRecently())
             {
-                _shared.StartGroundJump();
+                StartGroundJump();
                 DebugDisplay.PrintLine("Coyote-time jump!");
             }
 
@@ -133,7 +133,7 @@ public partial class PlayerMovement
             // try to change your direction.
             var inputVector = GetWalkInput();
 
-            Vector3 forward = _shared.AngleForward(HAngleDeg);
+            Vector3 forward = AngleForward(HAngleDeg);
             bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
             bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
             bool movingForwards = _shared._walkVelocity.normalized.ComponentAlong(forward) > 0;
@@ -180,7 +180,12 @@ public partial class PlayerMovement
             _shared._walkVelocity = newVelocity.normalized * newSpeed;
 
             // Keep HSpeed up-to-date, so it'll be correct when we land.
-            HSpeed = _shared._walkVelocity.ComponentAlong(_shared.Forward);
+            HSpeed = _shared._walkVelocity.ComponentAlong(Forward);
+        }
+    
+        private bool WasGroundedRecently()
+        {
+            return (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
         }
     }
 }

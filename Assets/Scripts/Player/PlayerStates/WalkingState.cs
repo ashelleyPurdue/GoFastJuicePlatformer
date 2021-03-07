@@ -16,7 +16,7 @@ public partial class PlayerMovement
             if (!_ground.IsGrounded)
                 ChangeState(State.FreeFall);
         }
-        
+
         public override void FixedUpdate()
         {
             // Start the chained jump timer once we land
@@ -35,7 +35,7 @@ public partial class PlayerMovement
             StickControls();
             ButtonControls();
             
-            _shared.SyncWalkVelocityToHSpeed();
+            SyncWalkVelocityToHSpeed();
         }
 
         private void Physics()
@@ -103,16 +103,21 @@ public partial class PlayerMovement
         {
             if (JumpPressedRecently())
             {
-                if (_shared.StoppedRollingRecently())
-                    _shared.StartRollJump();
+                if (StoppedRollingRecently())
+                    StartRollJump();
                 else
-                    _shared.StartGroundJump();
+                    StartGroundJump();
             }
 
             if (AttackPressedRecently() && _shared._rollCooldown <= 0)
             {
                 ChangeState(State.Rolling);
             }
+        }
+
+        private bool StoppedRollingRecently()
+        {
+            return (Time.time - PlayerConstants.COYOTE_TIME < _shared._lastRollStopTime);
         }
     }
 }

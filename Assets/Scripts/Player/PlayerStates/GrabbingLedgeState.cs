@@ -32,7 +32,7 @@ public partial class PlayerMovement
         {
             _shared.VSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
             _shared.HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
-            _shared.SyncWalkVelocityToHSpeed();
+            SyncWalkVelocityToHSpeed();
 
             _timer -= Time.deltaTime;
         }

@@ -54,7 +54,7 @@ public partial class PlayerMovement
             }
 
             // Start bonking if we're moving into a wall.
-            if (_shared.ShouldBonkAgainstWall())
+            if (ShouldBonkAgainstWall())
             {
                 ChangeState(State.Bonking);
                 return;
@@ -76,7 +76,7 @@ public partial class PlayerMovement
             // Let the player jump out of a roll.
             if (JumpPressedRecently())
             {
-                _shared.StartRollJump();
+                StartRollJump();
                 return;
             }
 

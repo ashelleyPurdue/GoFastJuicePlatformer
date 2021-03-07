@@ -22,7 +22,7 @@ public partial class PlayerMovement
         {
             VSpeed = PlayerConstants.BONK_START_VSPEED;
             HSpeed = PlayerConstants.BONK_START_HSPEED;
-            HAngleDeg = _shared.GetHAngleDegFromForward(-_wall.LastWallNormal);
+            HAngleDeg = GetHAngleDegFromForward(-_wall.LastWallNormal);
             SyncWalkVelocityToHSpeed();
 
             _timer = PlayerConstants.BONK_DURATION;

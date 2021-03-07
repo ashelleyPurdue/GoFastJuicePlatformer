@@ -20,7 +20,7 @@ public partial class PlayerMovement
         public override void OnStateEnter()
         {
             base.OnStateEnter();
-            _lastWallJumpPos = _shared.transform.position;
+            _lastWallJumpPos = transform.position;
         }
 
         public override void EarlyFixedUpdate()
@@ -29,7 +29,7 @@ public partial class PlayerMovement
             // FreeFalling so air strafing can be re-enabled.
             float distFromWall = Vector3.Distance(
                 _lastWallJumpPos.Flattened(),
-                _shared.transform.position.Flattened()
+                transform.position.Flattened()
             );
             if (distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST)
                 ChangeState(State.FreeFall);
@@ -41,8 +41,8 @@ public partial class PlayerMovement
         public override void FixedUpdate()
         {
             // DEBUG: Record stats
-            if (_shared.transform.position.y > _shared._debugJumpMaxY)
-                _shared._debugJumpMaxY = _shared.transform.position.y;
+            if (transform.position.y > _debugJumpMaxY)
+                _debugJumpMaxY = transform.position.y;
 
             base.Physics();
             base.ButtonControls();

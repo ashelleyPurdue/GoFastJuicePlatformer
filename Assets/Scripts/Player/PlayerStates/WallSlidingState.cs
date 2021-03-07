@@ -14,7 +14,7 @@ public partial class PlayerMovement
             bool keepWallSliding = 
                 !_ground.IsGrounded &&
                 _wall.IsTouchingWall &&
-                _shared.Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
+                Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
                 VSpeed < 0;
 
             if (keepWallSliding)
@@ -59,7 +59,7 @@ public partial class PlayerMovement
         {
             // Wall kick when we press the jump button
             if (JumpPressedRecently())
-                _shared.StartWallJump();
+                StartWallJump();
         }
     }
 }

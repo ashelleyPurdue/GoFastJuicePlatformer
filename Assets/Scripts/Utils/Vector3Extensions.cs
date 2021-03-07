@@ -20,6 +20,14 @@ public static class Vector3Extensions
         return Vector3.Project(v, target);
     }
 
+    public static Vector3 ReflectOffOfSurface(this Vector3 v, Vector3 surfaceNormal)
+    {
+        var vectorAlongSurface = v.ProjectOnPlane(surfaceNormal);
+        var vectorIntoSurface = v - vectorAlongSurface;
+
+        return -vectorIntoSurface + vectorAlongSurface;
+    }
+
     /// <summary>
     /// Returns the component of this vector along the target vector.
     /// </summary>

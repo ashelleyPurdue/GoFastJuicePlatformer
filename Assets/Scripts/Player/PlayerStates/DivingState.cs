@@ -27,7 +27,7 @@ public partial class PlayerMovement
                 ChangeState(State.Rolling);
 
             // Bonk if we hit a wall
-            if (_shared.ShouldBonkAgainstWall())
+            if (ShouldBonkAgainstWall())
                 ChangeState(State.Bonking);
         }
         public override void FixedUpdate()
