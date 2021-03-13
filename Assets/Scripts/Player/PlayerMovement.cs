@@ -79,7 +79,7 @@ public partial class PlayerMovement : MonoBehaviour
 
     private float _lastAttackButtonPressTime = float.NegativeInfinity;
 
-    private float _chainedJumpTimer = 0;
+    private float _lastChainedJumpLandTime = 0;
     private int _chainedJumpCount = 0;
 
     private float _jumpRedirectTimer = 0;
@@ -149,7 +149,7 @@ public partial class PlayerMovement : MonoBehaviour
 
         _lastJumpButtonPressTime = float.NegativeInfinity;
         _jumpReleased = false;
-        _chainedJumpTimer = 0;
+        _lastChainedJumpLandTime = 0;
         _chainedJumpCount = 0;
 
         CurrentState = State.FreeFall;
@@ -238,7 +238,7 @@ public partial class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLine("VSpeed: " + VSpeed);
         DebugDisplay.PrintLine("HAngleDeg: " + HAngleDeg);
         DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
-        DebugDisplay.PrintLine("Chained jump timer: " + _chainedJumpTimer);
+        DebugDisplay.PrintLine("In chained jump window: " + ChainedJumpLandedRecently());
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
         DebugDisplay.PrintLine("Current state: " + CurrentState);
     }
@@ -263,6 +263,11 @@ public partial class PlayerMovement : MonoBehaviour
     private void AdvanceCooldowns()
     {
         _rollCooldown -= Time.deltaTime;
+    }
+
+    private bool ChainedJumpLandedRecently()
+    {
+        return (Time.fixedTime - _lastChainedJumpLandTime < PlayerConstants.CHAINED_JUMP_TIME_WINDOW);
     }
 
     private Vector3 AngleForward(float angleDeg)

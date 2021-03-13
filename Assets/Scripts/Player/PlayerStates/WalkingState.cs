@@ -21,13 +21,11 @@ public partial class PlayerMovement
         {
             // Start the chained jump timer once we land
             if (!_ground.WasGroundedLastFrame)
-                _shared._chainedJumpTimer = PlayerConstants.CHAINED_JUMP_TIME_WINDOW;
+                _shared._lastChainedJumpLandTime = Time.fixedTime;
 
             // Reset the chained jump count if you wait too long after landing
-            _shared._chainedJumpTimer -= Time.deltaTime;
-            if (_shared._chainedJumpTimer < 0)
+            if (!ChainedJumpLandedRecently())
             {
-                _shared._chainedJumpTimer = 0;
                 _shared._chainedJumpCount = 0;
             }
 

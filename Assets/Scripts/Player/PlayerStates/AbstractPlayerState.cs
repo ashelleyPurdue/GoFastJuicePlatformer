@@ -260,6 +260,9 @@ public partial class PlayerMovement
             return (Time.time - Time.fixedDeltaTime < _shared._lastAttackButtonPressTime);
         }
 
+        protected bool ChainedJumpLandedRecently()
+            => _shared.ChainedJumpLandedRecently();
+
         protected bool ShouldBonkAgainstWall()
         {
             return 
