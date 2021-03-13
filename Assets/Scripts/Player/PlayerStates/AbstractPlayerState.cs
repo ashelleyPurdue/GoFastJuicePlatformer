@@ -101,6 +101,10 @@ public partial class PlayerMovement
 
             VSpeed = _jumpSpeed;
 
+            // If this was a chained jump, restore their stored hspeed
+            if (ChainedJumpLandedRecently())
+                HSpeed = _shared._storedAirHSpeed;
+
             // Jump heigher and get a speed boost every time they do 2 chained jumps
             if (_chainedJumpCount % 2 == 1)
             {

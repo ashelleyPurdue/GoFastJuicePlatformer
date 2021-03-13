@@ -53,6 +53,9 @@ public partial class PlayerMovement : MonoBehaviour
     public float HSpeed {get; private set;}
     public float VSpeed {get; private set;}
     private Vector3 _walkVelocity;
+    private float _storedAirHSpeed; // Temporarily stores your air HSpeed after
+                                    // landing, so it can be restored if you jump
+                                    // again shortly after landing.
 
     public enum State
     {
@@ -146,6 +149,7 @@ public partial class PlayerMovement : MonoBehaviour
         HSpeed = 0;
         VSpeed = 0;
         _walkVelocity = Vector3.zero;
+        _storedAirHSpeed = 0;
 
         _lastJumpButtonPressTime = float.NegativeInfinity;
         _jumpReleased = false;
