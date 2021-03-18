@@ -230,10 +230,6 @@ public partial class PlayerMovement : MonoBehaviour
         // Move with the current velocity
         _controller.Move(TotalVelocity * Time.deltaTime);
 
-        // Run state logic that needs to be done after the player has been
-        // moved.
-        _states[CurrentState].LateFixedUpdate();
-
         // Remember moving-platform stuff for next frame
         _ground.RecordFootprintPos();
 

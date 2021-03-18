@@ -84,7 +84,6 @@ public partial class PlayerMovement
 
         public virtual void EarlyFixedUpdate() {}
         public virtual void FixedUpdate() {}
-        public virtual void LateFixedUpdate() {}
 
         protected void ChangeState(State newState)
         {
