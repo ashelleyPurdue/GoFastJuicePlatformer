@@ -9,6 +9,7 @@ public class PlayerGroundDetector : MonoBehaviour
     public const float RAYCAST_OFFSET = 1f;
 
     public Vector3 GroundVelocity {get; private set;}
+    public Vector3 LastGroundNormal {get; private set;}
     public Transform CurrentGround {get; private set;}
     public bool IsGrounded {get; private set;}
     public bool WasGroundedLastFrame {get; private set;}
@@ -45,6 +46,10 @@ public class PlayerGroundDetector : MonoBehaviour
         // Record the last time we were grounded
         if (IsGrounded)
             LastGroundedTime = Time.time;
+
+        // Update the ground normal
+        if (IsGrounded)
+            LastGroundNormal = hit.Value.normal;
 
         // Calculate how fast the ground is moving (aka: the ground velocity)
         if (IsGrounded && CurrentGround == previousGround)

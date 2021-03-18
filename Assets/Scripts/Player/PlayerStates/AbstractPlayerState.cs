@@ -176,7 +176,21 @@ public partial class PlayerMovement
 
         protected void SyncWalkVelocityToHSpeed()
         {
-            _shared._walkVelocity = HSpeed * AngleForward(HAngleDeg);
+            // We're about to multiply HSpeed by the "forward" direction to
+            // get our walking velocity.
+            var forward = AngleForward(HAngleDeg);
+            
+            // If we're standing on a sloped surface, then that "forward" value
+            // needs to be parallel to the ground we're standing on.  Otherwise,
+            // walking downhill at high speeds will look like "stair stepping".
+            if (_ground.IsGrounded)
+            {
+                forward = forward
+                    .ProjectOnPlane(_ground.LastGroundNormal)
+                    .normalized;
+            }
+
+            _shared._walkVelocity = HSpeed * forward;
         }
         
         protected void InstantlyFaceLeftStick()
