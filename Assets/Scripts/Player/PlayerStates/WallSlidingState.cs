@@ -9,6 +9,8 @@ public partial class PlayerStateMachine
         public WallSlidingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.WallSliding;
+
         public override void EarlyFixedUpdate()
         {
             bool keepWallSliding = 
@@ -18,11 +20,11 @@ public partial class PlayerStateMachine
                 _motor.RelativeVSpeed < 0;
 
             if (keepWallSliding)
-                ChangeState(State.WallSliding);
+                ChangeState(_sm.WallSliding);
             else if (_motor.IsGrounded)
-                ChangeState(State.Walking);
+                ChangeState(_sm.Walking);
             else
-                ChangeState(State.FreeFall);
+                ChangeState(_sm.FreeFall);
         }
 
         public override void FixedUpdate()

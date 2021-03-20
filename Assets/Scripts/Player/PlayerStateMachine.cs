@@ -54,14 +54,19 @@ public partial class PlayerStateMachine : MonoBehaviour
         Diving,
         Bonking
     }
-    public State CurrentState
-    {
-        get => _currentState;
-        set => ChangeState(value);
-    }
-    private State _currentState;
+    public State CurrentState => _currentState.GetEnumVal();
 
-    private Dictionary<State, AbstractPlayerState> _states;
+    public AbstractPlayerState Walking {get; private set;}
+    public AbstractPlayerState FreeFall {get; private set;}
+    public AbstractPlayerState WallSliding {get; private set;}
+    public AbstractPlayerState WallJumping {get; private set;}
+    public AbstractPlayerState GrabbingLedge {get; private set;}
+    public AbstractPlayerState Rolling {get; private set;}
+    public AbstractPlayerState Diving {get; private set;}
+    public AbstractPlayerState Bonking {get; private set;}
+
+    private AbstractPlayerState[] _allStates;
+    private AbstractPlayerState _currentState;
 
     private float _lastJumpButtonPressTime = float.NegativeInfinity;
     private bool _jumpReleased;
@@ -108,17 +113,29 @@ public partial class PlayerStateMachine : MonoBehaviour
             PlayerConstants.DIVE_GRAVITY
         );
 
-        _states = new Dictionary<State, AbstractPlayerState>
+        Walking = new WalkingState(this, _motor);
+        FreeFall = new FreeFallState(this, _motor);
+        WallSliding = new WallSlidingState(this, _motor);
+        WallJumping = new WallJumpingState(this, _motor);
+        Rolling = new RollingState(this, _motor);
+        Diving = new DivingState(this, _motor);
+        Bonking = new BonkingState(this, _motor);
+        GrabbingLedge = new GrabbingLedgeState(this, _motor);
+
+        _allStates = new[]
         {
-            {State.Walking, new WalkingState(this, _motor)},
-            {State.FreeFall, new FreeFallState(this, _motor)},
-            {State.WallSliding, new WallSlidingState(this, _motor)},
-            {State.WallJumping, new WallJumpingState(this, _motor)},
-            {State.Rolling, new RollingState(this, _motor)},
-            {State.Diving, new DivingState(this, _motor)},
-            {State.Bonking, new BonkingState(this, _motor)},
-            {State.LedgeGrabbing, new GrabbingLedgeState(this, _motor)}
+            Walking,
+            FreeFall,
+            WallSliding,
+            WallJumping,
+            Rolling,
+            Diving,
+            Bonking,
+            GrabbingLedge
         };
+
+        // Start in FreeFall
+        ChangeState(FreeFall);
 
         Debug.Log("Jump speed: " + _jumpSpeed);
     }
@@ -138,14 +155,14 @@ public partial class PlayerStateMachine : MonoBehaviour
         _lastChainedJumpLandTime = 0;
         _chainedJumpCount = 0;
 
-        CurrentState = State.FreeFall;
+        ChangeState(FreeFall);
 
         _motor.ResetState();
         
         // Tell all the state objects to reset as well.
         // Wow, the word "state" really is overused, huh?
-        foreach (var state in _states.Keys)
-            _states[state].ResetState();
+        foreach (var state in _allStates)
+            state.ResetState();
     }
 
     public void Update()
@@ -171,11 +188,11 @@ public partial class PlayerStateMachine : MonoBehaviour
 
         // Run state logic that needs to be done early.
         // Usually, this is where state transitions happen.
-        _states[CurrentState].EarlyFixedUpdate();
+        _currentState.EarlyFixedUpdate();
 
         // Run the current state's main logic.
         // Note that CurrentState may have been changed by EarlyFixedUpdate()
-        _states[CurrentState].FixedUpdate();
+        _currentState.FixedUpdate();
 
         // Tell the motor to move at its current velocity.
         _motor.Move();
@@ -190,16 +207,13 @@ public partial class PlayerStateMachine : MonoBehaviour
         DebugDisplay.PrintLine("Current state: " + CurrentState);
     }
 
-    private void ChangeState(State newState)
+    private void ChangeState(AbstractPlayerState newState)
     {
-        var oldState = CurrentState;
+        var oldState = _currentState;
         _currentState = newState;
 
-        if (_states.ContainsKey(oldState))
-            _states[oldState].OnStateExit();
-        
-        if (_states.ContainsKey(newState))
-            _states[newState].OnStateEnter();
+        oldState?.OnStateExit();
+        newState.OnStateEnter();
     }
 
     /// <summary>

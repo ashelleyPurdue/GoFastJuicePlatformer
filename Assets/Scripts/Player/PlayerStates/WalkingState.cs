@@ -9,12 +9,14 @@ public partial class PlayerStateMachine
         public WalkingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.Walking;
+
         public override void ResetState() {}
 
         public override void EarlyFixedUpdate()
         {
             if (!_motor.IsGrounded)
-                ChangeState(State.FreeFall);
+                ChangeState(_sm.FreeFall);
         }
 
         public override void FixedUpdate()
@@ -109,7 +111,7 @@ public partial class PlayerStateMachine
 
             if (AttackPressedRecently() && _sm._rollCooldown <= 0)
             {
-                ChangeState(State.Rolling);
+                ChangeState(_sm.Rolling);
             }
         }
 

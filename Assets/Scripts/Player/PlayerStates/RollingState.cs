@@ -11,6 +11,8 @@ public partial class PlayerStateMachine
         public RollingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.Rolling;
+
         public override void ResetState()
         {
             _timer = 0;
@@ -48,15 +50,15 @@ public partial class PlayerStateMachine
                 // Transition to the correct state, based on if we're in the air
                 // or not.
                 if (_motor.IsGrounded)
-                    ChangeState(State.Walking);
+                    ChangeState(_sm.Walking);
                 else
-                    ChangeState(State.FreeFall);
+                    ChangeState(_sm.FreeFall);
             }
 
             // Start bonking if we're moving into a wall.
             if (ShouldBonkAgainstWall())
             {
-                ChangeState(State.Bonking);
+                ChangeState(_sm.Bonking);
                 return;
             }
         }

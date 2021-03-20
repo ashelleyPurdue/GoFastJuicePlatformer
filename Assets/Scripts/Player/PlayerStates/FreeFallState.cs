@@ -9,6 +9,8 @@ public partial class PlayerStateMachine
         public FreeFallState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.FreeFall;
+
         public override void ResetState() {}
 
         public override void EarlyFixedUpdate()
@@ -16,7 +18,7 @@ public partial class PlayerStateMachine
             // Transition to walking if we're on the ground
             if (_motor.IsGrounded)
             {
-                ChangeState(State.Walking);
+                ChangeState(_sm.Walking);
 
                 // Reduce the HSpeed based on the stick magnitude.
                 // This lets you avoid sliding(AKA: "sticking" the landing) by
@@ -45,13 +47,13 @@ public partial class PlayerStateMachine
 
             if (isWallSliding && inLedgeGrabSweetSpot)
             {
-                ChangeState(State.LedgeGrabbing);
+                ChangeState(_sm.GrabbingLedge);
                 return;
             }
 
             if (isWallSliding && !inLedgeGrabSweetSpot)
             {
-                ChangeState(State.WallSliding);
+                ChangeState(_sm.WallSliding);
                 return;
             }
         }
@@ -111,7 +113,7 @@ public partial class PlayerStateMachine
             // Dive when the attack button is pressed.
             if (AttackPressedRecently())
             {
-                ChangeState(State.Diving);
+                ChangeState(_sm.Diving);
                 return;
             }
         }

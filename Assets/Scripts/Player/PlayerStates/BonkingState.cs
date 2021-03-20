@@ -12,6 +12,8 @@ public partial class PlayerStateMachine
         public BonkingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.Bonking;
+
         public override void ResetState()
         {
             _timer = 0;
@@ -36,9 +38,9 @@ public partial class PlayerStateMachine
             if (_timer <= 0)
             {
                 if (!_motor.IsGrounded)
-                    ChangeState(State.FreeFall);
+                    ChangeState(_sm.FreeFall);
                 else
-                    ChangeState(State.Walking);
+                    ChangeState(_sm.Walking);
             }
         }
 

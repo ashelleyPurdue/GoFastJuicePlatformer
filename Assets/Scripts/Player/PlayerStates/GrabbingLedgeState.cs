@@ -11,6 +11,8 @@ public partial class PlayerStateMachine
         public GrabbingLedgeState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.LedgeGrabbing;
+
         public override void ResetState()
         {
             _timer = 0;
@@ -25,7 +27,7 @@ public partial class PlayerStateMachine
         public override void EarlyFixedUpdate()
         {
             if (_timer <= 0)
-                _sm.CurrentState = State.FreeFall;
+                ChangeState(_sm.FreeFall);
         }
         
         public override void FixedUpdate()

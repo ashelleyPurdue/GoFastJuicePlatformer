@@ -9,6 +9,8 @@ public partial class PlayerStateMachine
         public DivingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.Diving;
+
         public override void OnStateEnter()
         {
             InstantlyFaceLeftStick();
@@ -24,11 +26,11 @@ public partial class PlayerStateMachine
         {
             // Roll when we hit the ground
             if (_motor.IsGrounded)
-                ChangeState(State.Rolling);
+                ChangeState(_sm.Rolling);
 
             // Bonk if we hit a wall
             if (ShouldBonkAgainstWall())
-                ChangeState(State.Bonking);
+                ChangeState(_sm.Bonking);
         }
         public override void FixedUpdate()
         {

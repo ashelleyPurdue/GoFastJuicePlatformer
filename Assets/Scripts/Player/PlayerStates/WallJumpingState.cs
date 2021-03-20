@@ -11,6 +11,8 @@ public partial class PlayerStateMachine
         public WallJumpingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override State GetEnumVal() => State.WallJumping;
+
         public override void ResetState()
         {
             _lastWallJumpPos = Vector3.zero;
@@ -32,7 +34,7 @@ public partial class PlayerStateMachine
                 _motor.transform.position.Flattened()
             );
             if (distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST)
-                ChangeState(State.FreeFall);
+                ChangeState(_sm.FreeFall);
 
             // All of the usual free fall transitions apply too.
             base.EarlyFixedUpdate();

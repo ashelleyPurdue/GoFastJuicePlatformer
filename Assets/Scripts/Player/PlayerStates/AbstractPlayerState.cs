@@ -4,7 +4,7 @@ using UnityEngine;
 
 public partial class PlayerStateMachine
 {
-    private abstract class AbstractPlayerState
+    public abstract class AbstractPlayerState
     {
         protected PlayerStateMachine _sm;
         protected PlayerMotor _motor;
@@ -69,6 +69,8 @@ public partial class PlayerStateMachine
             _motor = motor;
         }
 
+        public abstract State GetEnumVal();
+
         public virtual void ResetState() {}
 
         public virtual void OnStateEnter() {}
@@ -77,7 +79,7 @@ public partial class PlayerStateMachine
         public virtual void EarlyFixedUpdate() {}
         public virtual void FixedUpdate() {}
 
-        protected void ChangeState(State newState)
+        protected void ChangeState(AbstractPlayerState newState)
         {
             _sm.ChangeState(newState);
         }
@@ -141,7 +143,7 @@ public partial class PlayerStateMachine
             // Book keeping
             _chainedJumpCount = 0;
             _jumpReleased = false;
-            ChangeState(State.WallJumping);
+            ChangeState(_sm.WallJumping);
             _sm.StartedJumping?.Invoke();
         }
 
@@ -164,7 +166,7 @@ public partial class PlayerStateMachine
             _chainedJumpCount = 0;
             _jumpReleased = false;
             _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
-            ChangeState(State.Walking);
+            ChangeState(_sm.Walking);
             _sm.StartedJumping?.Invoke();
         }
     
