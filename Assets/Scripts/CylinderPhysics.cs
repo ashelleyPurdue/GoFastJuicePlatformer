@@ -177,6 +177,22 @@ public static class CylinderPhysics
         if (hit.distance > maxDistance)
             return null;
 
+        // To complete the illusion of this being a cylinder and not a sphere,
+        // we need to adjust the normal.  Spheres will produce a "diagonal"
+        // normal if they pass through the "edge" of a platform, and that's
+        // not what we want.  So, we need to do an ordinary raycast to get an
+        // ordinary normal.
+        var rayStartPoint = hit.point - (hit.distance * direction);
+        RaycastHit rayHit;
+        bool lineHitAnything = Physics.Raycast(
+            rayStartPoint,
+            direction,
+            out rayHit,
+            maxDistance
+        );
+        if (lineHitAnything)
+            hit.normal = rayHit.normal;
+
         return hit;
     }
 }
