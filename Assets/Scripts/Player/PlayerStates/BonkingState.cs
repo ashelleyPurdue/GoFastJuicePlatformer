@@ -2,15 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private class BonkingState : AbstractPlayerState
     {
         private float _timer;
         private int _bounceCount;
 
-        public BonkingState(PlayerMovement shared)
-            : base(shared) {}
+        public BonkingState(PlayerStateMachine shared, PlayerMotor motor)
+            : base(shared, motor) {}
 
         public override void ResetState()
         {
@@ -20,22 +20,22 @@ public partial class PlayerMovement
 
         public override void OnStateEnter()
         {
-            VSpeed = PlayerConstants.BONK_START_VSPEED;
+            _motor.RelativeVSpeed = PlayerConstants.BONK_START_VSPEED;
             HSpeed = PlayerConstants.BONK_START_HSPEED;
-            HAngleDeg = GetHAngleDegFromForward(-_wall.LastWallNormal);
+            HAngleDeg = GetHAngleDegFromForward(-_motor.LastWallNormal);
             SyncWalkVelocityToHSpeed();
 
             _timer = PlayerConstants.BONK_DURATION;
             _bounceCount = 0;
 
-            _shared.Bonked?.Invoke();
+            _sm.Bonked?.Invoke();
         }
 
         public override void EarlyFixedUpdate()
         {
             if (_timer <= 0)
             {
-                if (!_ground.IsGrounded)
+                if (!_motor.IsGrounded)
                     ChangeState(State.FreeFall);
                 else
                     ChangeState(State.Walking);
@@ -45,14 +45,14 @@ public partial class PlayerMovement
         public override void FixedUpdate()
         {
             // Apply gravity
-            VSpeed -= PlayerConstants.BONK_GRAVITY * Time.deltaTime;
-            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
-                VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+            _motor.RelativeVSpeed -= PlayerConstants.BONK_GRAVITY * Time.deltaTime;
+            if (_motor.RelativeVSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+                _motor.RelativeVSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
 
             // Bounce against the floor
-            if (_ground.IsGrounded && VSpeed < 0 && _bounceCount < PlayerConstants.BONK_MAX_BOUNCE_COUNT)
+            if (_motor.IsGrounded && _motor.RelativeVSpeed < 0 && _bounceCount < PlayerConstants.BONK_MAX_BOUNCE_COUNT)
             {
-                VSpeed *= -PlayerConstants.BONK_BOUNCE_MULTIPLIER;
+                _motor.RelativeVSpeed *= -PlayerConstants.BONK_BOUNCE_MULTIPLIER;
                 _bounceCount++;
             }
 

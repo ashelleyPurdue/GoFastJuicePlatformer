@@ -2,28 +2,28 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private class DivingState : AbstractPlayerState
     {
-        public DivingState(PlayerMovement shared)
-            : base(shared) {}
+        public DivingState(PlayerStateMachine shared, PlayerMotor motor)
+            : base(shared, motor) {}
 
         public override void OnStateEnter()
         {
             InstantlyFaceLeftStick();
 
             HSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
-            VSpeed = _shared._diveJumpVspeed;
+            _motor.RelativeVSpeed = _sm._diveJumpVspeed;
 
-            _shared._chainedJumpCount = 0;
-            _shared.StartedDiving?.Invoke();
+            _sm._chainedJumpCount = 0;
+            _sm.StartedDiving?.Invoke();
         }
 
         public override void EarlyFixedUpdate()
         {
             // Roll when we hit the ground
-            if (_ground.IsGrounded)
+            if (_motor.IsGrounded)
                 ChangeState(State.Rolling);
 
             // Bonk if we hit a wall
@@ -33,16 +33,16 @@ public partial class PlayerMovement
         public override void FixedUpdate()
         {
             // Damage things
-            _shared._diveHitbox.ApplyDamage();
+            _sm._diveHitbox.ApplyDamage();
 
             // Apply gravity
             // Use more gravity when we're falling so the jump arc feels "squishier"
-            VSpeed -= PlayerConstants.DIVE_GRAVITY * Time.deltaTime;
+            _motor.RelativeVSpeed -= PlayerConstants.DIVE_GRAVITY * Time.deltaTime;
 
             // TODO: This logic is copy/pasted from WhileAirborn().  Refactor.
             // Cap the VSpeed at the terminal velocity
-            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
-                VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+            if (_motor.RelativeVSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+                _motor.RelativeVSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
 
             // Reduce HSpeed until it's at the minimum
             // If the player is pushing backwards on the left stick, reduce the speed

@@ -2,24 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private class WallSlidingState : AbstractPlayerState
     {
-        public WallSlidingState(PlayerMovement shared)
-            : base(shared) {}
+        public WallSlidingState(PlayerStateMachine shared, PlayerMotor motor)
+            : base(shared, motor) {}
 
         public override void EarlyFixedUpdate()
         {
             bool keepWallSliding = 
-                !_ground.IsGrounded &&
-                _wall.IsTouchingWall &&
-                Forward.ComponentAlong(-_wall.LastWallNormal) > 0 &&
-                VSpeed < 0;
+                !_motor.IsGrounded &&
+                _motor.IsTouchingWall &&
+                Forward.ComponentAlong(-_motor.LastWallNormal) > 0 &&
+                _motor.RelativeVSpeed < 0;
 
             if (keepWallSliding)
                 ChangeState(State.WallSliding);
-            else if (_ground.IsGrounded)
+            else if (_motor.IsGrounded)
                 ChangeState(State.Walking);
             else
                 ChangeState(State.FreeFall);
@@ -34,25 +34,25 @@ public partial class PlayerMovement
         private void Physics()
         {
             // Apply gravity
-            float gravity = _shared._wallSlideGravity;
-            VSpeed -= gravity * Time.deltaTime;
+            float gravity = _sm._wallSlideGravity;
+            _motor.RelativeVSpeed -= gravity * Time.deltaTime;
 
-            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE)
-                VSpeed = PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE;
+            if (_motor.RelativeVSpeed < PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE)
+                _motor.RelativeVSpeed = PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE;
 
             // Cancel all walking velocity pointing "inside" the wall.
             // We're intentionally letting _walkVelocity and HSpeed get out of sync
             // here, so that the original HSpeed will be resumed when we wall kick.
-            _shared._walkVelocity = _shared._walkVelocity.ProjectOnPlane(_wall.LastWallNormal);
+            _motor.RelativeFlatVelocity = _motor.RelativeFlatVelocity.ProjectOnPlane(_motor.LastWallNormal);
 
             // Apply horizontal friction, since sliding on a wall naturally slows
             // you down.
-            float slidingHSpeed = _shared._walkVelocity.magnitude;
+            float slidingHSpeed = _motor.RelativeFlatVelocity.magnitude;
             slidingHSpeed -= PlayerConstants.FRICTION_WALL_SLIDE * Time.deltaTime;
             if (slidingHSpeed < 0)
                 slidingHSpeed = 0;
 
-            _shared._walkVelocity = slidingHSpeed * _shared._walkVelocity.normalized;
+            _motor.RelativeFlatVelocity = slidingHSpeed * _motor.RelativeFlatVelocity.normalized;
         }
 
         private void Controls()

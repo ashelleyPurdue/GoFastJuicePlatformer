@@ -2,79 +2,71 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private abstract class AbstractPlayerState
     {
-        protected PlayerMovement _shared;
-        
-        protected PlayerGroundDetector _ground => _shared._ground;
-        protected PlayerWallDetector _wall => _shared._wall;
-        protected PlayerLedgeDetector _ledge => _shared._ledge;
+        protected PlayerStateMachine _sm;
+        protected PlayerMotor _motor;
 
-        protected IPlayerInput _input => _shared._input;
-
-        protected Transform transform => _shared.transform;
+        protected IPlayerInput _input => _sm._input;
 
         protected float HAngleDeg
         {
-            get => _shared.HAngleDeg;
-            set => _shared.HAngleDeg = value;
+            get => _sm.HAngleDeg;
+            set => _sm.HAngleDeg = value;
         }
         protected float HSpeed
         {
-            get => _shared.HSpeed;
-            set => _shared.HSpeed = value;
+            get => _sm.HSpeed;
+            set => _sm.HSpeed = value;
         }
-        protected float VSpeed
-        {
-            get => _shared.VSpeed;
-            set => _shared.VSpeed = value;
-        }
-        protected Vector3 Forward => _shared.Forward;
+
+        protected Vector3 Forward => _sm.Forward;
 
 
         protected float _jumpSpeed
         {
-            get => _shared._jumpSpeed;
-            set => _shared._jumpSpeed = value;
+            get => _sm._jumpSpeed;
+            set => _sm._jumpSpeed = value;
         }
         protected float _secondJumpSpeed
         {
-            get => _shared._secondJumpSpeed;
-            set => _shared._secondJumpSpeed = value;
+            get => _sm._secondJumpSpeed;
+            set => _sm._secondJumpSpeed = value;
         }
         protected int _chainedJumpCount
         {
-            get => _shared._chainedJumpCount;
-            set => _shared._chainedJumpCount = value;
+            get => _sm._chainedJumpCount;
+            set => _sm._chainedJumpCount = value;
         }
         protected bool _jumpReleased
         {
-            get => _shared._jumpReleased;
-            set => _shared._jumpReleased = value;
+            get => _sm._jumpReleased;
+            set => _sm._jumpReleased = value;
         }
         protected float _jumpRedirectTimer
         {
-            get => _shared._jumpRedirectTimer;
-            set => _shared._jumpRedirectTimer = value;
+            get => _sm._jumpRedirectTimer;
+            set => _sm._jumpRedirectTimer = value;
         }
 
 
         protected float _debugJumpStartY
         {
-            get => _shared._debugJumpStartY;
-            set => _shared._debugJumpStartY = value;
+            get => _sm._debugJumpStartY;
+            set => _sm._debugJumpStartY = value;
         }
         protected float _debugJumpMaxY
         {
-            get => _shared._debugJumpMaxY;
-            set => _shared._debugJumpMaxY = value;
+            get => _sm._debugJumpMaxY;
+            set => _sm._debugJumpMaxY = value;
         }
         
-        public AbstractPlayerState(PlayerMovement shared)
+        public AbstractPlayerState(PlayerStateMachine shared, PlayerMotor motor)
         {
-            _shared = shared;
+            _sm = shared;
+            _motor = motor;
         }
 
         public virtual void ResetState() {}
@@ -87,27 +79,27 @@ public partial class PlayerMovement
 
         protected void ChangeState(State newState)
         {
-            _shared.ChangeState(newState);
+            _sm.ChangeState(newState);
         }
 
         protected void StartGroundJump()
         {
             // DEBUG: Record debug stats
-            _debugJumpStartY = transform.position.y;
-            _debugJumpMaxY = transform.position.y;
+            _debugJumpStartY = _motor.transform.position.y;
+            _debugJumpMaxY = _motor.transform.position.y;
 
             InstantlyFaceLeftStick();
 
-            VSpeed = _jumpSpeed;
+            _motor.RelativeVSpeed = _jumpSpeed;
 
             // If this was a chained jump, restore their stored hspeed
             if (ChainedJumpLandedRecently())
-                HSpeed = _shared._storedAirHSpeed;
+                HSpeed = _sm._storedAirHSpeed;
 
             // Jump heigher and get a speed boost every time they do 2 chained jumps
             if (_chainedJumpCount % 2 == 1)
             {
-                VSpeed = _secondJumpSpeed;
+                _motor.RelativeVSpeed = _secondJumpSpeed;
                 HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
             }
 
@@ -117,18 +109,18 @@ public partial class PlayerMovement
             _chainedJumpCount++;
             _jumpReleased = false;
             _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
-            _shared.StartedJumping?.Invoke();
+            _sm.StartedJumping?.Invoke();
         }
         protected void StartWallJump()
         {
             // DEBUG: Record debug stats
-            _debugJumpStartY = transform.position.y;
-            _debugJumpMaxY = transform.position.y;
+            _debugJumpStartY = _motor.transform.position.y;
+            _debugJumpMaxY = _motor.transform.position.y;
 
-            VSpeed = _jumpSpeed;
+            _motor.RelativeVSpeed = _jumpSpeed;
 
             // Reflect off of the wall at the angle we approached it at
-            var kickDir = Forward.ReflectOffOfSurface(_wall.LastWallNormal);
+            var kickDir = Forward.ReflectOffOfSurface(_motor.LastWallNormal);
             HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
 
             // Kick off of the wall at a speed that's *at least* WALL_JUMP_MIN_HSPEED.
@@ -150,14 +142,14 @@ public partial class PlayerMovement
             _chainedJumpCount = 0;
             _jumpReleased = false;
             ChangeState(State.WallJumping);
-            _shared.StartedJumping?.Invoke();
+            _sm.StartedJumping?.Invoke();
         }
 
         protected void StartRollJump()
         {
             // DEBUG: Record debug stats
-            _debugJumpStartY = transform.position.y;
-            _debugJumpMaxY = transform.position.y;
+            _debugJumpStartY = _motor.transform.position.y;
+            _debugJumpMaxY = _motor.transform.position.y;
 
             InstantlyFaceLeftStick();
 
@@ -166,14 +158,14 @@ public partial class PlayerMovement
             // jump, which would result in a *super* ridiculous long jump.
             // We only want rolling jumps to be *slightly* ridiculous.
             HSpeed = PlayerConstants.ROLL_JUMP_HSPEED;
-            VSpeed = _jumpSpeed;
+            _motor.RelativeVSpeed = _jumpSpeed;
             SyncWalkVelocityToHSpeed();
 
             _chainedJumpCount = 0;
             _jumpReleased = false;
             _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
             ChangeState(State.Walking);
-            _shared.StartedJumping?.Invoke();
+            _sm.StartedJumping?.Invoke();
         }
     
 
@@ -186,14 +178,14 @@ public partial class PlayerMovement
             // If we're standing on a sloped surface, then that "forward" value
             // needs to be parallel to the ground we're standing on.  Otherwise,
             // walking downhill at high speeds will look like "stair stepping".
-            if (_ground.IsGrounded)
+            if (_motor.IsGrounded)
             {
                 forward = forward
-                    .ProjectOnPlane(_ground.LastGroundNormal)
+                    .ProjectOnPlane(_motor.LastGroundNormal)
                     .normalized;
             }
 
-            _shared._walkVelocity = HSpeed * forward;
+            _motor.RelativeFlatVelocity = HSpeed * forward;
         }
         
         protected void InstantlyFaceLeftStick()
@@ -239,7 +231,7 @@ public partial class PlayerMovement
         }
 
 
-        protected Vector3 AngleForward(float angleDeg) => _shared.AngleForward(angleDeg);
+        protected Vector3 AngleForward(float angleDeg) => _sm.AngleForward(angleDeg);
         
         /// <summary>
         /// Returns the HAngleDeg that would result in the given forward.
@@ -255,22 +247,22 @@ public partial class PlayerMovement
 
         protected bool JumpPressedRecently()
         {
-            return (Time.time - PlayerConstants.EARLY_JUMP_TIME < _shared._lastJumpButtonPressTime);
+            return (Time.time - PlayerConstants.EARLY_JUMP_TIME < _sm._lastJumpButtonPressTime);
         }
 
         protected bool AttackPressedRecently()
         {
-            return (Time.time - Time.fixedDeltaTime < _shared._lastAttackButtonPressTime);
+            return (Time.time - Time.fixedDeltaTime < _sm._lastAttackButtonPressTime);
         }
 
         protected bool ChainedJumpLandedRecently()
-            => _shared.ChainedJumpLandedRecently();
+            => _sm.ChainedJumpLandedRecently();
 
         protected bool ShouldBonkAgainstWall()
         {
             return 
-                _wall.IsTouchingWall &&
-                Forward.ComponentAlong(-_wall.LastWallNormal) > 0.5f;
+                _motor.IsTouchingWall &&
+                Forward.ComponentAlong(-_motor.LastWallNormal) > 0.5f;
         }
     }
 }

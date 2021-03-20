@@ -50,7 +50,7 @@ public class PlayerDiveAttackHitbox : MonoBehaviour
 
     private Vector3 GetSphereCenter()
     {
-        var dir = GetComponent<PlayerMovement>().TotalVelocity.normalized;
+        var dir = GetComponent<PlayerMotor>().TotalVelocity.normalized;
         return transform.position + (dir * HEIGHT_OFFSET);
     }
 }

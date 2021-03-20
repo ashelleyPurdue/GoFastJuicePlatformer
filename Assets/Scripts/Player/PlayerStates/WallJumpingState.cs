@@ -2,14 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private class WallJumpingState : FreeFallState
     {
         private Vector3 _lastWallJumpPos;
 
-        public WallJumpingState(PlayerMovement shared)
-            : base(shared) {}
+        public WallJumpingState(PlayerStateMachine shared, PlayerMotor motor)
+            : base(shared, motor) {}
 
         public override void ResetState()
         {
@@ -20,7 +20,7 @@ public partial class PlayerMovement
         public override void OnStateEnter()
         {
             base.OnStateEnter();
-            _lastWallJumpPos = transform.position;
+            _lastWallJumpPos = _motor.transform.position;
         }
 
         public override void EarlyFixedUpdate()
@@ -29,7 +29,7 @@ public partial class PlayerMovement
             // FreeFalling so air strafing can be re-enabled.
             float distFromWall = Vector3.Distance(
                 _lastWallJumpPos.Flattened(),
-                transform.position.Flattened()
+                _motor.transform.position.Flattened()
             );
             if (distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST)
                 ChangeState(State.FreeFall);
@@ -41,8 +41,8 @@ public partial class PlayerMovement
         public override void FixedUpdate()
         {
             // DEBUG: Record stats
-            if (transform.position.y > _debugJumpMaxY)
-                _debugJumpMaxY = transform.position.y;
+            if (_motor.transform.position.y > _debugJumpMaxY)
+                _debugJumpMaxY = _motor.transform.position.y;
 
             base.Physics();
             base.ButtonControls();

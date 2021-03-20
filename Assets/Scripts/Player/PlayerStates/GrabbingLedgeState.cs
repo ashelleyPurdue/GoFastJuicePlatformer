@@ -2,14 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private class GrabbingLedgeState : AbstractPlayerState
     {
         private float _timer;
 
-        public GrabbingLedgeState(PlayerMovement shared)
-            : base(shared) {}
+        public GrabbingLedgeState(PlayerStateMachine shared, PlayerMotor motor)
+            : base(shared, motor) {}
 
         public override void ResetState()
         {
@@ -19,19 +19,19 @@ public partial class PlayerMovement
         public override void OnStateEnter()
         {
             _timer = PlayerConstants.LEDGE_GRAB_DURATION;
-            _shared.GrabbedLedge?.Invoke();
+            _sm.GrabbedLedge?.Invoke();
         }
 
         public override void EarlyFixedUpdate()
         {
             if (_timer <= 0)
-                _shared.CurrentState = State.FreeFall;
+                _sm.CurrentState = State.FreeFall;
         }
         
         public override void FixedUpdate()
         {
-            _shared.VSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
-            _shared.HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
+            _motor.RelativeVSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
+            HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
             SyncWalkVelocityToHSpeed();
 
             _timer -= Time.deltaTime;

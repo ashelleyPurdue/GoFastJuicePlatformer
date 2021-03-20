@@ -5,23 +5,16 @@ using UnityEngine;
 using UnityEngine.Events;
 
 [RequireComponent(typeof(IPlayerInput))]
-[RequireComponent(typeof(PlayerGroundDetector))]
-[RequireComponent(typeof(PlayerLedgeDetector))]
-[RequireComponent(typeof(PlayerWallDetector))]
-[RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(PlayerRollAttackHitbox))]
 [RequireComponent(typeof(PlayerDiveAttackHitbox))]
-public partial class PlayerMovement : MonoBehaviour
+[RequireComponent(typeof(PlayerMotor))]
+public partial class PlayerStateMachine : MonoBehaviour
 {
     // Required components
     private IPlayerInput _input;
-    private PlayerGroundDetector _ground;
-    private PlayerLedgeDetector _ledge;
-    private PlayerWallDetector _wall;
     private PlayerRollAttackHitbox _rollHitbox;
     private PlayerDiveAttackHitbox _diveHitbox;
-    private CharacterController _controller;
-
+    private PlayerMotor _motor;
 
     // Events
     public event Action StartedJumping;
@@ -41,18 +34,11 @@ public partial class PlayerMovement : MonoBehaviour
     // Accessors
     public Vector3 Forward => AngleForward(HAngleDeg);
 
-    public Vector3 TotalVelocity => 
-        _ground.GroundVelocity +
-        _walkVelocity +
-        (Vector3.up * VSpeed);
-
     public int ChainedJumpCount => (_chainedJumpCount + 1) % 2;
 
     // State
     public float HAngleDeg {get; private set;}
     public float HSpeed {get; private set;}
-    public float VSpeed {get; private set;}
-    private Vector3 _walkVelocity;
     private float _storedAirHSpeed; // Temporarily stores your air HSpeed after
                                     // landing, so it can be restored if you jump
                                     // again shortly after landing.
@@ -97,12 +83,9 @@ public partial class PlayerMovement : MonoBehaviour
     public void Awake()
     {
         _input = GetComponent<IPlayerInput>();
-        _ground = GetComponent<PlayerGroundDetector>();
-        _ledge = GetComponent<PlayerLedgeDetector>();
-        _wall = GetComponent<PlayerWallDetector>();
         _rollHitbox = GetComponent<PlayerRollAttackHitbox>();
         _diveHitbox = GetComponent<PlayerDiveAttackHitbox>();
-        _controller = GetComponent<CharacterController>();
+        _motor = GetComponent<PlayerMotor>();
 
         // Compute jump parameters
         var jumpValues = GravityMath.ComputeGravity(
@@ -127,14 +110,14 @@ public partial class PlayerMovement : MonoBehaviour
 
         _states = new Dictionary<State, AbstractPlayerState>
         {
-            {State.Walking, new WalkingState(this)},
-            {State.FreeFall, new FreeFallState(this)},
-            {State.WallSliding, new WallSlidingState(this)},
-            {State.WallJumping, new WallJumpingState(this)},
-            {State.Rolling, new RollingState(this)},
-            {State.Diving, new DivingState(this)},
-            {State.Bonking, new BonkingState(this)},
-            {State.LedgeGrabbing, new GrabbingLedgeState(this)}
+            {State.Walking, new WalkingState(this, _motor)},
+            {State.FreeFall, new FreeFallState(this, _motor)},
+            {State.WallSliding, new WallSlidingState(this, _motor)},
+            {State.WallJumping, new WallJumpingState(this, _motor)},
+            {State.Rolling, new RollingState(this, _motor)},
+            {State.Diving, new DivingState(this, _motor)},
+            {State.Bonking, new BonkingState(this, _motor)},
+            {State.LedgeGrabbing, new GrabbingLedgeState(this, _motor)}
         };
 
         Debug.Log("Jump speed: " + _jumpSpeed);
@@ -147,8 +130,7 @@ public partial class PlayerMovement : MonoBehaviour
     {
         HAngleDeg = 0;
         HSpeed = 0;
-        VSpeed = 0;
-        _walkVelocity = Vector3.zero;
+        _motor.RelativeFlatVelocity = Vector3.zero;
         _storedAirHSpeed = 0;
 
         _lastJumpButtonPressTime = float.NegativeInfinity;
@@ -158,44 +140,12 @@ public partial class PlayerMovement : MonoBehaviour
 
         CurrentState = State.FreeFall;
 
-        _ground.RecordFootprintPos();
-        _ground.UpdateGroundState();
-        _ground.RecordFootprintPos();
-
-        _wall.UpdateWallState();
-        _ledge.UpdateLedgeDetectorState();
-
+        _motor.ResetState();
+        
         // Tell all the state objects to reset as well.
         // Wow, the word "state" really is overused, huh?
         foreach (var state in _states.Keys)
             _states[state].ResetState();
-    }
-
-    /// <summary>
-    /// Use this to teleport the player, instead of setting transform.position
-    /// directly.
-    /// </summary>
-    /// <param name="position"></param>
-    public void SetPosition(Vector3 position)
-    {
-        // CharacterController maintains its own private "position" field,
-        // which happens to trump "transform.position".  This means you can't
-        // teleport the player by changing "transform.position", because the
-        // CharacterController will just roll you back to its internal position.
-        //
-        // The "correct" way to avoid this would be to call CharacterController's
-        // "SetPosition()" method, like you would for a rigidbody.  Unfortunately,
-        // CharacterController doesn't HAVE a "SetPosition()" method.
-        //
-        // Thanks, Unity >_<
-        //
-        // To get around this, we disable the CharacterController, and then 
-        // immediately re-enable it.  This forces CharacterController to sync
-        // its internal position with "transform.position", avoiding that stupid
-        // rollback.
-        transform.position = position;
-        _controller.enabled = false;
-        _controller.enabled = true;
     }
 
     public void Update()
@@ -212,12 +162,12 @@ public partial class PlayerMovement : MonoBehaviour
         DebugDisplay.PrintLine($"Rise: {_riseGravity}");
         DebugDisplay.PrintLine($"Fall: {_fallGravity}");
 
-        // Detect various states
-        _ground.UpdateGroundState();
-        _ledge.UpdateLedgeDetectorState();
-        _wall.UpdateWallState();
-
         AdvanceCooldowns();
+
+        // Many states use collision status(eg: are we touching the ground?)
+        // to decide if they should change to a different state.
+        // We need to update this information before 
+        _motor.UpdateCollisionStatus();
 
         // Run state logic that needs to be done early.
         // Usually, this is where state transitions happen.
@@ -227,15 +177,12 @@ public partial class PlayerMovement : MonoBehaviour
         // Note that CurrentState may have been changed by EarlyFixedUpdate()
         _states[CurrentState].FixedUpdate();
 
-        // Move with the current velocity
-        _controller.Move(TotalVelocity * Time.deltaTime);
-
-        // Remember moving-platform stuff for next frame
-        _ground.RecordFootprintPos();
+        // Tell the motor to move at its current velocity.
+        _motor.Move();
 
         // Display debugging metrics
         DebugDisplay.PrintLine("HSpeed: " + HSpeed);
-        DebugDisplay.PrintLine("VSpeed: " + VSpeed);
+        DebugDisplay.PrintLine("VSpeed: " + _motor.RelativeVSpeed);
         DebugDisplay.PrintLine("HAngleDeg: " + HAngleDeg);
         DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
         DebugDisplay.PrintLine("In chained jump window: " + ChainedJumpLandedRecently());

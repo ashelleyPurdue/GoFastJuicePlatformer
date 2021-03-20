@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[RequireComponent(typeof(PlayerMovement))]
+[RequireComponent(typeof(PlayerStateMachine))]
+[RequireComponent(typeof(PlayerMotor))]
 public class PlayerController : MonoBehaviour
 {
-    private PlayerMovement _movement;
+    private PlayerStateMachine _stateMachine;
+    private PlayerMotor _motor;
 
     private Vector3 _respawnPosition;
 
@@ -17,7 +19,8 @@ public class PlayerController : MonoBehaviour
         CheckpointManager.Respawned += OnRespawned;
 
         // Get components
-        _movement = GetComponent<PlayerMovement>();
+        _stateMachine = GetComponent<PlayerStateMachine>();
+        _motor = GetComponent<PlayerMotor>();
 
         _respawnPosition = transform.position;
     }
@@ -35,8 +38,8 @@ public class PlayerController : MonoBehaviour
 
     private void OnRespawned()
     {
-        _movement.SetPosition(_respawnPosition);
-        _movement.ResetState();
+        _motor.SetPosition(_respawnPosition);
+        _stateMachine.ResetState();
         // TODO: Play a respawning animation
     }
 }

@@ -52,7 +52,7 @@ public class PlayerRollAttackHitbox : MonoBehaviour
 
     private Vector3 GetBoxCenter()
     {
-        var forward = GetComponent<PlayerMovement>().Forward;
+        var forward = GetComponent<PlayerStateMachine>().Forward;
         
         var pos = transform.position;
         pos.y += HITBOX_HEIGHT / 2;
@@ -74,7 +74,7 @@ public class PlayerRollAttackHitbox : MonoBehaviour
 
     private Quaternion GetBoxOrientation()
     {
-        var forward = GetComponent<PlayerMovement>().Forward;
+        var forward = GetComponent<PlayerStateMachine>().Forward;
         return Quaternion.LookRotation(forward);
     }
 }

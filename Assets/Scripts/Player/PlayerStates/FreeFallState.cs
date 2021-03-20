@@ -2,19 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private class FreeFallState : AbstractPlayerState
     {
-        public FreeFallState(PlayerMovement shared)
-            : base(shared) {}
+        public FreeFallState(PlayerStateMachine shared, PlayerMotor motor)
+            : base(shared, motor) {}
 
         public override void ResetState() {}
 
         public override void EarlyFixedUpdate()
         {
             // Transition to walking if we're on the ground
-            if (_ground.IsGrounded)
+            if (_motor.IsGrounded)
             {
                 ChangeState(State.Walking);
 
@@ -23,7 +23,7 @@ public partial class PlayerMovement
                 // moving the left stick to neutral.
                 // This doesn't take away *all* of your momentum, because that would
                 // look stiff and unnatural.
-                _shared._storedAirHSpeed = HSpeed;
+                _sm._storedAirHSpeed = HSpeed;
                 float hSpeedMult = _input.LeftStick.magnitude + PlayerConstants.MIN_LANDING_HSPEED_MULT;
                 if (hSpeedMult > 1)
                     hSpeedMult = 1;
@@ -34,14 +34,14 @@ public partial class PlayerMovement
 
             // Transition to either ledge grabbing or wall sliding
             bool isWallSliding =
-                VSpeed < 0 &&
-                _wall.IsTouchingWall &&
-                Forward.ComponentAlong(-_wall.LastWallNormal) > 0;
+                _motor.RelativeVSpeed < 0 &&
+                _motor.IsTouchingWall &&
+                Forward.ComponentAlong(-_motor.LastWallNormal) > 0;
 
             bool inLedgeGrabSweetSpot = 
-                _ledge.LedgePresent &&
-                _ledge.LastLedgeHeight >= PlayerConstants.BODY_HEIGHT / 2 &&
-                _ledge.LastLedgeHeight <= PlayerConstants.BODY_HEIGHT;
+                _motor.LedgePresent &&
+                _motor.LastLedgeHeight >= PlayerConstants.BODY_HEIGHT / 2 &&
+                _motor.LastLedgeHeight <= PlayerConstants.BODY_HEIGHT;
 
             if (isWallSliding && inLedgeGrabSweetSpot)
             {
@@ -58,8 +58,8 @@ public partial class PlayerMovement
         public override void FixedUpdate()
         {
             // DEBUG: Record stats
-            if (transform.position.y > _debugJumpMaxY)
-                _debugJumpMaxY = transform.position.y;
+            if (_motor.transform.position.y > _debugJumpMaxY)
+                _debugJumpMaxY = _motor.transform.position.y;
 
             Physics();
             StrafingControls();
@@ -70,39 +70,39 @@ public partial class PlayerMovement
         {
             // Apply gravity
             // Use more gravity when we're falling so the jump arc feels "squishier"
-            float gravity = VSpeed > 0
-                ? _shared._riseGravity
-                : _shared._fallGravity;
+            float gravity = _motor.RelativeVSpeed > 0
+                ? _sm._riseGravity
+                : _sm._fallGravity;
 
-            VSpeed -= gravity * Time.deltaTime;
+            _motor.RelativeVSpeed -= gravity * Time.deltaTime;
 
             // Cap the VSpeed at the terminal velocity
-            if (VSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
-                VSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
+            if (_motor.RelativeVSpeed < PlayerConstants.TERMINAL_VELOCITY_AIR)
+                _motor.RelativeVSpeed = PlayerConstants.TERMINAL_VELOCITY_AIR;
 
             // Start going downwards if you bonk your head on the ceiling.
             // Don't bonk your head!
-            if (VSpeed > 0 && _ground.IsBonkingHead)
-                VSpeed = PlayerConstants.BONK_SPEED;
+            if (_motor.RelativeVSpeed > 0 && _motor.IsBonkingHead)
+                _motor.RelativeVSpeed = PlayerConstants.BONK_SPEED;
         }
         protected void ButtonControls()
         {
             if (!_input.JumpHeld)
-                _shared._jumpReleased = true;
+                _sm._jumpReleased = true;
 
             // Cut the jump short if the button was released on the way u
             // Immediately setting the VSpeed to 0 looks jarring, so instead we'll
             // exponentially decay it every frame.
             // Once it's decayed below a certain threshold, we'll let gravity do the
             // rest of the work so it still looks natural.
-            if (VSpeed > (_shared._jumpSpeed / 2) && _shared._jumpReleased)
-                VSpeed *= PlayerConstants.SHORT_JUMP_DECAY_RATE;
+            if (_motor.RelativeVSpeed > (_sm._jumpSpeed / 2) && _sm._jumpReleased)
+                _motor.RelativeVSpeed *= PlayerConstants.SHORT_JUMP_DECAY_RATE;
 
             // Let the player jump for a short period after walking off a ledge,
             // because everyone is human.  
             // This is called "coyote time", named after the tragic life of the late
             // Wile E. Coyote.
-            if (VSpeed < 0 && WasGroundedRecently() && JumpPressedRecently())
+            if (_motor.RelativeVSpeed < 0 && WasGroundedRecently() && JumpPressedRecently())
             {
                 StartGroundJump();
                 DebugDisplay.PrintLine("Coyote-time jump!");
@@ -119,12 +119,12 @@ public partial class PlayerMovement
         {
             // Allow the player to change their direction for free for a short time
             // after jumping.  After that time is up, air strafing controls kick in
-            if (_shared._jumpRedirectTimer >= 0)
+            if (_sm._jumpRedirectTimer >= 0)
             {
                 InstantlyFaceLeftStick();
                 SyncWalkVelocityToHSpeed();
 
-                _shared._jumpRedirectTimer -= Time.deltaTime;
+                _sm._jumpRedirectTimer -= Time.deltaTime;
                 return;
             }
 
@@ -137,7 +137,7 @@ public partial class PlayerMovement
             Vector3 forward = AngleForward(HAngleDeg);
             bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
             bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
-            bool movingForwards = _shared._walkVelocity.normalized.ComponentAlong(forward) > 0;
+            bool movingForwards = _motor.RelativeFlatVelocity.normalized.ComponentAlong(forward) > 0;
 
             float accel = PlayerConstants.HACCEL_AIR;
             float maxSpeed = PlayerConstants.HSPEED_MAX_AIR;
@@ -153,8 +153,8 @@ public partial class PlayerMovement
                 accel = PlayerConstants.HACCEL_AIR_BACKWARDS;
 
             // Apply a force to get our new velocity.
-            var oldVelocity = _shared._walkVelocity;
-            var newVelocity = _shared._walkVelocity + (inputVector * accel * Time.deltaTime);
+            var oldVelocity = _motor.RelativeFlatVelocity;
+            var newVelocity = _motor.RelativeFlatVelocity + (inputVector * accel * Time.deltaTime);
             
             // Only let the player accellerate up to the normal ground speed.
             // We won't slow them down if they're already going faster than that,
@@ -176,17 +176,17 @@ public partial class PlayerMovement
             // We WILL, however, slow them down if they're going past the max air
             // speed.  That's a hard maximum.
             if (newSpeed > maxSpeed)
-                _shared._walkVelocity = _shared._walkVelocity.normalized * maxSpeed;
+                _motor.RelativeFlatVelocity = _motor.RelativeFlatVelocity.normalized * maxSpeed;
 
-            _shared._walkVelocity = newVelocity.normalized * newSpeed;
+            _motor.RelativeFlatVelocity = newVelocity.normalized * newSpeed;
 
             // Keep HSpeed up-to-date, so it'll be correct when we land.
-            HSpeed = _shared._walkVelocity.ComponentAlong(Forward);
+            HSpeed = _motor.RelativeFlatVelocity.ComponentAlong(Forward);
         }
     
         private bool WasGroundedRecently()
         {
-            return (Time.time - PlayerConstants.COYOTE_TIME < _ground.LastGroundedTime);
+            return (Time.time - PlayerConstants.COYOTE_TIME < _motor.LastGroundedTime);
         }
     }
 }

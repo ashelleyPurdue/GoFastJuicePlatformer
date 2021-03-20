@@ -3,9 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(PlayerMovement))]
+[RequireComponent(typeof(PlayerStateMachine))]
 [RequireComponent(typeof(PlayerGroundDetector))]
 [RequireComponent(typeof(PlayerWallDetector))]
+[RequireComponent(typeof(PlayerMotor))]
 public class PlayerAnimationController : MonoBehaviour
 {
     private readonly float TWEEN_HALF_LIFE = 1f / 60;
@@ -13,7 +14,8 @@ public class PlayerAnimationController : MonoBehaviour
     public Transform _model;
     public Animator _animator;
 
-    private PlayerMovement _movement;
+    private PlayerStateMachine _stateMachine;
+    private PlayerMotor _motor;
     private PlayerGroundDetector _ground;
     private PlayerWallDetector _wall;
 
@@ -33,15 +35,16 @@ public class PlayerAnimationController : MonoBehaviour
     
     void Awake()
     {
-        _movement = GetComponent<PlayerMovement>();
+        _stateMachine = GetComponent<PlayerStateMachine>();
+        _motor = GetComponent<PlayerMotor>();
         _ground = GetComponent<PlayerGroundDetector>();
         _wall = GetComponent<PlayerWallDetector>();
 
         // Subscribe to events
-        _movement.StartedJumping += OnStartedJumping;
-        _movement.StartedDiving += OnStartedDiving;
-        _movement.GrabbedLedge += OnGrabbedLedge;
-        _movement.Bonked += OnBonked;
+        _stateMachine.StartedJumping += OnStartedJumping;
+        _stateMachine.StartedDiving += OnStartedDiving;
+        _stateMachine.GrabbedLedge += OnGrabbedLedge;
+        _stateMachine.Bonked += OnBonked;
     }
 
     
@@ -54,10 +57,10 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void UpdateAnimatorParams()
     {
-        float speedPercent = _movement.HSpeed / PlayerConstants.HSPEED_MAX_GROUND;
+        float speedPercent = _stateMachine.HSpeed / PlayerConstants.HSPEED_MAX_GROUND;
 
         _animator.SetFloat("RunSpeed", speedPercent);
-        _animator.SetFloat("VSpeed", _movement.VSpeed);
+        _animator.SetFloat("VSpeed", _motor.RelativeVSpeed);
     }
 
     private void NaturalStateTransitions()
@@ -69,22 +72,22 @@ public class PlayerAnimationController : MonoBehaviour
             return;
         }
 
-        switch (_movement.CurrentState)
+        switch (_stateMachine.CurrentState)
         {
-            case PlayerMovement.State.Diving: SetState(PLAYER_DIVE, 0.1f); break;
-            case PlayerMovement.State.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
-            case PlayerMovement.State.Rolling: SetState(PLAYER_ROLL, 0.1f); break;
+            case PlayerStateMachine.State.Diving: SetState(PLAYER_DIVE, 0.1f); break;
+            case PlayerStateMachine.State.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
+            case PlayerStateMachine.State.Rolling: SetState(PLAYER_ROLL, 0.1f); break;
 
-            case PlayerMovement.State.Walking:
-                if (_movement.HSpeed > 0)
+            case PlayerStateMachine.State.Walking:
+                if (_stateMachine.HSpeed > 0)
                     SetState(PLAYER_RUN, 0.25f);
                 else
                     SetState(PLAYER_IDLE, 0.25f);
                 break;
 
-            case PlayerMovement.State.WallJumping:
-            case PlayerMovement.State.FreeFall:
-                if (_movement.VSpeed < 0)
+            case PlayerStateMachine.State.WallJumping:
+            case PlayerStateMachine.State.FreeFall:
+                if (_motor.RelativeVSpeed < 0)
                     SetState(PLAYER_FALL, 0.25f);
                 break;
         }
@@ -92,7 +95,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void OnStartedJumping()
     {
-        var state = _movement.ChainedJumpCount % 2 == 0
+        var state = _stateMachine.ChainedJumpCount % 2 == 0
             ? PLAYER_JUMP_0
             : PLAYER_JUMP_1;
         ForceSetState(state);
@@ -166,11 +169,11 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Quaternion GetTargetRot()
     {
-        switch (_movement.CurrentState)
+        switch (_stateMachine.CurrentState)
         {
-            case PlayerMovement.State.Diving: return GetTargetRotDiving();
-            case PlayerMovement.State.WallSliding: return FaceWallSlide();
-            case PlayerMovement.State.Walking: return TiltWithSpeed(FaceHAngle());
+            case PlayerStateMachine.State.Diving: return GetTargetRotDiving();
+            case PlayerStateMachine.State.WallSliding: return FaceWallSlide();
+            case PlayerStateMachine.State.Walking: return TiltWithSpeed(FaceHAngle());
 
             default: return FaceHAngle();
         }
@@ -186,14 +189,14 @@ public class PlayerAnimationController : MonoBehaviour
     {
         return Quaternion.Euler(
             0,
-            -_movement.HAngleDeg + 90,
+            -_stateMachine.HAngleDeg + 90,
             0
         );
     }
 
     private Quaternion TiltWithSpeed(Quaternion targetRot)
     {
-        float speedPercent = _movement.HSpeed / PlayerConstants.HSPEED_MAX_GROUND;
+        float speedPercent = _stateMachine.HSpeed / PlayerConstants.HSPEED_MAX_GROUND;
 
         var eulers = targetRot.eulerAngles;
         eulers.x = SignedPow(speedPercent, 3) * 20;
@@ -204,7 +207,7 @@ public class PlayerAnimationController : MonoBehaviour
     
     private Quaternion GetTargetRotDiving()
     {
-        return Quaternion.LookRotation(_movement.TotalVelocity.normalized);
+        return Quaternion.LookRotation(_motor.TotalVelocity.normalized);
     }
 
     private float SignedPow(float f, float p)

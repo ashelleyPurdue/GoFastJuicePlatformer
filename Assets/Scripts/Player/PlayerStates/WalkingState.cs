@@ -2,31 +2,31 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerMovement
+public partial class PlayerStateMachine
 {
     private class WalkingState : AbstractPlayerState
     {
-        public WalkingState(PlayerMovement shared)
-            : base(shared) {}
+        public WalkingState(PlayerStateMachine shared, PlayerMotor motor)
+            : base(shared, motor) {}
 
         public override void ResetState() {}
 
         public override void EarlyFixedUpdate()
         {
-            if (!_ground.IsGrounded)
+            if (!_motor.IsGrounded)
                 ChangeState(State.FreeFall);
         }
 
         public override void FixedUpdate()
         {
             // Start the chained jump timer once we land
-            if (!_ground.WasGroundedLastFrame)
-                _shared._lastChainedJumpLandTime = Time.fixedTime;
+            if (!_motor.WasGroundedLastFrame)
+                _sm._lastChainedJumpLandTime = Time.fixedTime;
 
             // Reset the chained jump count if you wait too long after landing
             if (!ChainedJumpLandedRecently())
             {
-                _shared._chainedJumpCount = 0;
+                _sm._chainedJumpCount = 0;
             }
 
             Physics();
@@ -39,11 +39,11 @@ public partial class PlayerMovement
         private void Physics()
         {
             // Stop falling when we hit the ground.
-            VSpeed = 0;
+            _motor.RelativeVSpeed = 0;
 
             // HACK: Snap to the ground if we're hovering over it a little bit.
-            if (_ground.HeightAboveGround > 0)
-                VSpeed = -_ground.HeightAboveGround / Time.deltaTime;
+            if (_motor.HeightAboveGround > 0)
+                _motor.RelativeVSpeed = -_motor.HeightAboveGround / Time.deltaTime;
             
             // If we obtained negative hspeed while in the air(EG: from air braking),
             // bring it back to zero so the player doesn't go flying backwards.
@@ -107,7 +107,7 @@ public partial class PlayerMovement
                     StartGroundJump();
             }
 
-            if (AttackPressedRecently() && _shared._rollCooldown <= 0)
+            if (AttackPressedRecently() && _sm._rollCooldown <= 0)
             {
                 ChangeState(State.Rolling);
             }
@@ -115,7 +115,7 @@ public partial class PlayerMovement
 
         private bool StoppedRollingRecently()
         {
-            return (Time.time - PlayerConstants.COYOTE_TIME < _shared._lastRollStopTime);
+            return (Time.time - PlayerConstants.COYOTE_TIME < _sm._lastRollStopTime);
         }
     }
 }
