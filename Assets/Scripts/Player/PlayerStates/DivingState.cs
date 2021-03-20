@@ -9,7 +9,7 @@ public partial class PlayerStateMachine
         public DivingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override State GetEnumVal() => State.Diving;
+        public override AnimationHint GetAnimationHint() => AnimationHint.Diving;
 
         public override void OnStateEnter()
         {

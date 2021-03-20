@@ -12,7 +12,7 @@ public partial class PlayerStateMachine
         public BonkingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override State GetEnumVal() => State.Bonking;
+        public override AnimationHint GetAnimationHint() => AnimationHint.Bonking;
 
         public override void ResetState()
         {

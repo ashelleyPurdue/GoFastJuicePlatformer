@@ -69,7 +69,7 @@ public partial class PlayerStateMachine
             _motor = motor;
         }
 
-        public abstract State GetEnumVal();
+        public abstract AnimationHint GetAnimationHint();
 
         public virtual void ResetState() {}
 

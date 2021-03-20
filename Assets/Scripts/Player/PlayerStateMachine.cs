@@ -43,7 +43,7 @@ public partial class PlayerStateMachine : MonoBehaviour
                                     // landing, so it can be restored if you jump
                                     // again shortly after landing.
 
-    public enum State
+    public enum AnimationHint
     {
         Walking,
         FreeFall,
@@ -54,7 +54,7 @@ public partial class PlayerStateMachine : MonoBehaviour
         Diving,
         Bonking
     }
-    public State CurrentState => _currentState.GetEnumVal();
+    public AnimationHint CurrentAnimationHint => _currentState.GetAnimationHint();
 
     public AbstractPlayerState Walking {get; private set;}
     public AbstractPlayerState FreeFall {get; private set;}
@@ -204,7 +204,7 @@ public partial class PlayerStateMachine : MonoBehaviour
         DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
         DebugDisplay.PrintLine("In chained jump window: " + ChainedJumpLandedRecently());
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
-        DebugDisplay.PrintLine("Current state: " + CurrentState);
+        DebugDisplay.PrintLine("Current state: " + CurrentAnimationHint);
     }
 
     private void ChangeState(AbstractPlayerState newState)

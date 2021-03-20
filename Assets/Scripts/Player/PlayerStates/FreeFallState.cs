@@ -9,7 +9,7 @@ public partial class PlayerStateMachine
         public FreeFallState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override State GetEnumVal() => State.FreeFall;
+        public override AnimationHint GetAnimationHint() => AnimationHint.FreeFall;
 
         public override void ResetState() {}
 

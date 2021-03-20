@@ -72,21 +72,21 @@ public class PlayerAnimationController : MonoBehaviour
             return;
         }
 
-        switch (_stateMachine.CurrentState)
+        switch (_stateMachine.CurrentAnimationHint)
         {
-            case PlayerStateMachine.State.Diving: SetState(PLAYER_DIVE, 0.1f); break;
-            case PlayerStateMachine.State.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
-            case PlayerStateMachine.State.Rolling: SetState(PLAYER_ROLL, 0.1f); break;
+            case PlayerStateMachine.AnimationHint.Diving: SetState(PLAYER_DIVE, 0.1f); break;
+            case PlayerStateMachine.AnimationHint.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
+            case PlayerStateMachine.AnimationHint.Rolling: SetState(PLAYER_ROLL, 0.1f); break;
 
-            case PlayerStateMachine.State.Walking:
+            case PlayerStateMachine.AnimationHint.Walking:
                 if (_stateMachine.HSpeed > 0)
                     SetState(PLAYER_RUN, 0.25f);
                 else
                     SetState(PLAYER_IDLE, 0.25f);
                 break;
 
-            case PlayerStateMachine.State.WallJumping:
-            case PlayerStateMachine.State.FreeFall:
+            case PlayerStateMachine.AnimationHint.WallJumping:
+            case PlayerStateMachine.AnimationHint.FreeFall:
                 if (_motor.RelativeVSpeed < 0)
                     SetState(PLAYER_FALL, 0.25f);
                 break;
@@ -169,11 +169,11 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Quaternion GetTargetRot()
     {
-        switch (_stateMachine.CurrentState)
+        switch (_stateMachine.CurrentAnimationHint)
         {
-            case PlayerStateMachine.State.Diving: return GetTargetRotDiving();
-            case PlayerStateMachine.State.WallSliding: return FaceWallSlide();
-            case PlayerStateMachine.State.Walking: return TiltWithSpeed(FaceHAngle());
+            case PlayerStateMachine.AnimationHint.Diving: return GetTargetRotDiving();
+            case PlayerStateMachine.AnimationHint.WallSliding: return FaceWallSlide();
+            case PlayerStateMachine.AnimationHint.Walking: return TiltWithSpeed(FaceHAngle());
 
             default: return FaceHAngle();
         }

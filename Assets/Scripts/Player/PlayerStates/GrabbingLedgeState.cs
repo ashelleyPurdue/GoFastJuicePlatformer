@@ -11,7 +11,7 @@ public partial class PlayerStateMachine
         public GrabbingLedgeState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override State GetEnumVal() => State.LedgeGrabbing;
+        public override AnimationHint GetAnimationHint() => AnimationHint.LedgeGrabbing;
 
         public override void ResetState()
         {

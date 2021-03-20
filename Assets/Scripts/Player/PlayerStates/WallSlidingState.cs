@@ -9,7 +9,7 @@ public partial class PlayerStateMachine
         public WallSlidingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override State GetEnumVal() => State.WallSliding;
+        public override AnimationHint GetAnimationHint() => AnimationHint.WallSliding;
 
         public override void EarlyFixedUpdate()
         {
