@@ -4,23 +4,30 @@ using UnityEngine;
 
 public static class GravityMath
 {
+    // Using a constant instead of Time.fixedDeltaTime so that this class can
+    // be used in a static constructor.  This constant should match the value
+    // configured in the Project Settings, or else the computed gravity/vspeed
+    // values won't accurately result in the specified jump height or rise/fall
+    // times.
+    private const float FIXED_TIMESTEP = 0.016f;
+
     public static GravityValues ComputeGravity(
         float jumpHeight,
         float riseTime,
         float fallTime
     )
     {
-        float fps = 1 / Time.fixedDeltaTime;
+        float fps = 1 / FIXED_TIMESTEP;
         float discreteConverter = fps / (fps + 1);
 
-        int riseTimeFrames = Mathf.CeilToInt(riseTime / Time.fixedDeltaTime);
-        int fallTimeFrames = Mathf.CeilToInt(fallTime / Time.fixedDeltaTime);
+        int riseTimeFrames = Mathf.CeilToInt(riseTime / FIXED_TIMESTEP);
+        int fallTimeFrames = Mathf.CeilToInt(fallTime / FIXED_TIMESTEP);
 
         float jumpVelMetersPerFrame = 2 * jumpHeight / riseTimeFrames;
         float jumpVel = jumpVelMetersPerFrame * fps * discreteConverter;
 
-        float adjustedRiseTime = riseTimeFrames * Time.fixedDeltaTime;
-        float adjustedFallTime = fallTimeFrames * Time.fixedDeltaTime;
+        float adjustedRiseTime = riseTimeFrames * FIXED_TIMESTEP;
+        float adjustedFallTime = fallTimeFrames * FIXED_TIMESTEP;
 
         float fullRiseGrav = BinarySearch(
             0,
@@ -141,8 +148,8 @@ public static class GravityMath
     public static float MaxHeight(float jumpVel, float gravity)
     {
         float y = 0;
-        for (jumpVel = jumpVel; jumpVel > 0; jumpVel -= gravity * Time.fixedDeltaTime)
-            y += jumpVel * Time.fixedDeltaTime;
+        for (jumpVel = jumpVel; jumpVel > 0; jumpVel -= gravity * FIXED_TIMESTEP)
+            y += jumpVel * FIXED_TIMESTEP;
 
         return y;
     }
@@ -151,10 +158,10 @@ public static class GravityMath
     {
         float v = 0;
         float t = 0;
-        for (float y = jumpHeight; y > 0; y += v * Time.fixedDeltaTime)
+        for (float y = jumpHeight; y > 0; y += v * FIXED_TIMESTEP)
         {
-            v -= gravity * Time.fixedDeltaTime;
-            t += Time.fixedDeltaTime;
+            v -= gravity * FIXED_TIMESTEP;
+            t += FIXED_TIMESTEP;
         }
 
         return t;
