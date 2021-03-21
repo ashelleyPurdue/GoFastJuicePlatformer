@@ -24,17 +24,6 @@ public partial class PlayerStateMachine
 
         protected Vector3 Forward => _sm.Forward;
 
-
-        protected float _jumpSpeed
-        {
-            get => _sm._jumpSpeed;
-            set => _sm._jumpSpeed = value;
-        }
-        protected float _secondJumpSpeed
-        {
-            get => _sm._secondJumpSpeed;
-            set => _sm._secondJumpSpeed = value;
-        }
         protected int _chainedJumpCount
         {
             get => _sm._chainedJumpCount;
@@ -92,7 +81,7 @@ public partial class PlayerStateMachine
 
             InstantlyFaceLeftStick();
 
-            _motor.RelativeVSpeed = _jumpSpeed;
+            _motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
 
             // If this was a chained jump, restore their stored hspeed
             if (ChainedJumpLandedRecently())
@@ -101,7 +90,7 @@ public partial class PlayerStateMachine
             // Jump heigher and get a speed boost every time they do 2 chained jumps
             if (_chainedJumpCount % 2 == 1)
             {
-                _motor.RelativeVSpeed = _secondJumpSpeed;
+                _motor.RelativeVSpeed = PlayerConstants.CHAIN_JUMP_VSPEED;
                 HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
             }
 
@@ -119,7 +108,7 @@ public partial class PlayerStateMachine
             _debugJumpStartY = _motor.transform.position.y;
             _debugJumpMaxY = _motor.transform.position.y;
 
-            _motor.RelativeVSpeed = _jumpSpeed;
+            _motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
 
             // Reflect off of the wall at the angle we approached it at
             var kickDir = Forward.ReflectOffOfSurface(_motor.LastWallNormal);
@@ -160,7 +149,7 @@ public partial class PlayerStateMachine
             // jump, which would result in a *super* ridiculous long jump.
             // We only want rolling jumps to be *slightly* ridiculous.
             HSpeed = PlayerConstants.ROLL_JUMP_HSPEED;
-            _motor.RelativeVSpeed = _jumpSpeed;
+            _motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
             SyncWalkVelocityToHSpeed();
 
             _chainedJumpCount = 0;

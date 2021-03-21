@@ -22,15 +22,6 @@ public partial class PlayerStateMachine : MonoBehaviour
     public event Action GrabbedLedge;
     public event Action Bonked;
 
-    // Computed jump/gravity values
-    private float _jumpSpeed;
-    private float _secondJumpSpeed;
-    private float _diveJumpVspeed;
-    private float _fallGravity;
-    private float _riseGravity;
-    private float _shortJumpRiseGravity;
-    private float _wallSlideGravity => _riseGravity;
-
     // Accessors
     public Vector3 Forward => AngleForward(HAngleDeg);
 
@@ -92,27 +83,6 @@ public partial class PlayerStateMachine : MonoBehaviour
         _diveHitbox = GetComponent<PlayerDiveAttackHitbox>();
         _motor = GetComponent<PlayerMotor>();
 
-        // Compute jump parameters
-        var jumpValues = GravityMath.ComputeGravity(
-            PlayerConstants.FIRST_JUMP_HEIGHT,
-            PlayerConstants.FIRST_JUMP_RISE_TIME,
-            PlayerConstants.FIRST_JUMP_FALL_TIME
-        );
-
-        _jumpSpeed   = jumpValues.JumpVelocity;
-        _fallGravity = jumpValues.FallGravity;
-        _riseGravity = jumpValues.RiseGravity;
-
-        _secondJumpSpeed = GravityMath.JumpVelForHeight(
-            PlayerConstants.SECOND_JUMP_HEIGHT,
-            _riseGravity
-        );
-
-        _diveJumpVspeed = GravityMath.JumpVelForHeight(
-            PlayerConstants.DIVE_JUMP_HEIGHT,
-            PlayerConstants.DIVE_GRAVITY
-        );
-
         Walking = new WalkingState(this, _motor);
         FreeFall = new FreeFallState(this, _motor);
         WallSliding = new WallSlidingState(this, _motor);
@@ -137,7 +107,7 @@ public partial class PlayerStateMachine : MonoBehaviour
         // Start in FreeFall
         ChangeState(FreeFall);
 
-        Debug.Log("Jump speed: " + _jumpSpeed);
+        Debug.Log("Jump speed: " + PlayerConstants.STANDARD_JUMP_VSPEED);
     }
 
     /// <summary>
@@ -176,8 +146,8 @@ public partial class PlayerStateMachine : MonoBehaviour
 
     public void FixedUpdate()
     {
-        DebugDisplay.PrintLine($"Rise: {_riseGravity}");
-        DebugDisplay.PrintLine($"Fall: {_fallGravity}");
+        DebugDisplay.PrintLine($"Rise: {PlayerConstants.JUMP_RISE_GRAVITY}");
+        DebugDisplay.PrintLine($"Fall: {PlayerConstants.FREE_FALL_GRAVITY}");
 
         AdvanceCooldowns();
 

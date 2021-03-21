@@ -16,7 +16,7 @@ public partial class PlayerStateMachine
             InstantlyFaceLeftStick();
 
             HSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
-            _motor.RelativeVSpeed = _sm._diveJumpVspeed;
+            _motor.RelativeVSpeed = PlayerConstants.DIVE_JUMP_VSPEED;
 
             _sm._chainedJumpCount = 0;
             _sm.StartedDiving?.Invoke();

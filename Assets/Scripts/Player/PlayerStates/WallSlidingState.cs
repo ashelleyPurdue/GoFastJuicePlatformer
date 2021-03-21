@@ -36,7 +36,7 @@ public partial class PlayerStateMachine
         private void Physics()
         {
             // Apply gravity
-            float gravity = _sm._wallSlideGravity;
+            float gravity = PlayerConstants.WALL_SLIDE_GRAVITY;
             _motor.RelativeVSpeed -= gravity * Time.deltaTime;
 
             if (_motor.RelativeVSpeed < PlayerConstants.TERMINAL_VELOCITY_WALL_SLIDE)

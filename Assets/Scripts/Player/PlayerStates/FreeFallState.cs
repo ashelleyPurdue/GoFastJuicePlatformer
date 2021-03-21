@@ -73,8 +73,8 @@ public partial class PlayerStateMachine
             // Apply gravity
             // Use more gravity when we're falling so the jump arc feels "squishier"
             float gravity = _motor.RelativeVSpeed > 0
-                ? _sm._riseGravity
-                : _sm._fallGravity;
+                ? PlayerConstants.JUMP_RISE_GRAVITY
+                : PlayerConstants.FREE_FALL_GRAVITY;
 
             _motor.RelativeVSpeed -= gravity * Time.deltaTime;
 
@@ -97,7 +97,7 @@ public partial class PlayerStateMachine
             // exponentially decay it every frame.
             // Once it's decayed below a certain threshold, we'll let gravity do the
             // rest of the work so it still looks natural.
-            if (_motor.RelativeVSpeed > (_sm._jumpSpeed / 2) && _sm._jumpReleased)
+            if (_motor.RelativeVSpeed > (PlayerConstants.STANDARD_JUMP_VSPEED / 2) && _sm._jumpReleased)
                 _motor.RelativeVSpeed *= PlayerConstants.SHORT_JUMP_DECAY_RATE;
 
             // Let the player jump for a short period after walking off a ledge,

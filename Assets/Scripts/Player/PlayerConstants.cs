@@ -81,4 +81,34 @@ public static class PlayerConstants
     public const float ROLL_JUMP_HSPEED = 10;
 
     public const float LEFT_STICK_DEADZONE = 0.001f;
+
+    public static readonly float STANDARD_JUMP_VSPEED;
+    public static readonly float CHAIN_JUMP_VSPEED;
+    public static readonly float DIVE_JUMP_VSPEED;
+    public static readonly float JUMP_RISE_GRAVITY;
+    public static readonly float FREE_FALL_GRAVITY;
+    public static float WALL_SLIDE_GRAVITY => JUMP_RISE_GRAVITY;
+
+    static PlayerConstants()
+    {
+        var jumpValues = GravityMath.ComputeGravity(
+            PlayerConstants.FIRST_JUMP_HEIGHT,
+            PlayerConstants.FIRST_JUMP_RISE_TIME,
+            PlayerConstants.FIRST_JUMP_FALL_TIME
+        );
+
+        STANDARD_JUMP_VSPEED = jumpValues.JumpVelocity;
+        FREE_FALL_GRAVITY    = jumpValues.FallGravity;
+        JUMP_RISE_GRAVITY    = jumpValues.RiseGravity;
+
+        CHAIN_JUMP_VSPEED = GravityMath.JumpVelForHeight(
+            PlayerConstants.SECOND_JUMP_HEIGHT,
+            JUMP_RISE_GRAVITY
+        );
+
+        DIVE_JUMP_VSPEED = GravityMath.JumpVelForHeight(
+            PlayerConstants.DIVE_JUMP_HEIGHT,
+            PlayerConstants.DIVE_GRAVITY
+        );
+    }
 }
