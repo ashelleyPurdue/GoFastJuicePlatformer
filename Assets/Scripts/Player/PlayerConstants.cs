@@ -89,26 +89,37 @@ public static class PlayerConstants
     public static readonly float FREE_FALL_GRAVITY;
     public static float WALL_SLIDE_GRAVITY => JUMP_RISE_GRAVITY;
 
+    // Using a constant instead of Time.fixedDeltaTime so that this class can
+    // be used in a static constructor.  This constant should match the value
+    // configured in the Project Settings, or else the computed gravity/vspeed
+    // values won't accurately result in the specified jump height or rise/fall
+    // times.
+    public const float FIXED_TIMESTEP = 0.016f;
+
     static PlayerConstants()
     {
-        var jumpValues = GravityMath.ComputeGravity(
+        (STANDARD_JUMP_VSPEED, JUMP_RISE_GRAVITY) = AccelerationMath.InitialVelAndFrictionFor(
             PlayerConstants.FIRST_JUMP_HEIGHT,
             PlayerConstants.FIRST_JUMP_RISE_TIME,
-            PlayerConstants.FIRST_JUMP_FALL_TIME
+            PlayerConstants.FIXED_TIMESTEP
         );
 
-        STANDARD_JUMP_VSPEED = jumpValues.JumpVelocity;
-        FREE_FALL_GRAVITY    = jumpValues.FallGravity;
-        JUMP_RISE_GRAVITY    = jumpValues.RiseGravity;
+        FREE_FALL_GRAVITY = AccelerationMath.AccelerationForDistanceOverTime(
+            PlayerConstants.FIRST_JUMP_HEIGHT,
+            PlayerConstants.FIRST_JUMP_FALL_TIME,
+            PlayerConstants.FIXED_TIMESTEP
+        );
 
-        CHAIN_JUMP_VSPEED = GravityMath.JumpVelForHeight(
+        CHAIN_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
             PlayerConstants.SECOND_JUMP_HEIGHT,
-            JUMP_RISE_GRAVITY
+            PlayerConstants.JUMP_RISE_GRAVITY,
+            PlayerConstants.FIXED_TIMESTEP
         );
 
-        DIVE_JUMP_VSPEED = GravityMath.JumpVelForHeight(
+        DIVE_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
             PlayerConstants.DIVE_JUMP_HEIGHT,
-            PlayerConstants.DIVE_GRAVITY
+            PlayerConstants.DIVE_GRAVITY,
+            PlayerConstants.FIXED_TIMESTEP
         );
     }
 }
