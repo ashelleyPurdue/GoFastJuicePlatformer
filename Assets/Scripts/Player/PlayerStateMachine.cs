@@ -179,6 +179,7 @@ public partial class PlayerStateMachine : MonoBehaviour
 
     private void ChangeState(AbstractPlayerState newState)
     {
+        Debug.Log($"Transitioning from {_currentState?.GetType()} to {newState?.GetType()}");
         var oldState = _currentState;
         _currentState = newState;
 
