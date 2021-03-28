@@ -151,20 +151,17 @@ public static class AccelerationMath
 
             if (maxErrorDecrease <= 0 && minErrorDecrease <= 0)
             {
-                Debug.Log($"Neither of them make it go down.({minErrorDecrease}, {maxErrorDecrease})  Shrinking the net.");
                 min = (min + mid) / 2;
                 max = (mid + max) / 2;
                 continue;
             }
             else if (maxErrorDecrease > minErrorDecrease)
             {
-                Debug.Log("maxError went down the most");
                 min = mid;
                 continue;
             }
             else if (maxErrorDecrease < minErrorDecrease)
             {
-                Debug.Log("minError went down the most");
                 max = mid;
                 continue;
             }
