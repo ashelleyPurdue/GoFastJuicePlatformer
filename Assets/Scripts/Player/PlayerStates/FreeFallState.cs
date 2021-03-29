@@ -15,8 +15,8 @@ public partial class PlayerStateMachine
 
         public override void EarlyFixedUpdate()
         {
-            // Transition to walking if we're on the ground
-            if (_motor.IsGrounded)
+            // Transition to walking if we're on the ground and not moving upward
+            if (_motor.IsGrounded && _motor.RelativeVSpeed <= 0)
             {
                 ChangeState(_sm.Walking);
 
