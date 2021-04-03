@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(PlayerStateMachine))]
 public class PlayerLedgeDetector : MonoBehaviour
 {
     private const float BIG_NUMBER = 10000;
