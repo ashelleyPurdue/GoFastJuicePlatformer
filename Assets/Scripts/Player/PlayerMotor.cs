@@ -5,14 +5,16 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerGroundDetector))]
 [RequireComponent(typeof(PlayerLedgeDetector))]
 [RequireComponent(typeof(PlayerWallDetector))]
-[RequireComponent(typeof(CharacterController))]
 public class PlayerMotor : MonoBehaviour
 {
+    private const float CAPSULE_RADIUS = 0.375f;
+    private const float CAPSULE_HEIGHT = 1.4558f;
+    private const float CAPSULE_Y_OFFSET = 0.7279f;
+
     // Required components
     private PlayerGroundDetector _ground;
     private PlayerLedgeDetector _ledge;
     private PlayerWallDetector _wall;
-    private CharacterController _controller;
 
     /// <summary>
     /// Velocity relative to the ground we were standing on last.
@@ -64,7 +66,7 @@ public class PlayerMotor : MonoBehaviour
     public Vector3 LastGroundNormal => _ground.LastGroundNormal;
     public bool IsGrounded => _ground.IsGrounded;
     public bool WasGroundedLastFrame => _ground.WasGroundedLastFrame;
-    public bool IsBonkingHead => _ground.IsBonkingHead;
+    public bool IsBonkingHead => _ground.CheckBonkingHead(_internalPosition);
     public float HeightAboveGround => _ground.HeightAboveGround;
     public float LastGroundedTime => _ground.LastGroundedTime;
     
@@ -74,12 +76,25 @@ public class PlayerMotor : MonoBehaviour
     public bool LedgePresent => _ledge.LedgePresent;
     public float LastLedgeHeight => _ledge.LastLedgeHeight;
 
+    private Vector3 _internalPosition;
+
     void Awake()
     {
         _ground = GetComponent<PlayerGroundDetector>();
         _ledge = GetComponent<PlayerLedgeDetector>();
         _wall = GetComponent<PlayerWallDetector>();
-        _controller = GetComponent<CharacterController>();
+
+        _internalPosition = transform.position;
+    }
+
+    void Update()
+    {
+        // Smoothly interpolate towards the internal position
+        transform.position = Vector3.MoveTowards(
+            transform.position,
+            _internalPosition,
+            TotalVelocity.magnitude * Time.deltaTime
+        );
     }
 
     /// <summary>
@@ -87,12 +102,14 @@ public class PlayerMotor : MonoBehaviour
     /// </summary>
     public void ResetState()
     {
-        _ground.RecordFootprintPos();
-        _ground.UpdateGroundState();
-        _ground.RecordFootprintPos();
+        transform.position = _internalPosition;
 
-        _wall.UpdateWallState();
-        _ledge.UpdateLedgeDetectorState();
+        _ground.RecordFootprintPos(_internalPosition);
+        _ground.UpdateGroundState(_internalPosition);
+        _ground.RecordFootprintPos(_internalPosition);
+
+        _wall.UpdateWallState(_internalPosition);
+        _ledge.UpdateLedgeDetectorState(_internalPosition);
     }
 
     /// <summary>
@@ -102,24 +119,8 @@ public class PlayerMotor : MonoBehaviour
     /// <param name="position"></param>
     public void SetPosition(Vector3 position)
     {
-        // CharacterController maintains its own private "position" field,
-        // which happens to trump "transform.position".  This means you can't
-        // teleport the player by changing "transform.position", because the
-        // CharacterController will just roll you back to its internal position.
-        //
-        // The "correct" way to avoid this would be to call CharacterController's
-        // "SetPosition()" method, like you would for a rigidbody.  Unfortunately,
-        // CharacterController doesn't HAVE a "SetPosition()" method.
-        //
-        // Thanks, Unity >_<
-        //
-        // To get around this, we disable the CharacterController, and then 
-        // immediately re-enable it.  This forces CharacterController to sync
-        // its internal position with "transform.position", avoiding that stupid
-        // rollback.
         transform.position = position;
-        _controller.enabled = false;
-        _controller.enabled = true;
+        _internalPosition = position;
     }
 
     /// <summary>
@@ -131,21 +132,151 @@ public class PlayerMotor : MonoBehaviour
     /// </summary>
     public void UpdateCollisionStatus()
     {
-        _ground.UpdateGroundState();
-        _ledge.UpdateLedgeDetectorState();
-        _wall.UpdateWallState();
+        _ground.UpdateGroundState(_internalPosition);
+        _ledge.UpdateLedgeDetectorState(_internalPosition);
+        _wall.UpdateWallState(_internalPosition);
     }
 
     /// <summary>
     /// Moves the player in a straight line at the current velocity,
     /// automatically taking moving/rotating platforms into account.
+    /// It also climbs up/down slopes and
     /// </summary>
     public void Move()
     {
         // Move with the current velocity
-        _controller.Move(TotalVelocity * Time.deltaTime);
+        MoveWithSlopes(TotalVelocity * Time.deltaTime);
+        SendTriggerEnterEvents();
 
         // Remember moving-platform stuff for next frame
-        _ground.RecordFootprintPos();
+        _ground.RecordFootprintPos(_internalPosition);
+    }
+
+    /// <summary>
+    /// Moves with the given delta, sliding along sloped surfaces and
+    /// stopping when obstructed by walls.
+    /// </summary>
+    /// <param name="deltaPos"></param>
+    private void MoveWithSlopes(Vector3 deltaPos)
+    {
+        var moveResults = TryMove(_internalPosition, deltaPos);
+        while (moveResults.remainingDeltaPos.magnitude > 0)
+        {
+            moveResults = TryMove(
+                moveResults.stopPoint,
+                moveResults.remainingDeltaPos.ProjectOnPlane(moveResults.contactSurfaceNormal)
+            );
+        }
+
+        _internalPosition = moveResults.stopPoint;
+    }
+    
+    private TryMoveResults TryMove(Vector3 startPoint, Vector3 deltaPos)
+    {
+        // If there's no distance to move, then don't do anything.
+        if (deltaPos.magnitude == 0)
+        {
+            return new TryMoveResults
+            {
+                stopPoint = startPoint,
+                remainingDeltaPos = Vector3.zero,
+                contactSurfaceNormal = Vector3.zero,
+                madeContact = false
+            };
+        }
+
+        // Do a capsule cast along the delta pos
+        Vector3 capsuleBottom = startPoint;
+        Vector3 capsuleTop = capsuleBottom + (Vector3.up * CAPSULE_HEIGHT);
+        bool hitAnything = Physics.CapsuleCast(
+            point1: capsuleBottom + (Vector3.up * CAPSULE_RADIUS),
+            point2: capsuleTop - (Vector3.up * CAPSULE_RADIUS),
+            radius: CAPSULE_RADIUS,
+            direction: deltaPos.normalized,
+            maxDistance: deltaPos.magnitude,
+            queryTriggerInteraction: QueryTriggerInteraction.Ignore,
+            layerMask: Physics.DefaultRaycastLayers,
+            hitInfo: out RaycastHit hit
+        );
+
+        // If we didn't hit anything, then just go straight to the destination
+        if (!hitAnything)
+        {
+            return new TryMoveResults
+            {
+                stopPoint = startPoint + deltaPos,
+                remainingDeltaPos = Vector3.zero,
+                contactSurfaceNormal = Vector3.zero,
+                madeContact = false
+            };
+        }
+
+        // Move as far as we can, up to the collision point.
+        Vector3 stopPoint = startPoint + (hit.distance * deltaPos.normalized);
+
+        // Move a little bit out of the collision so the next raycast starts
+        // outside the collider
+        stopPoint += hit.normal * 0.01f;
+
+        // Calculate how much remaining delta pos we have
+        Vector3 distanceTraveled = stopPoint - startPoint;
+        Vector3 remainingDeltaPos = deltaPos - distanceTraveled;
+
+        return new TryMoveResults
+        {
+            stopPoint = stopPoint,
+            remainingDeltaPos = remainingDeltaPos,
+            contactSurfaceNormal = hit.normal,
+            madeContact = true
+        };
+    }
+    private struct TryMoveResults
+    {
+        /// <summary>
+        /// The position of our feet when we had to stop, either due to a
+        /// collision or due to successfully moving all the way.
+        /// </summary>
+        public Vector3 stopPoint;
+
+        /// <summary>
+        /// The delta pos that should be fed into the next attempt.
+        /// Will be zero if we made it all the way without making contact
+        /// </summary>
+        public Vector3 remainingDeltaPos;
+
+        /// <summary>
+        /// The normal of the surface that we made contact with, if we made
+        /// contact.
+        /// Will be zero if we didn't make contact.
+        /// </summary>
+        public Vector3 contactSurfaceNormal;
+
+        /// <summary>
+        /// Will be false if we traveled the entire distance without making
+        /// contact.  Will be true otherwise.
+        /// </summary>
+        public bool madeContact;
+    }
+
+    private void SendTriggerEnterEvents()
+    {
+        Vector3 capsuleBottom = _internalPosition;
+        Vector3 capsuleTop = capsuleBottom + (Vector3.up * CAPSULE_HEIGHT);
+        var colliders = Physics.OverlapCapsule(
+            point0: capsuleBottom + (Vector3.up * CAPSULE_RADIUS),
+            point1: capsuleTop - (Vector3.up * CAPSULE_RADIUS),
+            radius: CAPSULE_RADIUS,
+            queryTriggerInteraction: QueryTriggerInteraction.Collide,
+            layerMask: Physics.DefaultRaycastLayers
+        );
+
+        foreach (var c in colliders)
+        {
+            c.SendMessage(
+                "OnPlayerMotorCollisionStay",
+                this,
+                SendMessageOptions.DontRequireReceiver
+            );
+        }
     }
 }

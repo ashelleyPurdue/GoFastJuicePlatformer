@@ -85,7 +85,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4053171933476045467}
   - component: {fileID: 4053171933476045461}
-  - component: {fileID: 4053171933476045460}
   - component: {fileID: 8900854824230657471}
   - component: {fileID: 1783337433682840787}
   - component: {fileID: 923105833348168020}
@@ -131,24 +130,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3e9bf7bea5bd0a44a860a1d2ca9b6a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!143 &4053171933476045460
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4053171933476045466}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Height: 1.4558
-  m_Radius: 0.375
-  m_SlopeLimit: 45
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.05
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0.7279, z: 0}
 --- !u!114 &8900854824230657471
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -9,21 +9,21 @@ public class PlayerLedgeDetector : MonoBehaviour
     public bool LedgePresent {get; private set;}
     public float LastLedgeHeight {get; private set;}
 
-    public void UpdateLedgeDetectorState()
+    public void UpdateLedgeDetectorState(Vector3 pos)
     {
         const float bodyRadius = PlayerConstants.BODY_RADIUS;
         const float distance = 0.13f;
 
         // TODO: Add comments, some of them clever.
         RaycastHit? ceilingHit = CylinderPhysics.CircleCast(
-            transform.position,
+            pos,
             bodyRadius,
             BIG_NUMBER,
             Vector3.up
         );
         float ceilingHeight = ceilingHit?.distance ?? BIG_NUMBER;
 
-        Vector3 echoStart = transform.position + (Vector3.up * ceilingHeight);
+        Vector3 echoStart = pos + (Vector3.up * ceilingHeight);
         RaycastHit? echoHit = CylinderPhysics.CircleCast(
             echoStart,
             bodyRadius + distance,
@@ -33,6 +33,6 @@ public class PlayerLedgeDetector : MonoBehaviour
 
         LedgePresent = echoHit.HasValue;
         if (LedgePresent)
-            LastLedgeHeight = echoHit.Value.point.y - transform.position.y;
+            LastLedgeHeight = echoHit.Value.point.y - pos.y;
     }
 }

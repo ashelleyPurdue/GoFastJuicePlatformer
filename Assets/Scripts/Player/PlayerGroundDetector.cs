@@ -16,17 +16,15 @@ public class PlayerGroundDetector : MonoBehaviour
     public float HeightAboveGround {get; private set;}
     public float LastGroundedTime {get; private set;}
 
-    public bool IsBonkingHead => CheckBonkingHead();
-
     private Vector3 _lastPositionRelativeToGround;
     
     /// <summary>
     /// Call this at the beginning of FixedUpdate, before you do any
     /// calculations that depend on this object's properties.
     /// </summary>
-    public void UpdateGroundState()
+    public void UpdateGroundState(Vector3 pos)
     {
-        RaycastHit? hit = GetGround();
+        RaycastHit? hit = GetGround(pos);
 
         // Update the height above the ground
         HeightAboveGround = hit.HasValue
@@ -56,7 +54,7 @@ public class PlayerGroundDetector : MonoBehaviour
         {
             // Figure out where our "foot prints" have moved to
             var currentFootprintsPos = CurrentGround.TransformPoint(_lastPositionRelativeToGround);
-            var lastFootprintsPos = transform.position;
+            var lastFootprintsPos = pos;
 
             // Figure out how much the footprints moved, and move by that much
             var deltaFootprints = currentFootprintsPos - lastFootprintsPos;
@@ -76,16 +74,16 @@ public class PlayerGroundDetector : MonoBehaviour
     /// Call this at the end of FixedUpdate, after you have moved the character.
     /// This ensures GroundVelocity is properly calculated on the next frame.
     /// </summary>
-    public void RecordFootprintPos()
+    public void RecordFootprintPos(Vector3 pos)
     {
         if (IsGrounded)
-            _lastPositionRelativeToGround = CurrentGround.InverseTransformPoint(transform.position);
+            _lastPositionRelativeToGround = CurrentGround.InverseTransformPoint(pos);
     }
 
-    private bool CheckBonkingHead()
+    public bool CheckBonkingHead(Vector3 pos)
     {
         return CylinderPhysics.CylinderCast(
-            transform.position + (Vector3.up * PlayerConstants.BODY_HEIGHT),
+            pos + (Vector3.up * PlayerConstants.BODY_HEIGHT),
             PlayerConstants.BODY_RADIUS,
             GROUND_DETECTOR_THICKNESS,
             Vector3.up,
@@ -98,10 +96,10 @@ public class PlayerGroundDetector : MonoBehaviour
     /// or null if we're in the air.
     /// </summary>
     /// <returns></returns>
-    private RaycastHit? GetGround()
+    private RaycastHit? GetGround(Vector3 pos)
     {
         return CylinderPhysics.CircleCast(
-            transform.position + (Vector3.up * RAYCAST_OFFSET),
+            pos + (Vector3.up * RAYCAST_OFFSET),
             PlayerConstants.BODY_RADIUS,
             RAYCAST_DISTANCE,
             Vector3.down,

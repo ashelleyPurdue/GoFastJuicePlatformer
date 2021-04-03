@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class DeathBarrier : MonoBehaviour
 {
-    void OnTriggerEnter(Collider other)
+    void OnPlayerMotorCollisionStay(PlayerMotor motor)
     {
-        var player = other.GetComponent<PlayerController>();
-        if (player != null)
-            player.Kill();
+        var playerController = motor.GetComponent<PlayerController>();
+        if (playerController != null)
+            playerController.Kill();
     }
 }
