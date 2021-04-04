@@ -9,7 +9,7 @@ public partial class PlayerStateMachine
         public WalkingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override AnimationHint GetAnimationHint() => AnimationHint.Walking;
+        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.Walking;
 
         public override void ResetState() {}
 

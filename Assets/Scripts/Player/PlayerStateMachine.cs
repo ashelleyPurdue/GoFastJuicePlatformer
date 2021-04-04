@@ -34,18 +34,7 @@ public partial class PlayerStateMachine : MonoBehaviour
                                     // landing, so it can be restored if you jump
                                     // again shortly after landing.
 
-    public enum AnimationHint
-    {
-        Walking,
-        FreeFall,
-        WallSliding,
-        WallJumping,
-        LedgeGrabbing,
-        Rolling,
-        Diving,
-        Bonking
-    }
-    public AnimationHint CurrentAnimationHint => _currentState.GetAnimationHint();
+    public PlayerAnimationHint CurrentAnimationHint => _currentState.GetAnimationHint();
 
     public AbstractPlayerState Walking {get; private set;}
     public AbstractPlayerState FreeFall {get; private set;}

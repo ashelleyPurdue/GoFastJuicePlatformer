@@ -58,7 +58,7 @@ public partial class PlayerStateMachine
             _motor = motor;
         }
 
-        public abstract AnimationHint GetAnimationHint();
+        public abstract PlayerAnimationHint GetAnimationHint();
 
         public virtual void ResetState() {}
 

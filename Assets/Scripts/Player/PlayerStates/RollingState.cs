@@ -11,7 +11,7 @@ public partial class PlayerStateMachine
         public RollingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override AnimationHint GetAnimationHint() => AnimationHint.Rolling;
+        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.Rolling;
 
         public override void ResetState()
         {

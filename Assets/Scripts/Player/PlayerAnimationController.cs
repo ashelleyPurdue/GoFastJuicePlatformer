@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerStateMachine))]
-[RequireComponent(typeof(PlayerGroundDetector))]
-[RequireComponent(typeof(PlayerWallDetector))]
 [RequireComponent(typeof(PlayerMotor))]
 public class PlayerAnimationController : MonoBehaviour
 {
@@ -16,8 +14,6 @@ public class PlayerAnimationController : MonoBehaviour
 
     private PlayerStateMachine _stateMachine;
     private PlayerMotor _motor;
-    private PlayerGroundDetector _ground;
-    private PlayerWallDetector _wall;
 
     private string _currentState;
     private const string PLAYER_FALL = "PlayerFall";
@@ -37,8 +33,6 @@ public class PlayerAnimationController : MonoBehaviour
     {
         _stateMachine = GetComponent<PlayerStateMachine>();
         _motor = GetComponent<PlayerMotor>();
-        _ground = GetComponent<PlayerGroundDetector>();
-        _wall = GetComponent<PlayerWallDetector>();
 
         // Subscribe to events
         _stateMachine.StartedJumping += OnStartedJumping;
@@ -74,22 +68,36 @@ public class PlayerAnimationController : MonoBehaviour
 
         switch (_stateMachine.CurrentAnimationHint)
         {
-            case PlayerStateMachine.AnimationHint.Diving: SetState(PLAYER_DIVE, 0.1f); break;
-            case PlayerStateMachine.AnimationHint.WallSliding: SetState(PLAYER_WALL_SLIDE, 0.1f); break;
-            case PlayerStateMachine.AnimationHint.Rolling: SetState(PLAYER_ROLL, 0.1f); break;
-
-            case PlayerStateMachine.AnimationHint.Walking:
+            case PlayerAnimationHint.Diving:
+            {
+                SetState(PLAYER_DIVE, 0.1f);
+                break;
+            }
+            case PlayerAnimationHint.WallSliding:
+            {
+                SetState(PLAYER_WALL_SLIDE, 0.1f); 
+                break;
+            }
+            case PlayerAnimationHint.Rolling:
+            {
+                SetState(PLAYER_ROLL, 0.1f);
+                break;
+            }
+            case PlayerAnimationHint.Walking:
+            {
                 if (_stateMachine.HSpeed > 0)
                     SetState(PLAYER_RUN, 0.25f);
                 else
-                    SetState(PLAYER_IDLE, 0.25f);
+                    SetState(PLAYER_IDLE, 0.25f); 
                 break;
-
-            case PlayerStateMachine.AnimationHint.WallJumping:
-            case PlayerStateMachine.AnimationHint.FreeFall:
+            }
+            case PlayerAnimationHint.WallJumping:
+            case PlayerAnimationHint.FreeFall:
+            {
                 if (_motor.RelativeVSpeed < 0)
                     SetState(PLAYER_FALL, 0.25f);
                 break;
+            }
         }
     }
 
@@ -171,9 +179,9 @@ public class PlayerAnimationController : MonoBehaviour
     {
         switch (_stateMachine.CurrentAnimationHint)
         {
-            case PlayerStateMachine.AnimationHint.Diving: return GetTargetRotDiving();
-            case PlayerStateMachine.AnimationHint.WallSliding: return FaceWallSlide();
-            case PlayerStateMachine.AnimationHint.Walking: return TiltWithSpeed(FaceHAngle());
+            case PlayerAnimationHint.Diving: return GetTargetRotDiving();
+            case PlayerAnimationHint.WallSliding: return FaceWallSlide();
+            case PlayerAnimationHint.Walking: return TiltWithSpeed(FaceHAngle());
 
             default: return FaceHAngle();
         }
@@ -181,7 +189,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Quaternion FaceWallSlide()
     {
-        var forward = _wall.LastWallNormal.Flattened();
+        var forward = _motor.LastWallNormal.Flattened();
         return Quaternion.LookRotation(forward);
     }
 
