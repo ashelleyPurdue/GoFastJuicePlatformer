@@ -35,4 +35,12 @@ public interface IPlayerInput
     /// </summary>
     /// <value></value>
     bool AttackPressed {get;}
+
+    /// <summary>
+    /// Whether or not the "slow time" button is being held.
+    /// This is really only intended as a cheat used during development, to find
+    /// bugs that require precise timing.
+    /// </summary>
+    /// <value></value>
+    bool CheatSlowTimeHeld {get;}
 }

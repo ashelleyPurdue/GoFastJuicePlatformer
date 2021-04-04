@@ -19,4 +19,6 @@ public class PlayerInputImpl : MonoBehaviour, IPlayerInput
 
     public bool AttackHeld => Input.GetButton("Attack");
     public bool AttackPressed => Input.GetButtonDown("Attack");
+
+    public bool CheatSlowTimeHeld => Input.GetAxis("CheatSlowTime") != 0;
 }

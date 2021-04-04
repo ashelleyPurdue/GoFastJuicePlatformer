@@ -131,6 +131,12 @@ public partial class PlayerStateMachine : MonoBehaviour
 
         if (_input.AttackPressed)
             _lastAttackButtonPressTime = Time.time;
+
+        // DEV CHEAT: slow down time with a button
+        DebugDisplay.PrintLine("CheatSlowTime: " + Input.GetAxisRaw("CheatSlowTime"));
+        Time.timeScale = _input.CheatSlowTimeHeld
+            ? 0.25f
+            : 1;
     }
 
     public void FixedUpdate()
