@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Cinemachine;
 using UnityEngine;
 
-public class PathFollower : MonoBehaviour
+public class PathFollowingPlatform : MonoBehaviour
 {
     public CinemachinePath path;
     public float speed;     // In path distance units per second
