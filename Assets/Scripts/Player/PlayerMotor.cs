@@ -76,7 +76,8 @@ public class PlayerMotor : MonoBehaviour
     public bool LedgePresent => _ledge.LedgePresent;
     public float LastLedgeHeight => _ledge.LastLedgeHeight;
 
-    private Vector3 _internalPosition;
+    private Vector3 _internalPosition => _characterController.transform.position;
+    private CharacterController _characterController;
 
     void Awake()
     {
@@ -84,7 +85,15 @@ public class PlayerMotor : MonoBehaviour
         _ledge = GetComponent<PlayerLedgeDetector>();
         _wall = GetComponent<PlayerWallDetector>();
 
-        _internalPosition = transform.position;
+        // HACK: Create a secret character controller that we use for the
+        // internal, non-interpolated position
+        var dummy = new GameObject();
+        dummy.transform.position = transform.position;
+        _characterController = dummy.AddComponent<CharacterController>();
+
+        _characterController.radius = CAPSULE_RADIUS;
+        _characterController.height = CAPSULE_HEIGHT;
+        _characterController.center = Vector3.up * CAPSULE_Y_OFFSET;
     }
 
     void Update()
@@ -120,7 +129,8 @@ public class PlayerMotor : MonoBehaviour
     public void SetPosition(Vector3 position)
     {
         transform.position = position;
-        _internalPosition = position;
+        _characterController.enabled = false;
+        _characterController.enabled = true;
     }
 
     /// <summary>
@@ -145,117 +155,11 @@ public class PlayerMotor : MonoBehaviour
     public void Move()
     {
         // Move with the current velocity
-        MoveWithSlopes(TotalVelocity * Time.deltaTime);
+        _characterController.Move(TotalVelocity * Time.deltaTime);
         SendTriggerEnterEvents();
 
         // Remember moving-platform stuff for next frame
         _ground.RecordFootprintPos(_internalPosition);
-    }
-
-    /// <summary>
-    /// Moves with the given delta, sliding along sloped surfaces and
-    /// stopping when obstructed by walls.
-    /// </summary>
-    /// <param name="deltaPos"></param>
-    private void MoveWithSlopes(Vector3 deltaPos)
-    {
-        var moveResults = TryMove(_internalPosition, deltaPos);
-        while (moveResults.remainingDeltaPos.magnitude > 0)
-        {
-            moveResults = TryMove(
-                moveResults.stopPoint,
-                moveResults.remainingDeltaPos.ProjectOnPlane(moveResults.contactSurfaceNormal)
-            );
-        }
-
-        _internalPosition = moveResults.stopPoint;
-    }
-    
-    private TryMoveResults TryMove(Vector3 startPoint, Vector3 deltaPos)
-    {
-        // If there's no distance to move, then don't do anything.
-        if (deltaPos.magnitude == 0)
-        {
-            return new TryMoveResults
-            {
-                stopPoint = startPoint,
-                remainingDeltaPos = Vector3.zero,
-                contactSurfaceNormal = Vector3.zero,
-                madeContact = false
-            };
-        }
-
-        // Do a capsule cast along the delta pos
-        Vector3 capsuleBottom = startPoint;
-        Vector3 capsuleTop = capsuleBottom + (Vector3.up * CAPSULE_HEIGHT);
-        bool hitAnything = Physics.CapsuleCast(
-            point1: capsuleBottom + (Vector3.up * CAPSULE_RADIUS),
-            point2: capsuleTop - (Vector3.up * CAPSULE_RADIUS),
-            radius: CAPSULE_RADIUS,
-            direction: deltaPos.normalized,
-            maxDistance: deltaPos.magnitude,
-            queryTriggerInteraction: QueryTriggerInteraction.Ignore,
-            layerMask: Physics.DefaultRaycastLayers,
-            hitInfo: out RaycastHit hit
-        );
-
-        // If we didn't hit anything, then just go straight to the destination
-        if (!hitAnything)
-        {
-            return new TryMoveResults
-            {
-                stopPoint = startPoint + deltaPos,
-                remainingDeltaPos = Vector3.zero,
-                contactSurfaceNormal = Vector3.zero,
-                madeContact = false
-            };
-        }
-
-        // Move as far as we can, up to the collision point.
-        Vector3 stopPoint = startPoint + (hit.distance * deltaPos.normalized);
-
-        // Move a little bit out of the collision so the next raycast starts
-        // outside the collider
-        stopPoint += hit.normal * 0.01f;
-
-        // Calculate how much remaining delta pos we have
-        Vector3 distanceTraveled = stopPoint - startPoint;
-        Vector3 remainingDeltaPos = deltaPos - distanceTraveled;
-
-        return new TryMoveResults
-        {
-            stopPoint = stopPoint,
-            remainingDeltaPos = remainingDeltaPos,
-            contactSurfaceNormal = hit.normal,
-            madeContact = true
-        };
-    }
-    private struct TryMoveResults
-    {
-        /// <summary>
-        /// The position of our feet when we had to stop, either due to a
-        /// collision or due to successfully moving all the way.
-        /// </summary>
-        public Vector3 stopPoint;
-
-        /// <summary>
-        /// The delta pos that should be fed into the next attempt.
-        /// Will be zero if we made it all the way without making contact
-        /// </summary>
-        public Vector3 remainingDeltaPos;
-
-        /// <summary>
-        /// The normal of the surface that we made contact with, if we made
-        /// contact.
-        /// Will be zero if we didn't make contact.
-        /// </summary>
-        public Vector3 contactSurfaceNormal;
-
-        /// <summary>
-        /// Will be false if we traveled the entire distance without making
-        /// contact.  Will be true otherwise.
-        /// </summary>
-        public bool madeContact;
     }
 
     private void SendTriggerEnterEvents()
