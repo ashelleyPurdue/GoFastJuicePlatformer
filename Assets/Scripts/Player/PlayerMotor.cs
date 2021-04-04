@@ -129,6 +129,23 @@ public class PlayerMotor : MonoBehaviour
     public void SetPosition(Vector3 position)
     {
         transform.position = position;
+
+        // CharacterController maintains its own private "position" field,
+        // which happens to trump "transform.position".  This means you can't
+        // teleport the player by changing "transform.position", because the
+        // CharacterController will just roll you back to its internal position.
+        //
+        // The "correct" way to avoid this would be to call CharacterController's
+        // "SetPosition()" method, like you would for a rigidbody.  Unfortunately,
+        // CharacterController doesn't HAVE a "SetPosition()" method.
+        //
+        // Thanks, Unity >_<
+        //
+        // To get around this, we disable the CharacterController, and then 
+        // immediately re-enable it.  This forces CharacterController to sync
+        // its internal position with "transform.position", avoiding that stupid
+        // rollback.
+        _characterController.transform.position = position;
         _characterController.enabled = false;
         _characterController.enabled = true;
     }
