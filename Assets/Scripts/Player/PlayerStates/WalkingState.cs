@@ -68,10 +68,7 @@ public partial class PlayerStateMachine
             if (hSpeedIntended < PlayerConstants.HSPEED_MIN)
                 hSpeedIntended = 0;
 
-            float accel = HSpeed < hSpeedIntended
-                ? PlayerConstants.HACCEL_GROUND
-                : PlayerConstants.FRICTION_GROUND;
-
+            float accel = PlayerConstants.HACCEL_GROUND;
             HSpeed = Mathf.MoveTowards(HSpeed, hSpeedIntended, accel * Time.deltaTime);
 
             // HACK: Immediately accelerate to the minimum speed.
