@@ -65,6 +65,7 @@ public static class PlayerConstants
 
     public const float WALL_JUMP_MIN_HSPEED = 10;
     public const float WALL_JUMP_HSPEED_MULT = 1.1f;
+    public const float WALL_JUMP_HEIGHT = 5.5f;
     public const float WALL_JUMP_MIN_HDIST = 1; // air strafing is disabled after
                                                 // a wall jump until the player
                                                 // has moved this far away from
@@ -85,6 +86,7 @@ public static class PlayerConstants
     public static readonly float STANDARD_JUMP_VSPEED;
     public static readonly float CHAIN_JUMP_VSPEED;
     public static readonly float DIVE_JUMP_VSPEED;
+    public static readonly float WALL_JUMP_VSPEED;
     public static readonly float JUMP_RISE_GRAVITY;
     public static readonly float FREE_FALL_GRAVITY;
     public static float WALL_SLIDE_GRAVITY => JUMP_RISE_GRAVITY;
@@ -119,6 +121,12 @@ public static class PlayerConstants
         DIVE_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
             PlayerConstants.DIVE_JUMP_HEIGHT,
             PlayerConstants.DIVE_GRAVITY,
+            PlayerConstants.FIXED_TIMESTEP
+        );
+
+        WALL_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
+            PlayerConstants.WALL_JUMP_HEIGHT,
+            PlayerConstants.JUMP_RISE_GRAVITY,
             PlayerConstants.FIXED_TIMESTEP
         );
     }

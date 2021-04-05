@@ -108,7 +108,7 @@ public partial class PlayerStateMachine
             _debugJumpStartY = _motor.transform.position.y;
             _debugJumpMaxY = _motor.transform.position.y;
 
-            _motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
+            _motor.RelativeVSpeed = PlayerConstants.WALL_JUMP_VSPEED;
 
             // Reflect off of the wall at the angle we approached it at
             var kickDir = Forward.ReflectOffOfSurface(_motor.LastWallNormal);
