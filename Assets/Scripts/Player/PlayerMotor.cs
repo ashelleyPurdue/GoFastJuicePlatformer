@@ -89,6 +89,7 @@ public class PlayerMotor : MonoBehaviour
         // internal, non-interpolated position
         var dummy = new GameObject();
         dummy.transform.position = transform.position;
+        dummy.layer = LayerMask.NameToLayer("Ignore Raycast");
         _characterController = dummy.AddComponent<CharacterController>();
 
         _characterController.radius = CAPSULE_RADIUS;

@@ -24,6 +24,7 @@ public class PlayerLedgeDetector : MonoBehaviour
         float ceilingHeight = ceilingHit?.distance ?? BIG_NUMBER;
 
         Vector3 echoStart = pos + (Vector3.up * ceilingHeight);
+
         RaycastHit? echoHit = CylinderPhysics.CircleCast(
             echoStart,
             bodyRadius + distance,
@@ -33,6 +34,9 @@ public class PlayerLedgeDetector : MonoBehaviour
 
         LedgePresent = echoHit.HasValue;
         if (LedgePresent)
+        {
+            DebugDisplay.DrawPoint(Color.green, echoHit.Value.point);
             LastLedgeHeight = echoHit.Value.point.y - pos.y;
+        }
     }
 }
