@@ -7,7 +7,6 @@ public enum PlayerAnimationHint
     Walking,
     FreeFall,
     WallSliding,
-    WallJumping,
     LedgeGrabbing,
     Rolling,
     Diving,

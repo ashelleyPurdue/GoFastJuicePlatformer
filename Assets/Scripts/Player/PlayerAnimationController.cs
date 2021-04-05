@@ -91,7 +91,6 @@ public class PlayerAnimationController : MonoBehaviour
                     SetState(PLAYER_IDLE, 0.25f); 
                 break;
             }
-            case PlayerAnimationHint.WallJumping:
             case PlayerAnimationHint.FreeFall:
             {
                 if (_motor.RelativeVSpeed < 0)

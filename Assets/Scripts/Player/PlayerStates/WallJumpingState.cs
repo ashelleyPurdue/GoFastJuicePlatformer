@@ -11,8 +11,6 @@ public partial class PlayerStateMachine
         public WallJumpingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.WallJumping;
-
         public override void ResetState()
         {
             _lastWallJumpPos = Vector3.zero;
