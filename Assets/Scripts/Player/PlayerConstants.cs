@@ -28,7 +28,6 @@ public static class PlayerConstants
 
     public const float HACCEL_GROUND = 15;
     public const float HACCEL_AIR = 30;
-    public const float HACCEL_AIR_BACKWARDS = 30;
     public const float MIN_LANDING_HSPEED_MULT = 0.25f;
 
     public const float BONK_SPEED = -3; // TODO: Rename this to "head bonk speed"

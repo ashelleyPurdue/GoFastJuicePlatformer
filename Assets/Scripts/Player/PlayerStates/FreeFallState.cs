@@ -144,7 +144,6 @@ public partial class PlayerStateMachine
             var inputVector = GetWalkInput();
 
             Vector3 forward = AngleForward(HAngleDeg);
-            bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
             bool movingForwards = _motor.RelativeFlatVelocity.normalized.ComponentAlong(forward) > 0;
 
             float accel = PlayerConstants.HACCEL_AIR;
@@ -154,11 +153,6 @@ public partial class PlayerStateMachine
             // If you wanna go fast, you gotta go forward.
             if (!movingForwards)
                 maxSpeed = PlayerConstants.HSPEED_MAX_GROUND;
-
-            // Give them a little bit of help if they're pushing backwards
-            // on the stick, so it's easier to "abort" a poorly-timed jum
-            if (pushingBackwards)
-                accel = PlayerConstants.HACCEL_AIR_BACKWARDS;
 
             // Apply a force to get our new velocity.
             var oldVelocity = _motor.RelativeFlatVelocity;
