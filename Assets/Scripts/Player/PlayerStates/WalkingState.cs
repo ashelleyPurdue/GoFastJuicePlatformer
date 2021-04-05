@@ -60,7 +60,12 @@ public partial class PlayerStateMachine
             // We do this by keeping track of their speed and angle separately.
             // The target speed is controlled by the magnitude of the left stick.
             // The target angle is controlled by the direction of the left stick.
-
+            UpdateHSpeed();
+            UpdateHAngle();
+        }
+        
+        private void UpdateHSpeed()
+        {
             // Speed up/slow down with the left stick
             var inputVector = GetWalkInput();
             float hSpeedIntended = inputVector.magnitude * PlayerConstants.HSPEED_MAX_GROUND;
@@ -76,7 +81,10 @@ public partial class PlayerStateMachine
             // having a feeling of acceleration.
             if (hSpeedIntended > 0 && HSpeed < PlayerConstants.HSPEED_MIN)
                 HSpeed = PlayerConstants.HSPEED_MIN;
+        }
 
+        private void UpdateHAngle()
+        {
             // Rotate with the left stick
             if (!IsLeftStickNeutral())
             {
@@ -95,7 +103,7 @@ public partial class PlayerStateMachine
                     HAngleDeg = targetAngleDeg;
             }
         }
-        
+
         private void ButtonControls()
         {
             if (JumpPressedRecently())
