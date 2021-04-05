@@ -71,7 +71,8 @@ public partial class PlayerStateMachine
         protected void Physics()
         {
             // Apply gravity
-            // Use more gravity when we're falling so the jump arc feels "squishier"
+            // Use more gravity when we're falling so the jump arc feels
+            // "squishier"
             float gravity = _motor.RelativeVSpeed > 0
                 ? PlayerConstants.JUMP_RISE_GRAVITY
                 : PlayerConstants.FREE_FALL_GRAVITY;
@@ -92,22 +93,27 @@ public partial class PlayerStateMachine
             if (!_input.JumpHeld)
                 _sm._jumpReleased = true;
 
-            // Cut the jump short if the button was released on the way u
-            // Immediately setting the VSpeed to 0 looks jarring, so instead we'll
-            // exponentially decay it every frame.
-            // Once it's decayed below a certain threshold, we'll let gravity do the
-            // rest of the work so it still looks natural.
-            if (_motor.RelativeVSpeed > (PlayerConstants.STANDARD_JUMP_VSPEED / 2) && _sm._jumpReleased)
+            // Cut the jump short if the button was released on the way up
+            // Immediately setting the VSpeed to 0 looks jarring, so instead
+            // we'll exponentially decay it every frame.
+            // Once it's decayed below a certain threshold, we'll let gravity do 
+            // the rest of the work so it still looks natural.
+            bool shouldDecay =
+                _sm._jumpReleased &&
+                _motor.RelativeVSpeed > (PlayerConstants.STANDARD_JUMP_VSPEED / 2);
+
+            if (shouldDecay)
                 _motor.RelativeVSpeed *= PlayerConstants.SHORT_JUMP_DECAY_RATE;
 
             // Let the player jump for a short period after walking off a ledge,
             // because everyone is human.  
-            // This is called "coyote time", named after the tragic life of the late
-            // Wile E. Coyote.
-            if (_motor.RelativeVSpeed < 0 && WasGroundedRecently() && JumpPressedRecently())
+            // This is called "coyote time", named after the tragic life of the 
+            // late Wile E. Coyote.
+            bool coyoteTime = WasGroundedRecently() && _motor.RelativeVSpeed < 0;
+            if (coyoteTime && JumpPressedRecently())
             {
                 StartGroundJump();
-                DebugDisplay.PrintLine("Coyote-time jump!");
+                Debug.Log("Coyote-time jump!");
             }
 
             // Dive when the attack button is pressed.
@@ -119,8 +125,9 @@ public partial class PlayerStateMachine
         }
         protected void StrafingControls()
         {
-            // Allow the player to change their direction for free for a short time
-            // after jumping.  After that time is up, air strafing controls kick in
+            // Allow the player to change their direction for free for a short
+            // time after jumping.  After that time is up, air strafing controls
+            // kick in.
             if (_sm._jumpRedirectTimer >= 0)
             {
                 InstantlyFaceLeftStick();
@@ -130,22 +137,21 @@ public partial class PlayerStateMachine
                 return;
             }
 
-            // In the air, we let the player "nudge" their velocity by applying a
-            // force in the direction the stick is being pushed.
-            // Unlike on the ground, you *will* lose speed and slide around if you
-            // try to change your direction.
+            // In the air, we let the player "nudge" their velocity by applying
+            // a force in the direction the stick is being pushed.
+            // Unlike on the ground, you *will* lose speed and slide around if
+            // you try to change your direction.
             var inputVector = GetWalkInput();
 
             Vector3 forward = AngleForward(HAngleDeg);
             bool pushingBackwards = inputVector.ComponentAlong(forward) < -0.5f;
-            bool pushingForwards = inputVector.ComponentAlong(forward) > 0.75f;
             bool movingForwards = _motor.RelativeFlatVelocity.normalized.ComponentAlong(forward) > 0;
 
             float accel = PlayerConstants.HACCEL_AIR;
             float maxSpeed = PlayerConstants.HSPEED_MAX_AIR;
 
             // Reduce the speed limit when moving backwards.
-            // If you're wanna go fast, you gotta go forward.
+            // If you wanna go fast, you gotta go forward.
             if (!movingForwards)
                 maxSpeed = PlayerConstants.HSPEED_MAX_GROUND;
 
@@ -159,8 +165,8 @@ public partial class PlayerStateMachine
             var newVelocity = _motor.RelativeFlatVelocity + (inputVector * accel * Time.deltaTime);
             
             // Only let the player accellerate up to the normal ground speed.
-            // We won't slow them down if they're already going faster than that,
-            // though (eg: due to the speed boost from chained jumping)
+            // We won't slow them down if they're already going faster than
+            // that, though (eg: due to a speed boost from wall jumping)
             float oldSpeed = oldVelocity.magnitude;
             float newSpeed = newVelocity.magnitude;
 
@@ -175,8 +181,8 @@ public partial class PlayerStateMachine
                     newSpeed = PlayerConstants.HSPEED_MAX_GROUND;
             }
 
-            // We WILL, however, slow them down if they're going past the max air
-            // speed.  That's a hard maximum.
+            // We WILL, however, slow them down if they're going past the max
+            // air speed.  That's a hard maximum.
             if (newSpeed > maxSpeed)
                 newSpeed = maxSpeed;
 
