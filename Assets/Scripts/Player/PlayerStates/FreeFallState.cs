@@ -178,7 +178,7 @@ public partial class PlayerStateMachine
             // We WILL, however, slow them down if they're going past the max air
             // speed.  That's a hard maximum.
             if (newSpeed > maxSpeed)
-                _motor.RelativeFlatVelocity = _motor.RelativeFlatVelocity.normalized * maxSpeed;
+                newSpeed = maxSpeed;
 
             _motor.RelativeFlatVelocity = newVelocity.normalized * newSpeed;
 
