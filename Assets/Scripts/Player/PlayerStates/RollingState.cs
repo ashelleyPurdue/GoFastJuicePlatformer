@@ -67,11 +67,15 @@ public partial class PlayerStateMachine
             // Damage things
             _sm._rollHitbox.ApplyDamage();
 
-            // Let the player change their direction for a very short about of time
-            // at the beginning of their roll
-            bool withinRedirectWindow = _timer > PlayerConstants.ROLL_TIME - PlayerConstants.ROLL_REDIRECT_TIME;
-            if (withinRedirectWindow && !IsLeftStickNeutral())
-                HAngleDeg = GetHAngleDegInput();
+            // Let the player turn a little bit
+            if (!IsLeftStickNeutral())
+            {
+                HAngleDeg = Mathf.MoveTowardsAngle(
+                    HAngleDeg,
+                    GetHAngleDegInput(),
+                    PlayerConstants.ROLL_ROT_SPEED_DEG * Time.deltaTime
+                );
+            }
 
             SyncWalkVelocityToHSpeed();
 

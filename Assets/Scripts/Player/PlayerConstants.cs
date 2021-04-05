@@ -76,10 +76,10 @@ public static class PlayerConstants
     public const float JUMP_REDIRECT_TIME = 0.1f;
     
     public const float ROLL_TIME = 0.25f;
-    public const float ROLL_REDIRECT_TIME = ROLL_TIME / 3;
     public const float ROLL_COOLDOWN = 0.5f;
     public const float ROLL_DISTANCE = 5;
     public const float ROLL_JUMP_HSPEED = 10;
+    public const float ROLL_ROT_SPEED_DEG = 180 / ROLL_TIME;
 
     public const float LEFT_STICK_DEADZONE = 0.001f;
 
