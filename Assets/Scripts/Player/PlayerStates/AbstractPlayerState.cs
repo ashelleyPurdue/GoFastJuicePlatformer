@@ -130,7 +130,8 @@ public partial class PlayerStateMachine
             SyncWalkVelocityToHSpeed();
 
             // Book keeping
-            _chainedJumpCount = 0;
+            _chainedJumpCount = 1;  // The next normal jump after landing will
+                                    // be a chained jump.
             _jumpReleased = false;
             ChangeState(_sm.WallJumping);
             _sm.StartedJumping?.Invoke();
