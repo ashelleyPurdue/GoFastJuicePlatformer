@@ -125,14 +125,20 @@ public partial class PlayerStateMachine
         }
         protected void StrafingControls()
         {
-            // Allow the player to change their direction for free for a short
-            // time after jumping.  After that time is up, air strafing controls
-            // kick in.
+            // Always be facing the left stick.
+            // This gives the player the illusion of having more control,
+            // without actually affecting their velocity.
+            // It also makes it easier to tell which direction they would dive
+            // in, if they were to press the dive button right now.
+            InstantlyFaceLeftStick();
+
+            // Allow the player to redirect their velocity for free for a short
+            // time after jumping, in case they pressed the jump button while
+            // they were still moving the stick.
+            // After that time is up, air strafing controls kick in.
             if (_sm._jumpRedirectTimer >= 0)
             {
-                InstantlyFaceLeftStick();
                 SyncWalkVelocityToHSpeed();
-
                 _sm._jumpRedirectTimer -= Time.deltaTime;
                 return;
             }
@@ -143,16 +149,8 @@ public partial class PlayerStateMachine
             // you try to change your direction.
             var inputVector = GetWalkInput();
 
-            Vector3 forward = AngleForward(HAngleDeg);
-            bool movingForwards = _motor.RelativeFlatVelocity.normalized.ComponentAlong(forward) > 0;
-
             float accel = PlayerConstants.HACCEL_AIR;
             float maxSpeed = PlayerConstants.HSPEED_MAX_AIR;
-
-            // Reduce the speed limit when moving backwards.
-            // If you wanna go fast, you gotta go forward.
-            if (!movingForwards)
-                maxSpeed = PlayerConstants.HSPEED_MAX_GROUND;
 
             // Apply a force to get our new velocity.
             var oldVelocity = _motor.RelativeFlatVelocity;
