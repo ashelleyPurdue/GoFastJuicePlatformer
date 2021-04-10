@@ -5,6 +5,7 @@ using UnityEngine;
 public enum PlayerAnimationHint
 {
     Walking,
+    Skidding,
     FreeFall,
     WallSliding,
     LedgeGrabbing,

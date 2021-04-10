@@ -6,12 +6,22 @@ public partial class PlayerStateMachine
 {
     private class WalkingState : AbstractPlayerState
     {
+        private float _lastSkidStartTime;
+
         public WalkingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.Walking;
+        public override PlayerAnimationHint GetAnimationHint()
+        {
+            if (IsSkidding())
+                return PlayerAnimationHint.Skidding;
+            return PlayerAnimationHint.Walking;
+        }
 
-        public override void ResetState() {}
+        public override void ResetState()
+        {
+            _lastSkidStartTime = 0;
+        }
 
         public override void EarlyFixedUpdate()
         {
@@ -62,6 +72,7 @@ public partial class PlayerStateMachine
             // The target angle is controlled by the direction of the left stick.
             UpdateHSpeed();
             UpdateHAngle();
+            StartSkiddingIfDoing180();
         }
         
         private void UpdateHSpeed()
@@ -104,12 +115,25 @@ public partial class PlayerStateMachine
             }
         }
 
+        private void StartSkiddingIfDoing180()
+        {
+            float stickForwardComponent = GetWalkInput().ComponentAlong(Forward);
+            if (stickForwardComponent < 0)
+            {
+                InstantlyFaceLeftStick();
+                HSpeed = PlayerConstants.HSPEED_MIN;
+                _lastSkidStartTime = Time.time;
+            }
+        }
+
         private void ButtonControls()
         {
             if (JumpPressedRecently())
             {
                 if (StoppedRollingRecently())
                     StartRollJump();
+                else if (IsSkidding())
+                    ChangeState(_sm.Diving);   // TODO: do a side-flip
                 else
                     StartGroundJump();
             }
@@ -123,6 +147,11 @@ public partial class PlayerStateMachine
         private bool StoppedRollingRecently()
         {
             return (Time.time - PlayerConstants.COYOTE_TIME < _sm._lastRollStopTime);
+        }
+
+        private bool IsSkidding()
+        {
+            return (Time.time - PlayerConstants.SKID_DURATION < _lastSkidStartTime);
         }
     }
 }

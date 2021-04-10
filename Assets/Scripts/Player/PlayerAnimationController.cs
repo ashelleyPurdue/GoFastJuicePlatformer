@@ -17,6 +17,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     private string _currentState;
     private const string PLAYER_FALL = "PlayerFall";
+    private const string PLAYER_SKID = "PlayerSkid";
     private const string PLAYER_WALL_SLIDE = "PlayerWallSlide";
     private const string PLAYER_IDLE = "PlayerIdle";
     private const string PLAYER_RUN = "PlayerRun";
@@ -55,6 +56,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         _animator.SetFloat("RunSpeed", speedPercent);
         _animator.SetFloat("VSpeed", _motor.RelativeVSpeed);
+        _animator.SetFloat("SkidSpeedMult", 1f / PlayerConstants.SKID_DURATION);
     }
 
     private void NaturalStateTransitions()
@@ -89,6 +91,11 @@ public class PlayerAnimationController : MonoBehaviour
                     SetState(PLAYER_RUN, 0.25f);
                 else
                     SetState(PLAYER_IDLE, 0.25f); 
+                break;
+            }
+            case PlayerAnimationHint.Skidding:
+            {
+                SetState(PLAYER_SKID, 0);
                 break;
             }
             case PlayerAnimationHint.FreeFall:
