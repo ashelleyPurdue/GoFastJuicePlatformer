@@ -159,7 +159,26 @@ public partial class PlayerStateMachine
             ChangeState(_sm.Walking);
             _sm.StartedJumping?.Invoke();
         }
-    
+
+        protected void StartSideFlipJump()
+        {
+            // DEBUG: Record debug stats
+            _debugJumpStartY = _motor.transform.position.y;
+            _debugJumpMaxY = _motor.transform.position.y;
+
+            // TODO: Use separate constants for this.
+            _motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED * 1.25f;
+            HSpeed = PlayerConstants.HSPEED_MAX_GROUND;
+            SyncWalkVelocityToHSpeed();
+
+            // Book keeping
+            // NOTE: A side flip never acts as a chained jump, but it still adds
+            // to the chain jump count.
+            _chainedJumpCount++;
+            _jumpReleased = false;
+            _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
+            _sm.StartedSideFlipping?.Invoke();
+        }
 
         protected void SyncWalkVelocityToHSpeed()
         {

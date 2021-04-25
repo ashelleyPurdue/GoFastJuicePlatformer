@@ -133,7 +133,7 @@ public partial class PlayerStateMachine
                 if (StoppedRollingRecently())
                     StartRollJump();
                 else if (IsSkidding())
-                    ChangeState(_sm.Diving);   // TODO: do a side-flip
+                    StartSideFlipJump();
                 else
                     StartGroundJump();
             }

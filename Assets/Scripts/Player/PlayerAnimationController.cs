@@ -24,6 +24,7 @@ public class PlayerAnimationController : MonoBehaviour
     private const string PLAYER_LEDGE_GRAB = "PlayerLedgeGrab";
     private const string PLAYER_JUMP_0 = "PlayerJump_0";
     private const string PLAYER_JUMP_1 = "PlayerJump_1";
+    private const string PLAYER_SIDE_FLIP = "PlayerSideFlip";
     private const string PLAYER_ROLL = "PlayerRoll";
     private const string PLAYER_DIVE = "PlayerDive";
     private const string PLAYER_BONK = "PlayerBonk";
@@ -40,6 +41,7 @@ public class PlayerAnimationController : MonoBehaviour
         _stateMachine.StartedDiving += OnStartedDiving;
         _stateMachine.GrabbedLedge += OnGrabbedLedge;
         _stateMachine.Bonked += OnBonked;
+        _stateMachine.StartedSideFlipping += OnStartedSideFlipping;
     }
 
     
@@ -113,6 +115,11 @@ public class PlayerAnimationController : MonoBehaviour
             ? PLAYER_JUMP_0
             : PLAYER_JUMP_1;
         ForceSetState(state);
+    }
+
+    private void OnStartedSideFlipping()
+    {
+        ForceSetState(PLAYER_SIDE_FLIP, 0.1f);
     }
 
     private void OnStartedDiving()

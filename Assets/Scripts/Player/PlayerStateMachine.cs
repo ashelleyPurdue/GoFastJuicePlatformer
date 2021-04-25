@@ -18,6 +18,7 @@ public partial class PlayerStateMachine : MonoBehaviour
 
     // Events
     public event Action StartedJumping;
+    public event Action StartedSideFlipping;
     public event Action StartedDiving;
     public event Action GrabbedLedge;
     public event Action Bonked;
