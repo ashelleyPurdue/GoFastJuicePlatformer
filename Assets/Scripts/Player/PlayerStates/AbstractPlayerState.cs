@@ -58,8 +58,6 @@ public partial class PlayerStateMachine
             _motor = motor;
         }
 
-        public abstract PlayerAnimationHint GetAnimationHint();
-
         public virtual void ResetState() {}
 
         public virtual void OnStateEnter() {}
@@ -88,7 +86,8 @@ public partial class PlayerStateMachine
                 HSpeed = _sm._storedAirHSpeed;
 
             // Jump heigher and get a speed boost every time they do 2 chained jumps
-            if (_chainedJumpCount % 2 == 1)
+            bool isChainedJump = _chainedJumpCount % 2 == 1;
+            if (isChainedJump)
             {
                 _motor.RelativeVSpeed = PlayerConstants.CHAIN_JUMP_VSPEED;
                 HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
@@ -100,7 +99,12 @@ public partial class PlayerStateMachine
             _chainedJumpCount++;
             _jumpReleased = false;
             _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
-            _sm.StartedJumping?.Invoke();
+
+            // Trigger animation
+            string anim = isChainedJump
+                ? PlayerAnims.CHAINED_JUMP
+                : PlayerAnims.STANDARD_JUMP;
+            _sm._anim.Set(anim);
         }
         protected void StartWallJump()
         {
@@ -134,7 +138,9 @@ public partial class PlayerStateMachine
                                     // be a chained jump.
             _jumpReleased = false;
             ChangeState(_sm.WallJumping);
-            _sm.StartedJumping?.Invoke();
+
+            // Trigger animation
+            _sm._anim.Set(PlayerAnims.STANDARD_JUMP);
         }
 
         protected void StartRollJump()
@@ -157,7 +163,9 @@ public partial class PlayerStateMachine
             _jumpReleased = false;
             _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
             ChangeState(_sm.Walking);
-            _sm.StartedJumping?.Invoke();
+            
+            // Trigger animation
+            _sm._anim.Set(PlayerAnims.STANDARD_JUMP);
         }
 
         protected void StartSideFlipJump()
@@ -177,7 +185,9 @@ public partial class PlayerStateMachine
             _chainedJumpCount++;
             _jumpReleased = false;
             _jumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
-            _sm.StartedSideFlipping?.Invoke();
+            
+            // Trigger animation
+            _sm._anim.Set(PlayerAnims.SIDE_FLIP);
         }
 
         protected void SyncWalkVelocityToHSpeed()

@@ -9,8 +9,6 @@ public partial class PlayerStateMachine
         public WallSlidingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.WallSliding;
-
         public override void EarlyFixedUpdate()
         {
             bool keepWallSliding = 

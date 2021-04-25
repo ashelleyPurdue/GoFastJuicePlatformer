@@ -11,8 +11,6 @@ public partial class PlayerStateMachine
         public GrabbingLedgeState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.LedgeGrabbing;
-
         public override void ResetState()
         {
             _timer = 0;
@@ -20,8 +18,8 @@ public partial class PlayerStateMachine
 
         public override void OnStateEnter()
         {
+            _sm._anim.Set(PlayerAnims.LEDGE_GRAB);
             _timer = PlayerConstants.LEDGE_GRAB_DURATION;
-            _sm.GrabbedLedge?.Invoke();
         }
 
         public override void EarlyFixedUpdate()

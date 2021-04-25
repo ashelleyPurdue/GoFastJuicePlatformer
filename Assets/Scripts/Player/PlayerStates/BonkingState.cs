@@ -12,8 +12,6 @@ public partial class PlayerStateMachine
         public BonkingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.Bonking;
-
         public override void ResetState()
         {
             _timer = 0;
@@ -22,6 +20,8 @@ public partial class PlayerStateMachine
 
         public override void OnStateEnter()
         {
+            _sm._anim.Set(PlayerAnims.BONK);
+
             _motor.RelativeVSpeed = PlayerConstants.BONK_START_VSPEED;
             HSpeed = PlayerConstants.BONK_START_HSPEED;
             HAngleDeg = GetHAngleDegFromForward(-_motor.LastWallNormal);
@@ -29,8 +29,6 @@ public partial class PlayerStateMachine
 
             _timer = PlayerConstants.BONK_DURATION;
             _bounceCount = 0;
-
-            _sm.Bonked?.Invoke();
         }
 
         public override void EarlyFixedUpdate()

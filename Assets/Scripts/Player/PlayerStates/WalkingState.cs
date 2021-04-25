@@ -11,16 +11,14 @@ public partial class PlayerStateMachine
         public WalkingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint()
-        {
-            if (IsSkidding())
-                return PlayerAnimationHint.Skidding;
-            return PlayerAnimationHint.Walking;
-        }
-
         public override void ResetState()
         {
             _lastSkidStartTime = 0;
+        }
+
+        public override void OnStateExit()
+        {
+            _sm._anim.ForwardTiltAngleDeg = 0;
         }
 
         public override void EarlyFixedUpdate()
@@ -31,6 +29,8 @@ public partial class PlayerStateMachine
 
         public override void FixedUpdate()
         {
+            UpdateAnimation();
+
             // Start the chained jump timer once we land
             if (!_motor.WasGroundedLastFrame)
                 _sm._lastChainedJumpLandTime = Time.fixedTime;
@@ -46,6 +46,38 @@ public partial class PlayerStateMachine
             ButtonControls();
             
             SyncWalkVelocityToHSpeed();
+        }
+
+        private void UpdateAnimation()
+        {
+            // Tilt depending on how fast we're moving
+            float speedPercent = _sm.HSpeed / PlayerConstants.HSPEED_MAX_GROUND;
+            _sm._anim.ForwardTiltAngleDeg = Mathf.Pow(speedPercent, 3) * 20;
+
+            // Choose the right animation
+            if (IsSkidding())
+            {
+                _sm._anim.Set(
+                    PlayerAnims.SKID,
+                    transitionDuration: 0.1f,
+                    speed: 1f / PlayerConstants.SKID_DURATION
+                );
+            }
+            else if (Mathf.Abs(HSpeed) > 0)
+            {
+                _sm._anim.Set(
+                    PlayerAnims.RUN,
+                    transitionDuration: 0.1f,
+                    speed: (HSpeed / PlayerConstants.HSPEED_MAX_GROUND)
+                );
+            }
+            else
+            {
+                _sm._anim.Set(
+                    PlayerAnims.IDLE,
+                    transitionDuration: 0.1f
+                );
+            }
         }
 
         private void Physics()

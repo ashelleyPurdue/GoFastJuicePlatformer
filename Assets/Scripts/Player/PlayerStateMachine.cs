@@ -8,20 +8,15 @@ using UnityEngine.Events;
 [RequireComponent(typeof(PlayerRollAttackHitbox))]
 [RequireComponent(typeof(PlayerDiveAttackHitbox))]
 [RequireComponent(typeof(PlayerMotor))]
+[RequireComponent(typeof(IPlayerAnimationManager))]
 public partial class PlayerStateMachine : MonoBehaviour
 {
     // Required components
     private IPlayerInput _input;
+    private IPlayerAnimationManager _anim;
     private PlayerRollAttackHitbox _rollHitbox;
     private PlayerDiveAttackHitbox _diveHitbox;
     private PlayerMotor _motor;
-
-    // Events
-    public event Action StartedJumping;
-    public event Action StartedSideFlipping;
-    public event Action StartedDiving;
-    public event Action GrabbedLedge;
-    public event Action Bonked;
 
     // Accessors
     public Vector3 Forward => AngleForward(HAngleDeg);
@@ -34,8 +29,6 @@ public partial class PlayerStateMachine : MonoBehaviour
     private float _storedAirHSpeed; // Temporarily stores your air HSpeed after
                                     // landing, so it can be restored if you jump
                                     // again shortly after landing.
-
-    public PlayerAnimationHint CurrentAnimationHint => _currentState.GetAnimationHint();
 
     public AbstractPlayerState Walking {get; private set;}
     public AbstractPlayerState FreeFall {get; private set;}
@@ -69,6 +62,7 @@ public partial class PlayerStateMachine : MonoBehaviour
     public void Awake()
     {
         _input = GetComponent<IPlayerInput>();
+        _anim = GetComponent<IPlayerAnimationManager>();
         _rollHitbox = GetComponent<PlayerRollAttackHitbox>();
         _diveHitbox = GetComponent<PlayerDiveAttackHitbox>();
         _motor = GetComponent<PlayerMotor>();
@@ -133,6 +127,9 @@ public partial class PlayerStateMachine : MonoBehaviour
         if (_input.AttackPressed)
             _lastAttackButtonPressTime = Time.time;
 
+        // Let the animator know our rotation
+        _anim.HAngleDeg = HAngleDeg;
+
         // DEV CHEAT: slow down time with a button
         DebugDisplay.PrintLine("CheatSlowTime: " + Input.GetAxisRaw("CheatSlowTime"));
         Time.timeScale = _input.CheatSlowTimeHeld
@@ -170,7 +167,6 @@ public partial class PlayerStateMachine : MonoBehaviour
         DebugDisplay.PrintLine("Chained jump count: " + _chainedJumpCount);
         DebugDisplay.PrintLine("In chained jump window: " + ChainedJumpLandedRecently());
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
-        DebugDisplay.PrintLine("Current state: " + CurrentAnimationHint);
     }
 
     private void ChangeState(AbstractPlayerState newState)

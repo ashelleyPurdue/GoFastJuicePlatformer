@@ -9,17 +9,21 @@ public partial class PlayerStateMachine
         public DivingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.Diving;
-
         public override void OnStateEnter()
         {
+            _sm._anim.Set(PlayerAnims.DIVE, 0.1f);
+
             InstantlyFaceLeftStick();
 
             HSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
             _motor.RelativeVSpeed = PlayerConstants.DIVE_JUMP_VSPEED;
 
             _sm._chainedJumpCount = 0;
-            _sm.StartedDiving?.Invoke();
+        }
+
+        public override void OnStateExit()
+        {
+            _sm._anim.ForwardTiltAngleDeg = 0;
         }
 
         public override void EarlyFixedUpdate()
@@ -32,8 +36,15 @@ public partial class PlayerStateMachine
             if (ShouldBonkAgainstWall())
                 ChangeState(_sm.Bonking);
         }
+
         public override void FixedUpdate()
         {
+            // Point the model in the direction we're moving
+            _sm._anim.ForwardTiltAngleDeg =
+                Quaternion.LookRotation(_sm._motor.TotalVelocity.normalized)
+                .eulerAngles
+                .x;
+
             // Damage things
             _sm._diveHitbox.ApplyDamage();
 

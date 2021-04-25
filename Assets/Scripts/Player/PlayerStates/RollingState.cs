@@ -11,8 +11,6 @@ public partial class PlayerStateMachine
         public RollingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.Rolling;
-
         public override void ResetState()
         {
             _timer = 0;
@@ -20,6 +18,8 @@ public partial class PlayerStateMachine
 
         public override void OnStateEnter()
         {
+            _sm._anim.Set(PlayerAnims.ROLL);
+
             _motor.RelativeVSpeed = 0;
             HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
             InstantlyFaceLeftStick();

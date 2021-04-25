@@ -9,8 +9,6 @@ public partial class PlayerStateMachine
         public FreeFallState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
-        public override PlayerAnimationHint GetAnimationHint() => PlayerAnimationHint.FreeFall;
-
         public override void ResetState() {}
 
         public override void EarlyFixedUpdate()
@@ -66,6 +64,7 @@ public partial class PlayerStateMachine
             Physics();
             StrafingControls();
             ButtonControls();
+            UpdateAnimation();
         }
         
         protected void Physics()
@@ -187,6 +186,13 @@ public partial class PlayerStateMachine
         private bool WasGroundedRecently()
         {
             return (Time.time - PlayerConstants.COYOTE_TIME < _motor.LastGroundedTime);
+        }
+
+        private void UpdateAnimation()
+        {
+            // Switch to the falling animation if we're falling
+            if (_sm._motor.RelativeVSpeed < 0)
+                _sm._anim.Set(PlayerAnims.FALL, 0.25f);
         }
     }
 }
