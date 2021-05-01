@@ -19,7 +19,7 @@ public partial class PlayerStateMachine
             bool keepWallSliding = 
                 !_motor.IsGrounded &&
                 _motor.IsTouchingWall &&
-                Forward.ComponentAlong(-_motor.LastWallNormal) > 0 &&
+                -Forward.ComponentAlong(-_motor.LastWallNormal) > 0 &&
                 _motor.RelativeVSpeed < 0;
 
             if (keepWallSliding)
@@ -32,6 +32,7 @@ public partial class PlayerStateMachine
 
         public override void FixedUpdate()
         {
+            FaceAwayFromWall();
             Physics();
             Controls();
         }

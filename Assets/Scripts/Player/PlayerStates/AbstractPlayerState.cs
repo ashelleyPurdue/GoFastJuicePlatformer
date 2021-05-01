@@ -114,14 +114,11 @@ public partial class PlayerStateMachine
 
             _motor.RelativeVSpeed = PlayerConstants.WALL_JUMP_VSPEED;
 
-            // Reflect off of the wall at the angle we approached it at
-            var kickDir = Forward.ReflectOffOfSurface(_motor.LastWallNormal);
-            HAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(kickDir.z, kickDir.x);
-
             // Kick off of the wall at a speed that's *at least* WALL_JUMP_MIN_HSPEED.
             // If we were already going faster than that before touching the wall,
             // then use *that* speed instead.  This way, you'll never lose speed by
             // wall jumping.
+            FaceAwayFromWall();
             HSpeed = Mathf.Max(
                 PlayerConstants.WALL_JUMP_MIN_HSPEED,
                 HSpeed
@@ -213,6 +210,15 @@ public partial class PlayerStateMachine
         {
             if (!IsLeftStickNeutral())
                 HAngleDeg = GetHAngleDegInput();
+        }
+
+        /// <summary>
+        /// Faces away from the wall that we last touched.
+        /// Our new forward will be equal to that wall's normal.
+        /// </summary>
+        protected void FaceAwayFromWall()
+        {
+            _sm.HAngleDeg = GetHAngleDegFromForward(_sm._motor.LastWallNormal.Flattened());
         }
 
         /// <summary>
