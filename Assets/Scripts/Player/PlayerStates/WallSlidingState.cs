@@ -9,6 +9,11 @@ public partial class PlayerStateMachine
         public WallSlidingState(PlayerStateMachine shared, PlayerMotor motor)
             : base(shared, motor) {}
 
+        public override void OnStateEnter()
+        {
+            _sm._anim.Set(PlayerAnims.WALL_SLIDE, 0.1f);
+        }
+
         public override void EarlyFixedUpdate()
         {
             bool keepWallSliding = 
