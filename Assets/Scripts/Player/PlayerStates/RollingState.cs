@@ -2,14 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerStateMachine
+namespace PlayerStates
 {
-    private class RollingState : AbstractPlayerState
+    public class RollingState : AbstractPlayerState
     {
         private float _timer;
 
-        public RollingState(PlayerStateMachine shared, PlayerMotor motor)
-            : base(shared, motor) {}
+        public RollingState(PlayerStateMachine shared)
+            : base(shared) {}
 
         public override void ResetState()
         {
@@ -18,12 +18,12 @@ public partial class PlayerStateMachine
 
         public override void OnStateEnter()
         {
-            _sm._anim.Set(PlayerAnims.ROLL);
+            _player.Anim.Set(PlayerAnims.ROLL);
 
-            _motor.RelativeVSpeed = 0;
-            HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
-            InstantlyFaceLeftStick();
-            SyncWalkVelocityToHSpeed();
+            _player.Motor.RelativeVSpeed = 0;
+            _player.HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
+            _player.InstantlyFaceLeftStick();
+            _player.SyncWalkVelocityToHSpeed();
 
             _timer = PlayerConstants.ROLL_TIME;
         }
@@ -32,7 +32,7 @@ public partial class PlayerStateMachine
         {
             // Start the cooldown, so the player can't immediately
             // roll again.
-            _sm._rollCooldown = PlayerConstants.ROLL_COOLDOWN;
+            _player.RollCooldown = PlayerConstants.ROLL_COOLDOWN;
         }
 
         public override void EarlyFixedUpdate()
@@ -40,49 +40,49 @@ public partial class PlayerStateMachine
             // Stop rolling after the timer expires
             if (_timer <= 0)
             {
-                _sm._lastRollStopTime = Time.time;
+                _player.LastRollStopTime = Time.time;
 
                 // Slow back down, so the player doesn't have ridiculous speed when
                 // the roll stops
-                HSpeed = 0;
-                _motor.RelativeFlatVelocity = Vector3.zero;
+                _player.HSpeed = 0;
+                _player.Motor.RelativeFlatVelocity = Vector3.zero;
 
                 // Transition to the correct state, based on if we're in the air
                 // or not.
-                if (_motor.IsGrounded)
-                    ChangeState(_sm.Walking);
+                if (_player.Motor.IsGrounded)
+                    _player.ChangeState(_player.Walking);
                 else
-                    ChangeState(_sm.FreeFall);
+                    _player.ChangeState(_player.FreeFall);
             }
 
             // Start bonking if we're moving into a wall.
-            if (ShouldBonkAgainstWall())
+            if (_player.ShouldBonkAgainstWall())
             {
-                ChangeState(_sm.Bonking);
+                _player.ChangeState(_player.Bonking);
                 return;
             }
         }
         public override void FixedUpdate()
         {
             // Damage things
-            _sm._rollHitbox.ApplyDamage();
+            _player.RollHitbox.ApplyDamage();
 
             // Let the player turn a little bit
-            if (!IsLeftStickNeutral())
+            if (!_player.IsLeftStickNeutral())
             {
-                HAngleDeg = Mathf.MoveTowardsAngle(
-                    HAngleDeg,
-                    GetHAngleDegInput(),
+                _player.HAngleDeg = Mathf.MoveTowardsAngle(
+                    _player.HAngleDeg,
+                    _player.GetHAngleDegInput(),
                     PlayerConstants.ROLL_ROT_SPEED_DEG * Time.deltaTime
                 );
             }
 
-            SyncWalkVelocityToHSpeed();
+            _player.SyncWalkVelocityToHSpeed();
 
             // Let the player jump out of a roll.
-            if (JumpPressedRecently())
+            if (_player.JumpPressedRecently())
             {
-                StartRollJump();
+                _player.StartRollJump();
                 return;
             }
 

@@ -2,14 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerStateMachine
+namespace PlayerStates
 {
-    private class GrabbingLedgeState : AbstractPlayerState
+    public class GrabbingLedgeState : AbstractPlayerState
     {
         private float _timer;
 
-        public GrabbingLedgeState(PlayerStateMachine shared, PlayerMotor motor)
-            : base(shared, motor) {}
+        public GrabbingLedgeState(PlayerStateMachine shared)
+            : base(shared) {}
 
         public override void ResetState()
         {
@@ -18,21 +18,21 @@ public partial class PlayerStateMachine
 
         public override void OnStateEnter()
         {
-            _sm._anim.Set(PlayerAnims.LEDGE_GRAB);
+            _player.Anim.Set(PlayerAnims.LEDGE_GRAB);
             _timer = PlayerConstants.LEDGE_GRAB_DURATION;
         }
 
         public override void EarlyFixedUpdate()
         {
             if (_timer <= 0)
-                ChangeState(_sm.FreeFall);
+                _player.ChangeState(_player.FreeFall);
         }
         
         public override void FixedUpdate()
         {
-            _motor.RelativeVSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
-            HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
-            SyncWalkVelocityToHSpeed();
+            _player.Motor.RelativeVSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
+            _player.HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
+            _player.SyncWalkVelocityToHSpeed();
 
             _timer -= Time.deltaTime;
         }

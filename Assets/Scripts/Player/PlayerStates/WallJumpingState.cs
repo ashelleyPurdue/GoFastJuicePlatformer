@@ -2,14 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class PlayerStateMachine
+namespace PlayerStates
 {
-    private class WallJumpingState : FreeFallState
+    public class WallJumpingState : FreeFallState
     {
         private Vector3 _lastWallJumpPos;
 
-        public WallJumpingState(PlayerStateMachine shared, PlayerMotor motor)
-            : base(shared, motor) {}
+        public WallJumpingState(PlayerStateMachine shared)
+            : base(shared) {}
 
         public override void ResetState()
         {
@@ -20,7 +20,7 @@ public partial class PlayerStateMachine
         public override void OnStateEnter()
         {
             base.OnStateEnter();
-            _lastWallJumpPos = _motor.transform.position;
+            _lastWallJumpPos = _player.Motor.transform.position;
         }
 
         public override void EarlyFixedUpdate()
@@ -29,10 +29,10 @@ public partial class PlayerStateMachine
             // FreeFalling so air strafing can be re-enabled.
             float distFromWall = Vector3.Distance(
                 _lastWallJumpPos.Flattened(),
-                _motor.transform.position.Flattened()
+                _player.Motor.transform.position.Flattened()
             );
             if (distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST)
-                ChangeState(_sm.FreeFall);
+                _player.ChangeState(_player.FreeFall);
 
             // All of the usual free fall transitions apply too.
             base.EarlyFixedUpdate();
@@ -41,8 +41,8 @@ public partial class PlayerStateMachine
         public override void FixedUpdate()
         {
             // DEBUG: Record stats
-            if (_motor.transform.position.y > _debugJumpMaxY)
-                _debugJumpMaxY = _motor.transform.position.y;
+            if (_player.Motor.transform.position.y > _player.DebugJumpMaxYFooBar)
+                _player.DebugJumpMaxYFooBar = _player.Motor.transform.position.y;
 
             base.Physics();
             base.ButtonControls();

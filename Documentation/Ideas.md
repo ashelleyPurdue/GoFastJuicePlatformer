@@ -43,9 +43,5 @@ proper documentation written.
 * Less disgusting state machine
     * Rename the concept of "states" to something else("actions"?) because "state"
         is overloaded.
-    * Move all the "helper" methods out of `AbstractPlayerState` and into
-        `PlayerStateMachine`
-    * Make all the state variables(HSpeed, etc.) public and get rid of the partial
-        class
     * Once all "helpers" and "accessors" are moved, make `AbstractPlayerState`
         into an interface.
