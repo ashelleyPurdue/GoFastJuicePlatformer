@@ -135,10 +135,9 @@ namespace PlayerStates
             // time after jumping, in case they pressed the jump button while
             // they were still moving the stick.
             // After that time is up, air strafing controls kick in.
-            if (_player.JumpRedirectTimer >= 0)
+            if (_player.IsInJumpRedirectTimeWindow())
             {
                 _player.SyncWalkVelocityToHSpeed();
-                _player.JumpRedirectTimer -= Time.deltaTime;
                 return;
             }
 

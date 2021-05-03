@@ -170,7 +170,7 @@ namespace PlayerStates
                     _player.StartGroundJump();
             }
 
-            if (_player.AttackPressedRecently() && _player.RollCooldown <= 0)
+            if (_player.AttackPressedRecently() && !_player.IsRollOnCooldown())
             {
                 _player.ChangeState(_player.Rolling);
             }

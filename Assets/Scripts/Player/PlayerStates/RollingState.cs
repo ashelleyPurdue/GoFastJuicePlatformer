@@ -6,15 +6,10 @@ namespace PlayerStates
 {
     public class RollingState : AbstractPlayerState
     {
-        private float _timer;
+        private float _lastRollStartTime;
 
         public RollingState(PlayerStateMachine shared)
             : base(shared) {}
-
-        public override void ResetState()
-        {
-            _timer = 0;
-        }
 
         public override void OnStateEnter()
         {
@@ -24,24 +19,21 @@ namespace PlayerStates
             _player.HSpeed = PlayerConstants.ROLL_DISTANCE / PlayerConstants.ROLL_TIME;
             _player.InstantlyFaceLeftStick();
             _player.SyncWalkVelocityToHSpeed();
-
-            _timer = PlayerConstants.ROLL_TIME;
+            
+            _lastRollStartTime = Time.time;
         }
 
         public override void OnStateExit()
         {
-            // Start the cooldown, so the player can't immediately
-            // roll again.
-            _player.RollCooldown = PlayerConstants.ROLL_COOLDOWN;
+            // Start the roll cooldown
+            _player.LastRollStopTime = Time.time;
         }
 
         public override void EarlyFixedUpdate()
         {
             // Stop rolling after the timer expires
-            if (_timer <= 0)
+            if (IsRollTimerExpired())
             {
-                _player.LastRollStopTime = Time.time;
-
                 // Slow back down, so the player doesn't have ridiculous speed when
                 // the roll stops
                 _player.HSpeed = 0;
@@ -85,8 +77,12 @@ namespace PlayerStates
                 _player.StartRollJump();
                 return;
             }
-
-            _timer -= Time.deltaTime;
+        }
+    
+        private bool IsRollTimerExpired()
+        {
+            float rollEndTime = _lastRollStartTime + PlayerConstants.ROLL_TIME;
+            return (Time.time > rollEndTime);
         }
     }
 

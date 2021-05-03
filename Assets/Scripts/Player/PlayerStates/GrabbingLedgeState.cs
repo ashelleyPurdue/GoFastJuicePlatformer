@@ -6,25 +6,20 @@ namespace PlayerStates
 {
     public class GrabbingLedgeState : AbstractPlayerState
     {
-        private float _timer;
+        private float _lastLedgeGrabStartTime;
 
         public GrabbingLedgeState(PlayerStateMachine shared)
             : base(shared) {}
 
-        public override void ResetState()
-        {
-            _timer = 0;
-        }
-
         public override void OnStateEnter()
         {
             _player.Anim.Set(PlayerAnims.LEDGE_GRAB);
-            _timer = PlayerConstants.LEDGE_GRAB_DURATION;
+            _lastLedgeGrabStartTime = Time.time;
         }
 
         public override void EarlyFixedUpdate()
         {
-            if (_timer <= 0)
+            if (IsLedgeGrabTimeExpired())
                 _player.ChangeState(_player.FreeFall);
         }
         
@@ -33,8 +28,11 @@ namespace PlayerStates
             _player.Motor.RelativeVSpeed = PlayerConstants.LEDGE_GRAB_VSPEED;
             _player.HSpeed = PlayerConstants.LEDGE_GRAB_HSPEED;
             _player.SyncWalkVelocityToHSpeed();
+        }
 
-            _timer -= Time.deltaTime;
+        private bool IsLedgeGrabTimeExpired()
+        {
+            return (Time.time >= _lastLedgeGrabStartTime + PlayerConstants.LEDGE_GRAB_DURATION);
         }
     }
 

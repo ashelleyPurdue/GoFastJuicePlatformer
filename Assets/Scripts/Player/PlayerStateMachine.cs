@@ -48,10 +48,8 @@ public class PlayerStateMachine : MonoBehaviour
     public float LastChainedJumpLandTime = 0;
     public int ChainedJumpCount = 0;
 
-    public float JumpRedirectTimer = 0;
-    
-    public float RollCooldown = 0;
     public float LastRollStopTime = 0;
+    public float LastJumpStartTime = 0;
 
     // Debugging metrics
     public float DebugJumpStartYFooBar;
@@ -140,8 +138,6 @@ public class PlayerStateMachine : MonoBehaviour
         DebugDisplay.PrintLine($"Rise: {PlayerConstants.JUMP_RISE_GRAVITY}");
         DebugDisplay.PrintLine($"Fall: {PlayerConstants.FREE_FALL_GRAVITY}");
 
-        AdvanceCooldowns();
-
         // Many states use collision status(eg: are we touching the ground?)
         // to decide if they should change to a different state.
         // We need to update this information before 
@@ -175,16 +171,6 @@ public class PlayerStateMachine : MonoBehaviour
 
         oldState?.OnStateExit();
         newState.OnStateEnter();
-    }
-
-    /// <summary>
-    /// Certain actions, like rolling, have a cooldown period.
-    /// The timer for each cooldown needs to *always* be ticking down, independent
-    /// of what state we're in.  Hence, we have a separate method for it.
-    /// </summary>
-    private void AdvanceCooldowns()
-    {
-        RollCooldown -= Time.deltaTime;
     }
 
     public bool ChainedJumpLandedRecently()
@@ -228,7 +214,7 @@ public class PlayerStateMachine : MonoBehaviour
         // Book keeping
         ChainedJumpCount++;
         JumpReleased = false;
-        JumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
+        LastJumpStartTime = Time.time;
 
         // Trigger animation
         string anim = isChainedJump
@@ -288,7 +274,7 @@ public class PlayerStateMachine : MonoBehaviour
 
         ChainedJumpCount = 0;
         JumpReleased = false;
-        JumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
+        LastJumpStartTime = Time.time;
         ChangeState(Walking);
         
         // Trigger animation
@@ -311,7 +297,7 @@ public class PlayerStateMachine : MonoBehaviour
         // to the chain jump count.
         ChainedJumpCount++;
         JumpReleased = false;
-        JumpRedirectTimer = PlayerConstants.JUMP_REDIRECT_TIME;
+        LastJumpStartTime = Time.time;
         
         // Trigger animation
         Anim.Set(PlayerAnims.SIDE_FLIP);
@@ -407,6 +393,16 @@ public class PlayerStateMachine : MonoBehaviour
     public bool AttackPressedRecently()
     {
         return (Time.time - Time.fixedDeltaTime < LastAttackButtonPressTime);
+    }
+
+    public bool IsRollOnCooldown()
+    {
+        return (Time.time - PlayerConstants.ROLL_COOLDOWN < LastRollStopTime);
+    }
+
+    public bool IsInJumpRedirectTimeWindow()
+    {
+        return (Time.time - PlayerConstants.JUMP_REDIRECT_TIME < LastJumpStartTime);
     }
 
     public bool ShouldBonkAgainstWall()
