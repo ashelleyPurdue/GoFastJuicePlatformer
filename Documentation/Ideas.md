@@ -43,5 +43,3 @@ proper documentation written.
 * Less disgusting state machine
     * Rename the concept of "states" to something else("actions"?) because "state"
         is overloaded.
-    * Once all "helpers" and "accessors" are moved, make `AbstractPlayerState`
-        into an interface.
