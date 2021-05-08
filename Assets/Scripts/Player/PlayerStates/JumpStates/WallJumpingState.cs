@@ -6,6 +6,8 @@ namespace PlayerStates
 {
     public class WallJumpingState : StandardJumpingState
     {
+        private bool _enableAirStrafing = false;
+
         public WallJumpingState(PlayerStateMachine shared)
             : base(shared) {}
 
@@ -34,7 +36,13 @@ namespace PlayerStates
             _player.ChainedJumpCount = 1; // HACK: The next normal jump after
                                           // landing will always be a "second"
                                           // chained jump
+
+            _enableAirStrafing = false;   // We will re-enable air-strafing after
+                                          // travelling a minimum distance away
+                                          // from the wall
             
+            _player.LastJumpStartTime = 0;  // HACK: Disable jump redirection
+                                            // entirely.
             
             // Trigger animation
             _player.Anim.Set(PlayerAnims.STANDARD_JUMP);
@@ -44,15 +52,19 @@ namespace PlayerStates
         {
             _player.DebugRecordWhileJumping();
 
+            if (ShouldEnableAirStrafing())
+                _enableAirStrafing = true;
+
             base.Physics();
 
-            if (IsAirStrafingEnabled())
+            if (_enableAirStrafing)
+            {
                 _player.AirStrafingControls();
-            
+            }
             base.ButtonControls();
         }
 
-        private bool IsAirStrafingEnabled()
+        private bool ShouldEnableAirStrafing()
         {
             float distFromWall = Vector3.Distance(
                 _player.LastJumpStartPos.Flattened(),
