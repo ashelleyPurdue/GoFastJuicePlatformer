@@ -189,10 +189,10 @@ public class PlayerStateMachine : MonoBehaviour
     {
         JumpReleased = false;
         LastJumpStartTime = Time.time;
-        LastJumpStartPos = Motor.transform.position;
+        LastJumpStartPos = Motor.Position;
         ChainedJumpCount++;
 
-        _debugJumpMaxY = Motor.transform.position.y;
+        _debugJumpMaxY = Motor.Position.y;
     }
 
     public bool ChainedJumpLandedRecently()
@@ -310,8 +310,8 @@ public class PlayerStateMachine : MonoBehaviour
 
     public void DebugRecordWhileJumping()
     {
-        if (Motor.transform.position.y > _debugJumpMaxY)
-            _debugJumpMaxY = Motor.transform.position.y;
+        if (Motor.Position.y > _debugJumpMaxY)
+            _debugJumpMaxY = Motor.Position.y;
     }
 
     /// <summary>

@@ -57,6 +57,11 @@ public class PlayerMotor : MonoBehaviour
     }
 
     /// <summary>
+    /// The player's current position, before interpolation
+    /// </summary>
+    public Vector3 Position => _internalPosition;
+
+    /// <summary>
     /// Total velocity, after adding in velocity from moving platforms
     /// </summary>
     public Vector3 TotalVelocity => _ground.GroundVelocity + RelativeVelocity;

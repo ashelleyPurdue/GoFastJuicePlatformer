@@ -56,7 +56,7 @@ namespace PlayerStates
         {
             float distFromWall = Vector3.Distance(
                 _player.LastJumpStartPos.Flattened(),
-                _player.Motor.transform.position.Flattened()
+                _player.Motor.Position.Flattened()
             );
 
             return distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST;
