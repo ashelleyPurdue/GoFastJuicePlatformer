@@ -11,13 +11,13 @@ public static class PlayerConstants
 
     // These constants will determine the initial jump velocity
     // and rising/falling gravity strength
-    public const float FIRST_JUMP_HEIGHT = 5;
-    public const float FIRST_JUMP_RISE_TIME = 0.404f;
-    public const float FIRST_JUMP_FALL_TIME = 0.328f;
+    public const float STANDARD_JUMP_MAX_HEIGHT = 5;
+    public const float STANDARD_JUMP_FULL_RISE_TIME = 0.404f;
+    public const float STANDARD_JUMP_FULL_FALL_TIME = 0.328f;
 
     // This constant will determine the initial jump velocity when doing
     // a chained jump.
-    public const float SECOND_JUMP_HEIGHT = 8;
+    public const float CHAINED_JUMP_MAX_HEIGHT = 8;
 
     public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
@@ -100,19 +100,19 @@ public static class PlayerConstants
     static PlayerConstants()
     {
         (STANDARD_JUMP_VSPEED, JUMP_RISE_GRAVITY) = AccelerationMath.InitialVelAndFrictionFor(
-            PlayerConstants.FIRST_JUMP_HEIGHT,
-            PlayerConstants.FIRST_JUMP_RISE_TIME,
+            PlayerConstants.STANDARD_JUMP_MAX_HEIGHT,
+            PlayerConstants.STANDARD_JUMP_FULL_RISE_TIME,
             PlayerConstants.FIXED_TIMESTEP
         );
 
         FREE_FALL_GRAVITY = AccelerationMath.AccelerationForDistanceOverTime(
-            PlayerConstants.FIRST_JUMP_HEIGHT,
-            PlayerConstants.FIRST_JUMP_FALL_TIME,
+            PlayerConstants.STANDARD_JUMP_MAX_HEIGHT,
+            PlayerConstants.STANDARD_JUMP_FULL_FALL_TIME,
             PlayerConstants.FIXED_TIMESTEP
         );
 
         CHAIN_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
-            PlayerConstants.SECOND_JUMP_HEIGHT,
+            PlayerConstants.CHAINED_JUMP_MAX_HEIGHT,
             PlayerConstants.JUMP_RISE_GRAVITY,
             PlayerConstants.FIXED_TIMESTEP
         );
