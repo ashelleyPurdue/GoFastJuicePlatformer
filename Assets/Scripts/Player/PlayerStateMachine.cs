@@ -24,6 +24,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     public AbstractPlayerState Walking {get; private set;}
     public AbstractPlayerState StandardJumping {get; private set;}
+    public AbstractPlayerState ChainedJumping {get; private set;}
     public AbstractPlayerState RollJumping {get; private set;}
     public AbstractPlayerState SideFlipJumping {get; private set;}
     public AbstractPlayerState FreeFall {get; private set;}
@@ -68,6 +69,7 @@ public class PlayerStateMachine : MonoBehaviour
 
         Walking = new WalkingState(this);
         StandardJumping = new StandardJumpingState(this);
+        ChainedJumping = new ChainedJumpingState(this);
         RollJumping = new RollJumpingState(this);
         SideFlipJumping = new SideFlipJumpingState(this);
         FreeFall = new FreeFallState(this);

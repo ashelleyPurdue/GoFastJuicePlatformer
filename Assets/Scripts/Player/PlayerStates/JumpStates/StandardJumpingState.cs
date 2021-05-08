@@ -10,23 +10,22 @@ namespace PlayerStates
 
         public override void OnStateEnter()
         {
-            _player.DebugRecordJumpStart();
+            // HACK: Chain jump instead
+            bool isChainedJump = _player.ChainedJumpCount % 2 == 1;
+            if (isChainedJump)
+            {
+                _player.ChangeState(_player.ChainedJumping);
+                return;
+            }
 
+            _player.DebugRecordJumpStart();
             _player.InstantlyFaceLeftStick();
 
             _player.Motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
 
-            // If this was a chained jump, restore their stored hspeed
+            // If we just recently landed, restore their stored hspeed
             if (_player.ChainedJumpLandedRecently())
                 _player.HSpeed = _player.StoredAirHSpeed;
-
-            // Jump heigher and get a speed boost every time they do 2 chained jumps
-            bool isChainedJump = _player.ChainedJumpCount % 2 == 1;
-            if (isChainedJump)
-            {
-                _player.Motor.RelativeVSpeed = PlayerConstants.CHAIN_JUMP_VSPEED;
-                _player.HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
-            }
 
             _player.SyncWalkVelocityToHSpeed();
 
@@ -36,10 +35,7 @@ namespace PlayerStates
             _player.LastJumpStartTime = Time.time;
 
             // Trigger animation
-            string anim = isChainedJump
-                ? PlayerAnims.CHAINED_JUMP
-                : PlayerAnims.STANDARD_JUMP;
-            _player.Anim.Set(anim);
+            _player.Anim.Set(PlayerAnims.STANDARD_JUMP);
         }
 
         public override void EarlyFixedUpdate()
