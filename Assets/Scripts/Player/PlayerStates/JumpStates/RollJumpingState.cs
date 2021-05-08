@@ -10,8 +10,6 @@ namespace PlayerStates
 
         public override void OnStateEnter()
         {
-            _player.DebugRecordJumpStart();
-
             _player.InstantlyFaceLeftStick();
 
             // Cap their HSpeed at something reasonable.
@@ -22,9 +20,9 @@ namespace PlayerStates
             _player.Motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
             _player.SyncWalkVelocityToHSpeed();
 
-            _player.ChainedJumpCount = 0;
-            _player.JumpReleased = false;
-            _player.LastJumpStartTime = Time.time;
+            _player.RecordJumpStarted();
+            _player.ChainedJumpCount = 0;   // HACK: Reset chained jump count.
+                                            // Why exactly?  I don't remember.
             
             // Trigger animation
             _player.Anim.Set(PlayerAnims.STANDARD_JUMP);

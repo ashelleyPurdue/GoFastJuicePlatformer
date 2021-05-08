@@ -181,6 +181,20 @@ public class PlayerStateMachine : MonoBehaviour
         newState.OnStateEnter();
     }
 
+    /// <summary>
+    /// Book keeping that needs to be done when a jump has started.
+    /// Call this in a jumping state's OnStateEntered() method.
+    /// </summary>
+    public void RecordJumpStarted()
+    {
+        _debugJumpStartY = Motor.transform.position.y;
+        _debugJumpMaxY = Motor.transform.position.y;
+
+        JumpReleased = false;
+        LastJumpStartTime = Time.time;
+        ChainedJumpCount++;
+    }
+
     public bool ChainedJumpLandedRecently()
     {
         return (Time.fixedTime - LastChainedJumpLandTime < PlayerConstants.CHAINED_JUMP_TIME_WINDOW);
@@ -292,12 +306,6 @@ public class PlayerStateMachine : MonoBehaviour
 
         // Keep HSpeed up-to-date, so it'll be correct when we land.
         HSpeed = Motor.RelativeFlatVelocity.ComponentAlong(Forward);
-    }
-
-    public void DebugRecordJumpStart()
-    {
-        _debugJumpStartY = Motor.transform.position.y;
-        _debugJumpMaxY = Motor.transform.position.y;
     }
 
     public void DebugRecordWhileJumping()

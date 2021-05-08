@@ -18,10 +18,8 @@ namespace PlayerStates
                 return;
             }
 
-            _player.DebugRecordJumpStart();
-            _player.InstantlyFaceLeftStick();
-
             _player.Motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
+            _player.InstantlyFaceLeftStick();
 
             // If we just recently landed, restore their stored hspeed
             if (_player.ChainedJumpLandedRecently())
@@ -30,9 +28,7 @@ namespace PlayerStates
             _player.SyncWalkVelocityToHSpeed();
 
             // Book keeping
-            _player.ChainedJumpCount++;
-            _player.JumpReleased = false;
-            _player.LastJumpStartTime = Time.time;
+            _player.RecordJumpStarted();
 
             // Trigger animation
             _player.Anim.Set(PlayerAnims.STANDARD_JUMP);

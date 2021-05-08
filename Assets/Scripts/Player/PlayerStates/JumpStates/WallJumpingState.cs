@@ -19,8 +19,6 @@ namespace PlayerStates
 
         public override void OnStateEnter()
         {
-            _player.DebugRecordJumpStart();
-
             _player.Motor.RelativeVSpeed = PlayerConstants.WALL_JUMP_VSPEED;
 
             // Kick off of the wall at a speed that's *at least* WALL_JUMP_MIN_HSPEED.
@@ -40,10 +38,12 @@ namespace PlayerStates
             _player.SyncWalkVelocityToHSpeed();
 
             // Book keeping
-            _player.ChainedJumpCount = 1;  // The next normal jump after landing will
-                                           // be a chained jump.
-            _player.JumpReleased = false;
-
+            _player.RecordJumpStarted();
+            _player.ChainedJumpCount = 1; // HACK: The next normal jump after
+                                          // landing will always be a "second"
+                                          // chained jump
+            
+            
             // Trigger animation
             _player.Anim.Set(PlayerAnims.STANDARD_JUMP);
 
