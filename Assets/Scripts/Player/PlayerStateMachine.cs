@@ -54,9 +54,9 @@ public class PlayerStateMachine : MonoBehaviour
 
     public float LastRollStopTime = 0;
     public float LastJumpStartTime = 0;
+    public Vector3 LastJumpStartPos;
 
     // Debugging metrics
-    private float _debugJumpStartY;
     private float _debugJumpMaxY;
 
     public void Awake()
@@ -168,7 +168,7 @@ public class PlayerStateMachine : MonoBehaviour
         DebugDisplay.PrintLine("HAngleDeg: " + HAngleDeg);
         DebugDisplay.PrintLine("Chained jump count: " + ChainedJumpCount);
         DebugDisplay.PrintLine("In chained jump window: " + ChainedJumpLandedRecently());
-        DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
+        DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - LastJumpStartPos.y));
     }
 
     public void ChangeState(AbstractPlayerState newState)
@@ -187,12 +187,12 @@ public class PlayerStateMachine : MonoBehaviour
     /// </summary>
     public void RecordJumpStarted()
     {
-        _debugJumpStartY = Motor.transform.position.y;
-        _debugJumpMaxY = Motor.transform.position.y;
-
         JumpReleased = false;
         LastJumpStartTime = Time.time;
+        LastJumpStartPos = Motor.transform.position;
         ChainedJumpCount++;
+
+        _debugJumpMaxY = Motor.transform.position.y;
     }
 
     public bool ChainedJumpLandedRecently()

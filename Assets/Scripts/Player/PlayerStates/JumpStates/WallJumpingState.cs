@@ -6,16 +6,8 @@ namespace PlayerStates
 {
     public class WallJumpingState : StandardJumpingState
     {
-        private Vector3 _lastWallJumpPos;
-
         public WallJumpingState(PlayerStateMachine shared)
             : base(shared) {}
-
-        public override void ResetState()
-        {
-            _lastWallJumpPos = Vector3.zero;
-            base.ResetState();
-        }
 
         public override void OnStateEnter()
         {
@@ -46,10 +38,6 @@ namespace PlayerStates
             
             // Trigger animation
             _player.Anim.Set(PlayerAnims.STANDARD_JUMP);
-
-            // Save the starting position of the jump.  We'll use this later
-            // to decide when to re-enable air strafing.
-            _lastWallJumpPos = _player.Motor.transform.position;
         }
 
         public override void FixedUpdate()
@@ -67,7 +55,7 @@ namespace PlayerStates
         private bool IsAirStrafingEnabled()
         {
             float distFromWall = Vector3.Distance(
-                _lastWallJumpPos.Flattened(),
+                _player.LastJumpStartPos.Flattened(),
                 _player.Motor.transform.position.Flattened()
             );
 
