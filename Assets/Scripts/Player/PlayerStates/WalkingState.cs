@@ -163,11 +163,11 @@ namespace PlayerStates
             if (_player.JumpPressedRecently())
             {
                 if (StoppedRollingRecently())
-                    _player.StartRollJump();
+                    _player.ChangeState(_player.RollJumping);
                 else if (IsSkidding())
-                    _player.StartSideFlipJump();
+                    _player.ChangeState(_player.SideFlipJumping);
                 else
-                    _player.StartGroundJump();
+                    _player.ChangeState(_player.StandardJumping);
             }
 
             if (_player.AttackPressedRecently() && !_player.IsRollOnCooldown())

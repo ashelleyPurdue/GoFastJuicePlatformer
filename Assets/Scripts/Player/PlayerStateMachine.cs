@@ -23,6 +23,9 @@ public class PlayerStateMachine : MonoBehaviour
     public Vector3 Forward => AngleForward(HAngleDeg);
 
     public AbstractPlayerState Walking {get; private set;}
+    public AbstractPlayerState StandardJumping {get; private set;}
+    public AbstractPlayerState RollJumping {get; private set;}
+    public AbstractPlayerState SideFlipJumping {get; private set;}
     public AbstractPlayerState FreeFall {get; private set;}
     public AbstractPlayerState WallSliding {get; private set;}
     public AbstractPlayerState WallJumping {get; private set;}
@@ -52,8 +55,8 @@ public class PlayerStateMachine : MonoBehaviour
     public float LastJumpStartTime = 0;
 
     // Debugging metrics
-    public float DebugJumpStartYFooBar;
-    public float DebugJumpMaxYFooBar;
+    private float _debugJumpStartY;
+    private float _debugJumpMaxY;
 
     public void Awake()
     {
@@ -64,6 +67,9 @@ public class PlayerStateMachine : MonoBehaviour
         Motor = GetComponent<PlayerMotor>();
 
         Walking = new WalkingState(this);
+        StandardJumping = new StandardJumpingState(this);
+        RollJumping = new RollJumpingState(this);
+        SideFlipJumping = new SideFlipJumpingState(this);
         FreeFall = new FreeFallState(this);
         WallSliding = new WallSlidingState(this);
         WallJumping = new WallJumpingState(this);
@@ -160,7 +166,7 @@ public class PlayerStateMachine : MonoBehaviour
         DebugDisplay.PrintLine("HAngleDeg: " + HAngleDeg);
         DebugDisplay.PrintLine("Chained jump count: " + ChainedJumpCount);
         DebugDisplay.PrintLine("In chained jump window: " + ChainedJumpLandedRecently());
-        DebugDisplay.PrintLine("Jump height: " + (DebugJumpMaxYFooBar - DebugJumpStartYFooBar));
+        DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - _debugJumpStartY));
     }
 
     public void ChangeState(AbstractPlayerState newState)
@@ -185,122 +191,6 @@ public class PlayerStateMachine : MonoBehaviour
             0,
             Mathf.Sin(Mathf.Deg2Rad * angleDeg)
         );
-    }
-
-    public void StartGroundJump()
-    {
-        // DEBUG: Record debug stats
-        DebugJumpStartYFooBar = Motor.transform.position.y;
-        DebugJumpMaxYFooBar = Motor.transform.position.y;
-
-        InstantlyFaceLeftStick();
-
-        Motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
-
-        // If this was a chained jump, restore their stored hspeed
-        if (ChainedJumpLandedRecently())
-            HSpeed = StoredAirHSpeed;
-
-        // Jump heigher and get a speed boost every time they do 2 chained jumps
-        bool isChainedJump = ChainedJumpCount % 2 == 1;
-        if (isChainedJump)
-        {
-            Motor.RelativeVSpeed = PlayerConstants.CHAIN_JUMP_VSPEED;
-            HSpeed *= PlayerConstants.CHAINED_JUMP_HSPEED_MULT;
-        }
-
-        SyncWalkVelocityToHSpeed();
-
-        // Book keeping
-        ChainedJumpCount++;
-        JumpReleased = false;
-        LastJumpStartTime = Time.time;
-
-        // Trigger animation
-        string anim = isChainedJump
-            ? PlayerAnims.CHAINED_JUMP
-            : PlayerAnims.STANDARD_JUMP;
-        Anim.Set(anim);
-    }
-    public void StartWallJump()
-    {
-        // DEBUG: Record debug stats
-        DebugJumpStartYFooBar = Motor.transform.position.y;
-        DebugJumpMaxYFooBar = Motor.transform.position.y;
-
-        Motor.RelativeVSpeed = PlayerConstants.WALL_JUMP_VSPEED;
-
-        // Kick off of the wall at a speed that's *at least* WALL_JUMP_MIN_HSPEED.
-        // If we were already going faster than that before touching the wall,
-        // then use *that* speed instead.  This way, you'll never lose speed by
-        // wall jumping.
-        FaceAwayFromWall();
-        HSpeed = Mathf.Max(
-            PlayerConstants.WALL_JUMP_MIN_HSPEED,
-            HSpeed
-        );
-
-        // On top of that, give the player a *boost* to their HSpeed, as a reward
-        // for wall jumping.
-        HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
-
-        SyncWalkVelocityToHSpeed();
-
-        // Book keeping
-        ChainedJumpCount = 1;  // The next normal jump after landing will
-                                // be a chained jump.
-        JumpReleased = false;
-        ChangeState(WallJumping);
-
-        // Trigger animation
-        Anim.Set(PlayerAnims.STANDARD_JUMP);
-    }
-
-    public void StartRollJump()
-    {
-        // DEBUG: Record debug stats
-        DebugJumpStartYFooBar = Motor.transform.position.y;
-        DebugJumpMaxYFooBar = Motor.transform.position.y;
-
-        InstantlyFaceLeftStick();
-
-        // Cap their HSpeed at something reasonable.
-        // Otherwise, they'd conserve their rolling HSpeed into the
-        // jump, which would result in a *super* ridiculous long jump.
-        // We only want rolling jumps to be *slightly* ridiculous.
-        HSpeed = PlayerConstants.ROLL_JUMP_HSPEED;
-        Motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED;
-        SyncWalkVelocityToHSpeed();
-
-        ChainedJumpCount = 0;
-        JumpReleased = false;
-        LastJumpStartTime = Time.time;
-        ChangeState(Walking);
-        
-        // Trigger animation
-        Anim.Set(PlayerAnims.STANDARD_JUMP);
-    }
-
-    public void StartSideFlipJump()
-    {
-        // DEBUG: Record debug stats
-        DebugJumpStartYFooBar = Motor.transform.position.y;
-        DebugJumpMaxYFooBar = Motor.transform.position.y;
-
-        // TODO: Use separate constants for this.
-        Motor.RelativeVSpeed = PlayerConstants.STANDARD_JUMP_VSPEED * 1.25f;
-        HSpeed = PlayerConstants.HSPEED_MAX_GROUND;
-        SyncWalkVelocityToHSpeed();
-
-        // Book keeping
-        // NOTE: A side flip never acts as a chained jump, but it still adds
-        // to the chain jump count.
-        ChainedJumpCount++;
-        JumpReleased = false;
-        LastJumpStartTime = Time.time;
-        
-        // Trigger animation
-        Anim.Set(PlayerAnims.SIDE_FLIP);
     }
 
     public void SyncWalkVelocityToHSpeed()
@@ -335,6 +225,83 @@ public class PlayerStateMachine : MonoBehaviour
     public void FaceAwayFromWall()
     {
         HAngleDeg = GetHAngleDegFromForward(Motor.LastWallNormal.Flattened());
+    }
+
+    /// <summary>
+    /// Common logic that is shared by all jumping/falling states.
+    /// Allows the player to influence their velocity in mid-air using the
+    /// left stick.
+    /// </summary>
+    public void AirStrafingControls()
+    {
+        // Always be facing the left stick.
+        // This gives the player the illusion of having more control,
+        // without actually affecting their velocity.
+        // It also makes it easier to tell which direction they would dive
+        // in, if they were to press the dive button right now.
+        InstantlyFaceLeftStick();
+
+        // Allow the player to redirect their velocity for free for a short
+        // time after jumping, in case they pressed the jump button while
+        // they were still moving the stick.
+        // After that time is up, air strafing controls kick in.
+        if (IsInJumpRedirectTimeWindow())
+        {
+            SyncWalkVelocityToHSpeed();
+            return;
+        }
+
+        // In the air, we let the player "nudge" their velocity by applying
+        // a force in the direction the stick is being pushed.
+        // Unlike on the ground, you *will* lose speed and slide around if
+        // you try to change your direction.
+        var inputVector = GetWalkInput();
+
+        float accel = PlayerConstants.HACCEL_AIR;
+        float maxSpeed = PlayerConstants.HSPEED_MAX_AIR;
+
+        // Apply a force to get our new velocity.
+        var oldVelocity = Motor.RelativeFlatVelocity;
+        var newVelocity = Motor.RelativeFlatVelocity + (inputVector * accel * Time.deltaTime);
+        
+        // Only let the player accellerate up to the normal ground speed.
+        // We won't slow them down if they're already going faster than
+        // that, though (eg: due to a speed boost from wall jumping)
+        float oldSpeed = oldVelocity.magnitude;
+        float newSpeed = newVelocity.magnitude;
+
+        bool wasAboveGroundSpeedLimit = oldSpeed > PlayerConstants.HSPEED_MAX_GROUND;
+        bool nowAboveGroundSpeedLimit = newSpeed > PlayerConstants.HSPEED_MAX_GROUND;
+
+        if (newSpeed > oldSpeed)
+        {
+            if (wasAboveGroundSpeedLimit)
+                newSpeed = oldSpeed;
+            else if (nowAboveGroundSpeedLimit)
+                newSpeed = PlayerConstants.HSPEED_MAX_GROUND;
+        }
+
+        // We WILL, however, slow them down if they're going past the max
+        // air speed.  That's a hard maximum.
+        if (newSpeed > maxSpeed)
+            newSpeed = maxSpeed;
+
+        Motor.RelativeFlatVelocity = newVelocity.normalized * newSpeed;
+
+        // Keep HSpeed up-to-date, so it'll be correct when we land.
+        HSpeed = Motor.RelativeFlatVelocity.ComponentAlong(Forward);
+    }
+
+    public void DebugRecordJumpStart()
+    {
+        _debugJumpStartY = Motor.transform.position.y;
+        _debugJumpMaxY = Motor.transform.position.y;
+    }
+
+    public void DebugRecordWhileJumping()
+    {
+        if (Motor.transform.position.y > _debugJumpMaxY)
+            _debugJumpMaxY = Motor.transform.position.y;
     }
 
     /// <summary>

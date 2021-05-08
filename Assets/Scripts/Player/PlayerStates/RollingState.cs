@@ -74,7 +74,7 @@ namespace PlayerStates
             // Let the player jump out of a roll.
             if (_player.JumpPressedRecently())
             {
-                _player.StartRollJump();
+                _player.ChangeState(_player.RollJumping);
                 return;
             }
         }

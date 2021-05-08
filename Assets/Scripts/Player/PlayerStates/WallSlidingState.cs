@@ -65,7 +65,7 @@ namespace PlayerStates
         {
             // Wall kick when we press the jump button
             if (_player.JumpPressedRecently())
-                _player.StartWallJump();
+                _player.ChangeState(_player.WallJumping);
         }
     }
 }

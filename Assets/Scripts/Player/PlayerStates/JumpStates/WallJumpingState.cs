@@ -1,0 +1,77 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace PlayerStates
+{
+    public class WallJumpingState : StandardJumpingState
+    {
+        private Vector3 _lastWallJumpPos;
+
+        public WallJumpingState(PlayerStateMachine shared)
+            : base(shared) {}
+
+        public override void ResetState()
+        {
+            _lastWallJumpPos = Vector3.zero;
+            base.ResetState();
+        }
+
+        public override void OnStateEnter()
+        {
+            _player.DebugRecordJumpStart();
+
+            _player.Motor.RelativeVSpeed = PlayerConstants.WALL_JUMP_VSPEED;
+
+            // Kick off of the wall at a speed that's *at least* WALL_JUMP_MIN_HSPEED.
+            // If we were already going faster than that before touching the wall,
+            // then use *that* speed instead.  This way, you'll never lose speed by
+            // wall jumping.
+            _player.FaceAwayFromWall();
+            _player.HSpeed = Mathf.Max(
+                PlayerConstants.WALL_JUMP_MIN_HSPEED,
+                _player.HSpeed
+            );
+
+            // On top of that, give the player a *boost* to their HSpeed, as a reward
+            // for wall jumping.
+            _player.HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
+
+            _player.SyncWalkVelocityToHSpeed();
+
+            // Book keeping
+            _player.ChainedJumpCount = 1;  // The next normal jump after landing will
+                                           // be a chained jump.
+            _player.JumpReleased = false;
+
+            // Trigger animation
+            _player.Anim.Set(PlayerAnims.STANDARD_JUMP);
+
+            // Save the starting position of the jump.  We'll use this later
+            // to decide when to re-enable air strafing.
+            _lastWallJumpPos = _player.Motor.transform.position;
+        }
+
+        public override void FixedUpdate()
+        {
+            _player.DebugRecordWhileJumping();
+
+            base.Physics();
+
+            if (IsAirStrafingEnabled())
+                _player.AirStrafingControls();
+            
+            base.ButtonControls();
+        }
+
+        private bool IsAirStrafingEnabled()
+        {
+            float distFromWall = Vector3.Distance(
+                _lastWallJumpPos.Flattened(),
+                _player.Motor.transform.position.Flattened()
+            );
+
+            return distFromWall >= PlayerConstants.WALL_JUMP_MIN_HDIST;
+        }
+    }
+}
