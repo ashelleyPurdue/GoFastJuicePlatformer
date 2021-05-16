@@ -22,6 +22,7 @@ public static class PlayerConstants
     public const float CHAINED_JUMP_MIN_DURATION = 0.2f;
 
     // Side fip constants
+    public const float SIDE_FLIP_MAX_HEIGHT = 7.76f;
     public const float SIDE_FLIP_MIN_DURATION = 0.5f;
 
     public const float HSPEED_MIN = 2;
@@ -89,6 +90,7 @@ public static class PlayerConstants
 
     public static readonly float STANDARD_JUMP_VSPEED;
     public static readonly float CHAIN_JUMP_VSPEED;
+    public static readonly float SIDE_FLIP_VSPEED;
     public static readonly float DIVE_JUMP_VSPEED;
     public static readonly float WALL_JUMP_VSPEED;
     public static readonly float JUMP_RISE_GRAVITY;
@@ -118,6 +120,12 @@ public static class PlayerConstants
 
         CHAIN_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
             PlayerConstants.CHAINED_JUMP_MAX_HEIGHT,
+            PlayerConstants.JUMP_RISE_GRAVITY,
+            PlayerConstants.FIXED_TIMESTEP
+        );
+
+        SIDE_FLIP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
+            PlayerConstants.SIDE_FLIP_MAX_HEIGHT,
             PlayerConstants.JUMP_RISE_GRAVITY,
             PlayerConstants.FIXED_TIMESTEP
         );
