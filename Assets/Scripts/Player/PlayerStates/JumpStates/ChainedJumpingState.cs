@@ -6,6 +6,8 @@ namespace PlayerStates
 {
     public class ChainedJumpingState : StandardJumpingState
     {
+        protected override float MinDuration => PlayerConstants.CHAINED_JUMP_MIN_DURATION;
+
         public ChainedJumpingState(PlayerStateMachine player) : base(player) {}
 
         public override void OnStateEnter()

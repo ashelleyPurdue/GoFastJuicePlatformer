@@ -6,6 +6,8 @@ namespace PlayerStates
 {
     public class SideFlipJumpingState : StandardJumpingState
     {
+        protected override float MinDuration => PlayerConstants.SIDE_FLIP_MIN_DURATION;
+
         public SideFlipJumpingState(PlayerStateMachine player) : base(player) {}
 
         public override void OnStateEnter()

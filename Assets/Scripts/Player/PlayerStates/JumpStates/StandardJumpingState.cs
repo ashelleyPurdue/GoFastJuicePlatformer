@@ -6,6 +6,8 @@ namespace PlayerStates
 {
     public class StandardJumpingState : AbstractPlayerState
     {
+        protected virtual float MinDuration => PlayerConstants.STANDARD_JUMP_MIN_DURATION;
+
         public StandardJumpingState(PlayerStateMachine player) : base(player) {}
 
         public override void OnStateEnter()
@@ -83,6 +85,7 @@ namespace PlayerStates
             // the rest of the work so it still looks natural.
             bool shouldDecay =
                 _player.JumpReleased &&
+                IsPastMinDuration() &&
                 _player.Motor.RelativeVSpeed > (PlayerConstants.STANDARD_JUMP_VSPEED / 2);
 
             if (shouldDecay)
@@ -94,6 +97,11 @@ namespace PlayerStates
                 _player.ChangeState(_player.Diving);
                 return;
             }
+        }
+
+        private bool IsPastMinDuration()
+        {
+            return (Time.time - _player.LastJumpStartTime >= MinDuration);
         }
     }
 }

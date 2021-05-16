@@ -12,12 +12,17 @@ public static class PlayerConstants
     // These constants will determine the initial jump velocity
     // and rising/falling gravity strength
     public const float STANDARD_JUMP_MAX_HEIGHT = 5;
+    public const float STANDARD_JUMP_MIN_DURATION = 0.05f;
     public const float STANDARD_JUMP_FULL_RISE_TIME = 0.404f;
     public const float STANDARD_JUMP_FULL_FALL_TIME = 0.328f;
 
     // This constant will determine the initial jump velocity when doing
     // a chained jump.
     public const float CHAINED_JUMP_MAX_HEIGHT = 8;
+    public const float CHAINED_JUMP_MIN_DURATION = 0.2f;
+
+    // Side fip constants
+    public const float SIDE_FLIP_MIN_DURATION = 0.5f;
 
     public const float HSPEED_MIN = 2;
     public const float HSPEED_MAX_GROUND = 8;
