@@ -17,9 +17,9 @@ public static class PlayerConstants
     public const float STANDARD_JUMP_FULL_FALL_TIME = 0.328f;
 
     // This constant will determine the initial jump velocity when doing
-    // a chained jump.
-    public const float CHAINED_JUMP_MAX_HEIGHT = 8;
-    public const float CHAINED_JUMP_MIN_DURATION = 0.2f;
+    // a double jump.
+    public const float DOUBLE_JUMP_MAX_HEIGHT = 8;
+    public const float DOUBLE_JUMP_MIN_DURATION = 0.2f;
 
     // Side fip constants
     public const float SIDE_FLIP_MAX_HEIGHT = 7.76f;
@@ -63,10 +63,10 @@ public static class PlayerConstants
     public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
     
-    // If you jump again shortly after you land, you'll do a "chained jump."
-    // This is like the "double jump" from 3D Mario games.
-    public const float CHAINED_JUMP_HSPEED_MULT = 1.3f;
-    public const float CHAINED_JUMP_TIME_WINDOW = 0.1f;
+    // If you jump again shortly after you land, you'll do a "double jump."
+    // Not the mid-air kind of double-jump, but the "3D Mario" kind.
+    public const float DOUBLE_JUMP_HSPEED_MULT = 1.3f;
+    public const float DOUBLE_JUMP_TIME_WINDOW = 0.1f;
 
     public const float WALL_JUMP_MIN_HSPEED = 10;
     public const float WALL_JUMP_HSPEED_MULT = 1.1f;
@@ -89,7 +89,7 @@ public static class PlayerConstants
     public const float LEFT_STICK_DEADZONE = 0.001f;
 
     public static readonly float STANDARD_JUMP_VSPEED;
-    public static readonly float CHAIN_JUMP_VSPEED;
+    public static readonly float DOUBLE_JUMP_VSPEED;
     public static readonly float SIDE_FLIP_VSPEED;
     public static readonly float DIVE_JUMP_VSPEED;
     public static readonly float WALL_JUMP_VSPEED;
@@ -118,8 +118,8 @@ public static class PlayerConstants
             PlayerConstants.FIXED_TIMESTEP
         );
 
-        CHAIN_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
-            PlayerConstants.CHAINED_JUMP_MAX_HEIGHT,
+        DOUBLE_JUMP_VSPEED = AccelerationMath.VelocityForDistanceWithFriction(
+            PlayerConstants.DOUBLE_JUMP_MAX_HEIGHT,
             PlayerConstants.JUMP_RISE_GRAVITY,
             PlayerConstants.FIXED_TIMESTEP
         );

@@ -21,8 +21,9 @@ namespace PlayerStates
             _player.SyncWalkVelocityToHSpeed();
 
             _player.RecordJumpStarted();
-            _player.ChainedJumpCount = 0;   // HACK: Reset chained jump count.
-                                            // Why exactly?  I don't remember.
+            _player.DoubleJumpArmed = false;    // HACK: Don't let this enable
+                                                // double jumping.
+                                                // Why exactly?  I don't remember.
             
             // Trigger animation
             _player.Anim.Set(PlayerAnims.STANDARD_JUMP);

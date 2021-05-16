@@ -24,7 +24,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     public AbstractPlayerState Walking {get; private set;}
     public AbstractPlayerState StandardJumping {get; private set;}
-    public AbstractPlayerState ChainedJumping {get; private set;}
+    public AbstractPlayerState DoubleJumping {get; private set;}
     public AbstractPlayerState RollJumping {get; private set;}
     public AbstractPlayerState SideFlipJumping {get; private set;}
     public AbstractPlayerState FreeFall {get; private set;}
@@ -49,8 +49,8 @@ public class PlayerStateMachine : MonoBehaviour
 
     public float LastAttackButtonPressTime = float.NegativeInfinity;
 
-    public float LastChainedJumpLandTime = 0;
-    public int ChainedJumpCount = 0;
+    public float LastJumpLandTime = 0;
+    public bool DoubleJumpArmed = false;
 
     public float LastRollStopTime = 0;
     public float LastJumpStartTime = 0;
@@ -69,7 +69,7 @@ public class PlayerStateMachine : MonoBehaviour
 
         Walking = new WalkingState(this);
         StandardJumping = new StandardJumpingState(this);
-        ChainedJumping = new ChainedJumpingState(this);
+        DoubleJumping = new DoubleJumpingState(this);
         RollJumping = new RollJumpingState(this);
         SideFlipJumping = new SideFlipJumpingState(this);
         FreeFall = new FreeFallState(this);
@@ -110,8 +110,8 @@ public class PlayerStateMachine : MonoBehaviour
 
         LastJumpButtonPressTime = float.NegativeInfinity;
         JumpReleased = false;
-        LastChainedJumpLandTime = 0;
-        ChainedJumpCount = 0;
+        LastJumpLandTime = 0;
+        DoubleJumpArmed = false;
 
         ChangeState(FreeFall);
 
@@ -166,8 +166,8 @@ public class PlayerStateMachine : MonoBehaviour
         DebugDisplay.PrintLine("HSpeed: " + HSpeed);
         DebugDisplay.PrintLine("VSpeed: " + Motor.RelativeVSpeed);
         DebugDisplay.PrintLine("HAngleDeg: " + HAngleDeg);
-        DebugDisplay.PrintLine("Chained jump count: " + ChainedJumpCount);
-        DebugDisplay.PrintLine("In chained jump window: " + ChainedJumpLandedRecently());
+        DebugDisplay.PrintLine("Double jump armed: " + DoubleJumpArmed);
+        DebugDisplay.PrintLine("In double jump window: " + IsInDoubleJumpWindow());
         DebugDisplay.PrintLine("Jump height: " + (_debugJumpMaxY - LastJumpStartPos.y));
     }
 
@@ -184,21 +184,23 @@ public class PlayerStateMachine : MonoBehaviour
     /// <summary>
     /// Book keeping that needs to be done when a jump has started.
     /// Call this in a jumping state's OnStateEntered() method.
+    /// By contract, it:
+    /// * Updates <see cref="LastJumpStartTime"/> and <see cref="LastJumpStartPos"/>
+    /// * Marks the jump button as having not been released yet
+    /// * Re-arms double jumping
+    /// * Starts measuring the maximum jump height for debugging purposes.
     /// </summary>
     public void RecordJumpStarted()
     {
         JumpReleased = false;
         LastJumpStartTime = Time.time;
         LastJumpStartPos = Motor.Position;
-        ChainedJumpCount++;
+        DoubleJumpArmed = true;
 
         _debugJumpMaxY = Motor.Position.y;
     }
 
-    public bool ChainedJumpLandedRecently()
-    {
-        return (Time.fixedTime - LastChainedJumpLandTime < PlayerConstants.CHAINED_JUMP_TIME_WINDOW);
-    }
+
 
     public Vector3 AngleForward(float angleDeg)
     {
@@ -375,6 +377,11 @@ public class PlayerStateMachine : MonoBehaviour
     public bool IsRollOnCooldown()
     {
         return (Time.time - PlayerConstants.ROLL_COOLDOWN < LastRollStopTime);
+    }
+
+    public bool IsInDoubleJumpWindow()
+    {
+        return (Time.fixedTime - LastJumpLandTime < PlayerConstants.DOUBLE_JUMP_TIME_WINDOW);
     }
 
     public bool IsInJumpRedirectTimeWindow()

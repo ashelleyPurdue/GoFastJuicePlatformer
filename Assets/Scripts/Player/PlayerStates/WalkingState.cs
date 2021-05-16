@@ -31,14 +31,14 @@ namespace PlayerStates
         {
             UpdateAnimation();
 
-            // Start the chained jump timer once we land
+            // Start the double jump timer once we land
             if (!_player.Motor.WasGroundedLastFrame)
-                _player.LastChainedJumpLandTime = Time.fixedTime;
+                _player.LastJumpLandTime = Time.fixedTime;
 
-            // Reset the chained jump count if you wait too long after landing
-            if (!_player.ChainedJumpLandedRecently())
+            // Disarm double jumping if the timer has expired
+            if (!_player.IsInDoubleJumpWindow())
             {
-                _player.ChainedJumpCount = 0;
+                _player.DoubleJumpArmed = false;
             }
 
             Physics();

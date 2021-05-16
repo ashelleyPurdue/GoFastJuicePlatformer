@@ -88,7 +88,7 @@ public static class PlayerAnims
     public const string RUN = "PlayerRun";
     public const string LEDGE_GRAB = "PlayerLedgeGrab";
     public const string STANDARD_JUMP = "PlayerJump_0";
-    public const string CHAINED_JUMP = "PlayerJump_1";
+    public const string DOUBLE_JUMP = "PlayerJump_1";
     public const string SIDE_FLIP = "PlayerSideFlip";
     public const string ROLL = "PlayerRoll";
     public const string DIVE = "PlayerDive";

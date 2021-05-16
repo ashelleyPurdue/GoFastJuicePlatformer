@@ -18,7 +18,7 @@ namespace PlayerStates
             _player.HSpeed = PlayerConstants.DIVE_HSPEED_INITIAL;
             _player.Motor.RelativeVSpeed = PlayerConstants.DIVE_JUMP_VSPEED;
 
-            _player.ChainedJumpCount = 0;
+            _player.DoubleJumpArmed = false;
         }
 
         public override void OnStateExit()

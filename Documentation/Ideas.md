@@ -14,7 +14,7 @@ proper documentation written.
 
 # Features
 * A minimum height for every type of jump
-* Doing a chained jump on sloped ground gives a speed boost
+* Doing a double jump on sloped ground gives a speed boost
 * Gaining/losing momentum from sloped surfaces
     * Going downhill gives you momentum
         * Perhaps only while rolling?

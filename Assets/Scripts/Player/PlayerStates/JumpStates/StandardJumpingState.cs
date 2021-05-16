@@ -12,11 +12,11 @@ namespace PlayerStates
 
         public override void OnStateEnter()
         {
-            // HACK: Chain jump instead
-            bool isChainedJump = _player.ChainedJumpCount % 2 == 1;
-            if (isChainedJump)
+            // HACK: Double jump instead
+            bool isDoubleJump = _player.DoubleJumpArmed && _player.IsInDoubleJumpWindow();
+            if (isDoubleJump)
             {
-                _player.ChangeState(_player.ChainedJumping);
+                _player.ChangeState(_player.DoubleJumping);
                 return;
             }
 
@@ -24,7 +24,7 @@ namespace PlayerStates
             _player.InstantlyFaceLeftStick();
 
             // If we just recently landed, restore their stored hspeed
-            if (_player.ChainedJumpLandedRecently())
+            if (_player.IsInDoubleJumpWindow())
                 _player.HSpeed = _player.StoredAirHSpeed;
 
             _player.SyncWalkVelocityToHSpeed();

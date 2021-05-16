@@ -33,9 +33,6 @@ namespace PlayerStates
 
             // Book keeping
             _player.RecordJumpStarted();
-            _player.ChainedJumpCount = 1; // HACK: The next normal jump after
-                                          // landing will always be a "second"
-                                          // chained jump
 
             _enableAirStrafing = false;   // We will re-enable air-strafing after
                                           // travelling a minimum distance away

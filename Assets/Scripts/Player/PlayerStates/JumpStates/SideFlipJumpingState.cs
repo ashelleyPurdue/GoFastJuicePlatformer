@@ -17,8 +17,6 @@ namespace PlayerStates
             _player.SyncWalkVelocityToHSpeed();
 
             // Book keeping
-            // NOTE: A side flip never acts as a chained jump, but it still adds
-            // to the chain jump count.
             _player.RecordJumpStarted();
             
             // Trigger animation
