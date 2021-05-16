@@ -35,6 +35,26 @@ proper documentation written.
 * "Zoom" ramps that launch you somewhere else when you roll into them, kind of
     like launch stars in Mario Galaxy.
 
+* Use "speed tiers" to reward players instead of directly increasing HSpeed
+    * Speed tiers are remeniscent like the various tiers of "boost" in Crash Team Racing
+    * Each tier has its own maximum HSpeed
+    * You stay in your current speed tier until:
+        * You get a boost with a tier higher than your current one
+        * Your invisible "reserve tank" runs out
+        * Your HSpeed drops below a certain threshold
+        * You perform certain actions that forcibly set you to a particular
+            tier
+    * Every time you do something that gives you a boost, it adds a little to
+        your "reserve tank".
+    * Your "reserve tank" depletes a little for every frame that you're on the
+        ground.  Bunny hopping is therefore a good strategy to make your
+        reserves last longer
+    * Certain actions count as a "boost"
+        * Each boost has a tier.  If the boost's tier is higher than your
+            current speed tier, then your current speed tier is upgraded to the
+            boost's tier.
+        * Each boost adds a little bit to your reserves
+
 # Refactorings
 * A separate state for skidding
 * Less disgusting state machine
