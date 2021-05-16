@@ -36,9 +36,6 @@ proper documentation written.
     like launch stars in Mario Galaxy.
 
 # Refactorings
-* A separate state for each jump
-    * Move the logic in `StartGroundJump()`, etc. into that jump's `OnStateEnter()`.
-* A separate state for falling after the "rising" portion of a jump
 * A separate state for skidding
 * Less disgusting state machine
     * Rename the concept of "states" to something else("actions"?) because "state"
