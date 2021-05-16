@@ -12,8 +12,6 @@ namespace PlayerStates
 
         public override void OnStateEnter()
         {
-            
-            // TODO: Use separate constants for this.
             _player.Motor.RelativeVSpeed = PlayerConstants.SIDE_FLIP_VSPEED;
             _player.HSpeed = PlayerConstants.HSPEED_MAX_GROUND;
             _player.SyncWalkVelocityToHSpeed();
