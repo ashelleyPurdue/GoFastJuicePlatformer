@@ -27,7 +27,7 @@ namespace PlayerStates
 
             // On top of that, give the player a *boost* to their HSpeed, as a reward
             // for wall jumping.
-            _player.HSpeed *= PlayerConstants.WALL_JUMP_HSPEED_MULT;
+            _player.HSpeed += PlayerConstants.WALL_JUMP_HSPEED_BOOST;
 
             _player.SyncWalkVelocityToHSpeed();
 

@@ -67,7 +67,7 @@ public static class PlayerConstants
 
 
     public const float WALL_JUMP_MIN_HSPEED = 10;
-    public const float WALL_JUMP_HSPEED_MULT = 1.1f;
+    public const float WALL_JUMP_HSPEED_BOOST = 1;
     public const float WALL_JUMP_HEIGHT = 5.5f;
     public const float WALL_JUMP_MIN_HDIST = 1; // air strafing is disabled after
                                                 // a wall jump until the player
