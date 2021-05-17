@@ -16,10 +16,12 @@ public static class PlayerConstants
     public const float STANDARD_JUMP_FULL_RISE_TIME = 0.404f;
     public const float STANDARD_JUMP_FULL_FALL_TIME = 0.328f;
 
-    // This constant will determine the initial jump velocity when doing
-    // a double jump.
+    // If you jump again shortly after you land, you'll do a "double jump."
+    // Not the mid-air kind of double-jump, but the "3D Mario" kind.
     public const float DOUBLE_JUMP_MAX_HEIGHT = 8;
     public const float DOUBLE_JUMP_MIN_DURATION = 0.2f;
+    public const float DOUBLE_JUMP_HSPEED_BOOST = 2.4f;
+    public const float DOUBLE_JUMP_TIME_WINDOW = 0.1f;
 
     // Side fip constants
     public const float SIDE_FLIP_MAX_HEIGHT = 7.76f;
@@ -62,11 +64,7 @@ public static class PlayerConstants
 
     public const float COYOTE_TIME = 0.1f;      // Allows you to press the jump button a little "late" and still jump
     public const float EARLY_JUMP_TIME = 0.1f;  // Allows you to press the jump button a little "early" and still jump
-    
-    // If you jump again shortly after you land, you'll do a "double jump."
-    // Not the mid-air kind of double-jump, but the "3D Mario" kind.
-    public const float DOUBLE_JUMP_HSPEED_MULT = 1.3f;
-    public const float DOUBLE_JUMP_TIME_WINDOW = 0.1f;
+
 
     public const float WALL_JUMP_MIN_HSPEED = 10;
     public const float WALL_JUMP_HSPEED_MULT = 1.1f;

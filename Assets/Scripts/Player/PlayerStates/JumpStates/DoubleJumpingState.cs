@@ -17,7 +17,7 @@ namespace PlayerStates
 
             // Since this is a double jump, give them a speed boost
             _player.HSpeed = _player.StoredAirHSpeed;
-            _player.HSpeed *= PlayerConstants.DOUBLE_JUMP_HSPEED_MULT;
+            _player.HSpeed += PlayerConstants.DOUBLE_JUMP_HSPEED_BOOST;
 
             _player.SyncWalkVelocityToHSpeed();
 
