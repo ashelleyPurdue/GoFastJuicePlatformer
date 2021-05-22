@@ -38,7 +38,6 @@ public class DeathPlane : MonoBehaviour
                 Gizmos.DrawWireCube(pos, squareSizeVec);
             }
         }
-
         
         Gizmos.color = prevColor;
     }
