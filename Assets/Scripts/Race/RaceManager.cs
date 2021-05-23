@@ -23,7 +23,7 @@ public interface IRaceManager
     /// If another race is already in progress, that race will be canceled
     /// and the new one will take its place.
     /// </summary>
-    void StartRace(string raceId);
+    void StartRace();
 
     /// <summary>
     /// Stops the current race(if one is in progress) and resets <see cref="RaceTime"/>
@@ -49,26 +49,39 @@ public interface IRaceManager
 
 public class RaceManager : ScriptableObject, IRaceManager
 {
-    public bool IsRaceInProgress => throw new NotImplementedException();
+    public bool IsRaceInProgress {get; private set;} = false;
 
-    public float RaceTime => throw new NotImplementedException();
-
-    public void FinishRace(string raceId)
+    public float RaceTime
     {
-        throw new NotImplementedException();
+        get => IsRaceInProgress
+            ? (Time.fixedTime - _raceStartTime)
+            : (_raceEndTime - _raceStartTime);
     }
 
-    public float GetBestTime(string raceId)
+    private float _raceStartTime = 0;
+    private float _raceEndTime = 0;
+
+    public void StartRace()
     {
-        throw new NotImplementedException();
+        IsRaceInProgress = true;
+        _raceStartTime = Time.fixedTime;
+        _raceEndTime = 0;
     }
 
     public void ResetRace()
     {
-        throw new NotImplementedException();
+        IsRaceInProgress = false;
+        _raceStartTime = 0;
+        _raceEndTime = 0;
     }
 
-    public void StartRace(string raceId)
+    public void FinishRace(string raceId)
+    {
+        IsRaceInProgress = false;
+        _raceEndTime = Time.fixedTime;
+    }
+
+    public float GetBestTime(string raceId)
     {
         throw new NotImplementedException();
     }
