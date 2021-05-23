@@ -3,151 +3,73 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public delegate void RaceStartedCallback(string raceId);
-public delegate void RaceCanceledCallback(string raceId);
-public delegate void RaceFinishedCallback(string raceId, float time);
-
-public enum RaceState
-{
-    NotStarted,
-    InProgress,
-    Finished
-}
-
 /// <summary>
 /// A service that manages races.
 /// Only one race may be running at a time.
 /// </summary>
 public interface IRaceManager
 {
+    bool IsRaceInProgress {get;}
+
     /// <summary>
-    /// The ID of the race that was started last.
-    /// Will be null if no race has been started yet during this playsession,
-    /// or if the last race was canceled.
+    /// Starts at 0.
+    /// Increments every FixedUpdate frame while a race is in progress.
     /// </summary>
-    string CurrentRaceId {get;}
+    /// <value></value>
+    float RaceTime {get;}
 
     /// <summary>
-    /// The current time in the race that was started last.
-    /// Will be 0 if no race has been started yet during this playsession.
-    /// 
-    /// When a new race is started, this value will be reset to 0.
-    /// 
-    /// While a race is in progress, this value constantly ticks up on every
-    /// FixedUpdate frame.  It will stop increasing when the race is finished
-    /// or canceled.
-    /// 
-    /// When a race is canceled, this value will reset to 0.
-    /// 
-    /// When a race is finished, this value will "freeze" and remain at what
-    /// its current value until a new race is started.
-    /// </summary>
-    float CurrentRaceTime {get;}
-
-    RaceState CurrentState {get;}
-    
-    event RaceStartedCallback RaceStarted;
-    event RaceCanceledCallback RaceCanceled;
-    event RaceFinishedCallback RaceFinished;
-
-    /// <summary>
-    /// Starts a new race.  Throws an error if there is already a race in progress.
-    /// 
-    /// Sets <see cref="CurrentRaceId"/> to the ID of the race that was started.
-    /// Sets <see cref="CurrentState"/> to <see cref="RaceState.InProgress"/>.
-    /// Resets <see cref="CurrentRaceTime"/> to 0.
-    /// Fires the <see cref="RaceStarted"/> event with the ID of the race that
-    /// was started.
+    /// Starts a new race and resets <see cref="RaceTime"/> to 0.
+    /// If another race is already in progress, that race will be canceled
+    /// and the new one will take its place.
     /// </summary>
     void StartRace(string raceId);
 
     /// <summary>
-    /// Cancels the race that is currently in progress.  Throws an error if
-    /// there is no race in progress.
-    /// Sets <see cref="CurrentState"/> to <see cref="RaceState.NotStarted"/>.
-    /// Resets <see cref="CurrentRaceTime"/> to 0.
-    /// Fires the <see cref="RaceCanceled"/> event.
-    /// Throws an error if there is no race in progress.
+    /// Stops the current race(if one is in progress) and resets <see cref="RaceTime"/>
+    /// to 0.
     /// </summary>
-    void CancelRace();
+    void ResetRace();
 
     /// <summary>
-    /// Finishes the race that is currently in progress.  Throws an error if
-    /// there is no race in progress.
-    /// Sets <see cref="CurrentState"/> to <see cref="RaceState.Finished"/>.
-    /// Does not change <see cref="CurrentRaceTime"/>.
-    /// Fires the <see cref="RaceCanceled"/> event.
+    /// Stops the current race.  Throws an error if there is no race in progress.
+    /// <see cref="RaceTime"/> will remain at its current value until either
+    /// <see cref="StartRace"/> or <see cref="ResetRace"/> is called.
+    /// 
+    /// Updates the leaderboard for the race with the specified ID, if this time
+    /// is better than the current best.
     /// </summary>
-    void FinishRace();
+    void FinishRace(string raceId);
+
+    /// <summary>
+    /// Gets the current best time for the race with the given ID.
+    /// </summary>
+    float GetBestTime(string raceId);
 }
 
 public class RaceManager : ScriptableObject, IRaceManager
 {
-    public RaceState CurrentState {get; private set;}
-    public string CurrentRaceId {get; private set;} = null;
+    public bool IsRaceInProgress => throw new NotImplementedException();
 
-    public float CurrentRaceTime
+    public float RaceTime => throw new NotImplementedException();
+
+    public void FinishRace(string raceId)
     {
-        get
-        {
-            switch (CurrentState)
-            {
-                case RaceState.NotStarted: return 0;
-                case RaceState.InProgress: return (Time.time - _lastRaceStartTime);
-                case RaceState.Finished: return (_lastRaceEndTime - _lastRaceStartTime);
-
-                default: throw new Exception("This will never happen.");
-            }
-        }
+        throw new NotImplementedException();
     }
 
-    public event RaceStartedCallback RaceStarted;
-    public event RaceCanceledCallback RaceCanceled;
-    public event RaceFinishedCallback RaceFinished;
+    public float GetBestTime(string raceId)
+    {
+        throw new NotImplementedException();
+    }
 
-    private float _lastRaceStartTime = 0;
-    private float _lastRaceEndTime = 0;
+    public void ResetRace()
+    {
+        throw new NotImplementedException();
+    }
 
     public void StartRace(string raceId)
     {
-        if (CurrentState == RaceState.InProgress)
-        {
-            throw new Exception("Cannot start a race while one is already in progress.");
-        }
-
-        CurrentRaceId = raceId;
-        _lastRaceStartTime = Time.time;
-        _lastRaceEndTime = 0;
-
-        RaceStarted?.Invoke(raceId);
-    }
-
-    public void CancelRace()
-    {
-        if (CurrentState != RaceState.InProgress)
-        {
-            throw new Exception("Cannot cancel a race if none is in progress.");
-        }
-
-        CurrentState = RaceState.NotStarted;
-        _lastRaceStartTime = 0;
-        _lastRaceEndTime = 0;
-
-        var raceId = CurrentRaceId;
-        CurrentRaceId = null;
-
-        RaceCanceled?.Invoke(raceId);
-    }
-
-    public void FinishRace()
-    {
-        if (CurrentState != RaceState.InProgress)
-        {
-            throw new Exception("Cannot finish a race if none is in progress.");
-        }
-        
-        CurrentState = RaceState.Finished;
-        _lastRaceEndTime = Time.time;
-        RaceFinished?.Invoke(CurrentRaceId, CurrentRaceTime);
+        throw new NotImplementedException();
     }
 }
